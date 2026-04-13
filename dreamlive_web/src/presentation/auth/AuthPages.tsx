@@ -308,6 +308,80 @@ export function LoginPage() {
   );
 }
 
+// ── Admin Icons ────────────────────────────────────────────────────────────
+const AdminIcons = {
+  shield: (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+    </svg>
+  ),
+  lock: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+    </svg>
+  ),
+  key: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+    </svg>
+  ),
+  fingerprint: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 117.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33" />
+    </svg>
+  ),
+  server: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+    </svg>
+  ),
+  activity: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" />
+    </svg>
+  ),
+  users: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  ),
+  database: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+    </svg>
+  ),
+};
+
+// ── Admin Features ─────────────────────────────────────────────────────────
+const adminFeatures = [
+  {
+    icon: AdminIcons.users,
+    title: 'Gestion de Usuarios',
+    description: 'Control total sobre agencias y operadores',
+  },
+  {
+    icon: AdminIcons.key,
+    title: 'Sistema de Licencias',
+    description: 'Administra y genera licencias de acceso',
+  },
+  {
+    icon: AdminIcons.activity,
+    title: 'Monitoreo en Vivo',
+    description: 'Estadisticas y metricas en tiempo real',
+  },
+  {
+    icon: AdminIcons.database,
+    title: 'Control de Datos',
+    description: 'Acceso completo a la base de datos',
+  },
+];
+
+const adminStats = [
+  { value: '256-bit', label: 'Encriptacion' },
+  { value: '2FA', label: 'Autenticacion' },
+  { value: '24/7', label: 'Monitoreo' },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN LOGIN PAGE (Private - No link from regular login)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -336,101 +410,244 @@ export function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--admin-bg))] flex items-center justify-center p-6">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-violet-500/10 to-transparent blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-violet-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-3xl" />
+    <div className="min-h-screen flex bg-[hsl(220,25%,6%)]">
+      {/* Panel izquierdo - Branding Admin */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-[55%] relative overflow-hidden">
+        {/* Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-950/50 via-[hsl(220,25%,6%)] to-purple-950/30" />
+        
+        {/* Animated Orbs */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-20 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse-slow" />
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-fuchsia-500/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '4s' }} />
+        </div>
+
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `linear-gradient(rgba(139,92,246,0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(139,92,246,0.3) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }} />
+
+        {/* Diagonal Lines */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
+          backgroundImage: `repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 100px,
+            rgba(139,92,246,0.1) 100px,
+            rgba(139,92,246,0.1) 101px
+          )`
+        }} />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
+          {/* Logo */}
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-violet-500/30 ring-1 ring-white/10">
+              {AdminIcons.shield}
+            </div>
+            <div>
+              <h1 className="text-white font-black text-2xl tracking-tight">DREAMLIVE</h1>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 text-[10px] font-bold tracking-wider uppercase border border-violet-500/20">
+                  Admin
+                </span>
+                <span className="text-slate-500 text-xs font-medium">v2.0</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="space-y-10">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 mb-6">
+                <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                <span className="text-violet-300 text-xs font-semibold tracking-wide">Area Restringida</span>
+              </div>
+              <h2 className="text-4xl xl:text-5xl font-black text-white leading-tight text-balance">
+                Centro de{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
+                  Control Administrativo
+                </span>
+              </h2>
+              <p className="mt-6 text-lg text-slate-400 leading-relaxed max-w-lg">
+                Acceso exclusivo para superusuarios. Gestiona licencias, agencias, y monitorea toda la actividad de la plataforma.
+              </p>
+            </div>
+
+            {/* Features Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {adminFeatures.map((feature, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/10 hover:bg-violet-500/5 hover:border-violet-500/20 transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/10 text-violet-400 flex items-center justify-center mb-3 group-hover:from-violet-500/30 group-hover:to-purple-500/20 transition-colors ring-1 ring-violet-500/20">
+                    {feature.icon}
+                  </div>
+                  <h3 className="font-semibold text-white text-sm mb-1">{feature.title}</h3>
+                  <p className="text-slate-500 text-xs leading-relaxed">{feature.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Security Stats */}
+          <div className="flex items-center gap-8">
+            {adminStats.map((stat, idx) => (
+              <div key={idx} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center ring-1 ring-violet-500/20">
+                  {idx === 0 && AdminIcons.lock}
+                  {idx === 1 && AdminIcons.fingerprint}
+                  {idx === 2 && AdminIcons.server}
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-white">{stat.value}</p>
+                  <p className="text-xs text-slate-500">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Grid Pattern */}
-      <div className="absolute inset-0 opacity-[0.02]" style={{
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-        backgroundSize: '40px 40px'
-      }} />
-
-      <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-500/25">
-            {Icons.shield}
-          </div>
-          <div className="text-center">
-            <h1 className="text-white font-black text-2xl tracking-tight">DREAMLIVE</h1>
-            <p className="text-violet-400/60 text-xs font-bold tracking-[0.25em] uppercase">Admin Console</p>
-          </div>
+      {/* Panel derecho - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 relative">
+        {/* Background Effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-3xl" />
         </div>
 
-        {/* Card */}
-        <div className="bg-[hsl(var(--admin-card))] border border-[hsl(var(--admin-border))] rounded-2xl p-8 shadow-2xl shadow-black/50">
-          <div className="text-center mb-8">
-            <h2 className="text-white font-bold text-xl mb-2">Acceso Administrativo</h2>
-            <p className="text-slate-400 text-sm">Ingreso restringido para superusuarios</p>
+        <div className="relative w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="flex items-center gap-3 mb-10 lg:hidden">
+            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-500/25">
+              {AdminIcons.shield}
+            </div>
+            <div>
+              <h1 className="text-white font-black text-xl tracking-tight">DREAMLIVE</h1>
+              <span className="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 text-[10px] font-bold tracking-wider uppercase">
+                Admin Console
+              </span>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Correo electronico
-              </label>
-              <input
-                type="email"
-                placeholder="admin@dreamlive.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 rounded-xl bg-[hsl(var(--admin-muted))] border border-[hsl(var(--admin-border))] text-white text-sm
-                  placeholder-slate-500 transition-all focus:outline-none focus:ring-2 focus:border-violet-500 focus:ring-violet-500/20"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Contrasena
-              </label>
-              <input
-                type="password"
-                placeholder="Ingresa tu contrasena"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 rounded-xl bg-[hsl(var(--admin-muted))] border border-[hsl(var(--admin-border))] text-white text-sm
-                  placeholder-slate-500 transition-all focus:outline-none focus:ring-2 focus:border-violet-500 focus:ring-violet-500/20"
-              />
-            </div>
-
-            {error && (
-              <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                {error}
+          {/* Card */}
+          <div className="bg-[hsl(220,20%,10%)] border border-violet-500/10 rounded-2xl p-8 shadow-2xl shadow-black/50 ring-1 ring-white/5">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-500/20 to-purple-500/10 rounded-2xl flex items-center justify-center ring-1 ring-violet-500/20">
+                <svg className="w-8 h-8 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                </svg>
               </div>
-            )}
-
-            <div className="mb-4">
-              <CaptchaBox onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+              <h2 className="text-white font-bold text-xl mb-2">Acceso Administrativo</h2>
+              <p className="text-slate-500 text-sm">Ingresa tus credenciales de superusuario</p>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 
-                disabled:opacity-50 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2.5
-                shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30"
-            >
-              {loading && (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Correo electronico
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    placeholder="admin@dreamlive.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-3.5 pl-11 rounded-xl bg-[hsl(220,20%,8%)] border border-violet-500/10 text-white text-sm
+                      placeholder-slate-600 transition-all focus:outline-none focus:ring-2 focus:border-violet-500/50 focus:ring-violet-500/20
+                      hover:border-violet-500/20"
+                  />
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  </svg>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Contrasena
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    placeholder="Ingresa tu contrasena"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="w-full px-4 py-3.5 pl-11 rounded-xl bg-[hsl(220,20%,8%)] border border-violet-500/10 text-white text-sm
+                      placeholder-slate-600 transition-all focus:outline-none focus:ring-2 focus:border-violet-500/50 focus:ring-violet-500/20
+                      hover:border-violet-500/20"
+                  />
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                  </svg>
+                </div>
+              </div>
+
+              {error && (
+                <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  {error}
+                </div>
               )}
-              Acceder al Panel
-            </button>
-          </form>
 
+              <div>
+                <CaptchaBox onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-violet-600 hover:from-violet-500 hover:via-purple-500 hover:to-violet-500 
+                  disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm transition-all flex items-center justify-center gap-2.5
+                  shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/40 bg-[length:200%_100%] hover:bg-right"
+                style={{ transition: 'all 0.3s ease, background-position 0.5s ease' }}
+              >
+                {loading ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                    Acceder al Panel
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Security Badge */}
+            <div className="mt-6 pt-6 border-t border-violet-500/10">
+              <div className="flex items-center justify-center gap-3 text-xs text-slate-500">
+                <svg className="w-4 h-4 text-violet-500/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+                <span>Conexion segura SSL/TLS</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Security Notice */}
+          <div className="mt-8 text-center">
+            <p className="text-slate-600 text-xs leading-relaxed">
+              Este es un area de acceso restringido. Todas las actividades son<br />
+              monitoreadas y registradas por motivos de seguridad.
+            </p>
+          </div>
         </div>
-
-        {/* Security Notice */}
-        <p className="text-center text-slate-600 text-xs mt-6">
-          Acceso restringido. Todas las actividades son monitoreadas y registradas.
-        </p>
       </div>
     </div>
   );
