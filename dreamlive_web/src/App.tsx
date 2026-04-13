@@ -35,7 +35,7 @@ function AppRoutes() {
       <Route path="/login" element={
         <PublicOnlyRoute><LoginPage /></PublicOnlyRoute>
       } />
-      <Route path="/console-login" element={
+      <Route path="/su-access" element={
         <PublicOnlyRoute><AdminLoginPage /></PublicOnlyRoute>
       } />
       <Route path="/register" element={

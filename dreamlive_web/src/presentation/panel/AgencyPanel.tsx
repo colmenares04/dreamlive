@@ -428,26 +428,30 @@ export function AgencyPanel() {
 
   const footer = (
     <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]" />
+        <span className="text-xs text-blue-400 font-semibold">En linea</span>
+      </div>
       <div>
-        <p className="text-xs text-slate-300 font-semibold truncate">{user?.username}</p>
-        <p className="text-[10px] text-slate-500 uppercase tracking-wider">{user?.role}</p>
+        <p className="text-xs text-slate-200 font-semibold truncate">{user?.username}</p>
+        <p className="text-[10px] text-blue-400/60 uppercase tracking-wider font-bold">{user?.role}</p>
       </div>
       <div className="flex flex-col gap-1.5">
         <button onClick={() => navigate('/profile')}
-          className="flex items-center gap-2 text-xs text-slate-400 hover:text-white font-semibold transition-colors">
+          className="flex items-center gap-2 text-xs text-slate-400 hover:text-blue-300 font-semibold transition-colors">
           {I.user} Mi Perfil
         </button>
         <button onClick={logout}
           className="flex items-center gap-2 text-xs text-red-400 hover:text-red-300 font-semibold transition-colors">
-          {I.logout} Cerrar sesión
+          {I.logout} Cerrar sesion
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
-      <Sidebar title="DREAMLIVE" subtitle="Agency" items={navItems}
+    <div className="flex min-h-screen bg-slate-50">
+      <Sidebar title="DREAMLIVE" subtitle="Agency Panel" items={navItems}
         activeId={active} onNavigate={id => setActive(id as PanelSection)}
         footer={footer} variant="panel" />
       <main className="md:ml-64 flex-1 p-8 min-w-0">

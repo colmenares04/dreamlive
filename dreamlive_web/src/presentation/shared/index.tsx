@@ -29,32 +29,59 @@ export function Sidebar({
 }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const accentColor = variant === 'admin' ? 'text-sky-400' : 'text-indigo-400';
-  const activeBg = variant === 'admin' ? 'bg-sky-500/10 text-sky-400' : 'bg-indigo-500 text-white';
+  // Admin uses violet/purple theme, panel uses blue theme
+  const isAdmin = variant === 'admin';
+  const activeBg = isAdmin 
+    ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/10 text-violet-400 border-l-2 border-violet-500' 
+    : 'bg-gradient-to-r from-blue-500/20 to-cyan-500/10 text-blue-400 border-l-2 border-blue-500';
+  const accentGradient = isAdmin
+    ? 'from-violet-500 to-purple-600'
+    : 'from-blue-500 to-cyan-400';
+  const subtitleColor = isAdmin ? 'text-violet-400/60' : 'text-blue-400/60';
 
   const content = (
-    <aside className="w-64 bg-slate-950 flex flex-col h-screen fixed top-0 left-0 z-50 border-r border-slate-800/60">
+    <aside className={clsx(
+      "w-64 flex flex-col h-screen fixed top-0 left-0 z-50",
+      isAdmin ? "bg-[hsl(222,47%,8%)] border-r border-violet-500/10" : "bg-slate-950 border-r border-slate-800/60"
+    )}>
+      {/* Background Effects for Admin */}
+      {isAdmin && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-violet-500/5 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-purple-500/5 to-transparent" />
+        </div>
+      )}
+
       {/* Brand */}
-      <div className="px-6 py-5 border-b border-slate-800/60">
+      <div className={clsx(
+        "relative px-6 py-5 border-b",
+        isAdmin ? "border-violet-500/10" : "border-slate-800/60"
+      )}>
         <div className="flex items-center gap-3">
           <div className={clsx(
-            'w-8 h-8 rounded-lg flex items-center justify-center',
-            variant === 'admin' ? 'bg-sky-500' : 'bg-indigo-500'
+            'w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg',
+            accentGradient,
+            isAdmin ? 'shadow-violet-500/25' : 'shadow-blue-500/25'
           )}>
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            {isAdmin ? (
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            )}
           </div>
           <div>
-            <p className="text-white font-black text-sm tracking-tight leading-none">{title}</p>
-            {subtitle && <p className="text-slate-500 text-[10px] font-medium tracking-widest uppercase mt-0.5">{subtitle}</p>}
+            <p className="text-white font-black text-base tracking-tight leading-none">{title}</p>
+            {subtitle && <p className={clsx("text-[10px] font-bold tracking-[0.2em] uppercase mt-1", subtitleColor)}>{subtitle}</p>}
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="relative flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {items.map(item => (
           <button
             key={item.id}
@@ -63,7 +90,10 @@ export function Sidebar({
               'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left',
               activeId === item.id
                 ? activeBg
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                : clsx(
+                    'text-slate-400 hover:text-white',
+                    isAdmin ? 'hover:bg-violet-500/10' : 'hover:bg-slate-800/60'
+                  )
             )}
           >
             <span className="w-4 h-4 shrink-0">{item.icon}</span>
@@ -71,7 +101,9 @@ export function Sidebar({
             {item.badge !== undefined && (
               <span className={clsx(
                 'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
-                activeId === item.id ? 'bg-white/20' : 'bg-slate-700 text-slate-300'
+                activeId === item.id 
+                  ? (isAdmin ? 'bg-violet-500/30' : 'bg-blue-500/30') 
+                  : 'bg-slate-700 text-slate-300'
               )}>
                 {item.badge}
               </span>
@@ -82,7 +114,12 @@ export function Sidebar({
 
       {/* Footer */}
       {footer && (
-        <div className="px-4 py-4 border-t border-slate-800/60">{footer}</div>
+        <div className={clsx(
+          "relative px-4 py-4 border-t",
+          isAdmin ? "border-violet-500/10" : "border-slate-800/60"
+        )}>
+          {footer}
+        </div>
       )}
     </aside>
   );
@@ -175,7 +212,7 @@ export function Badge({ children, variant = 'gray' }: { children: React.ReactNod
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MODAL
-// ═══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════��══════════════════════════════════
 interface ModalProps {
   open: boolean;
   onClose: () => void;
