@@ -1,13 +1,15 @@
 /**
  * App.tsx – Router principal con guards de roles.
+ * 
  * Rutas:
- *   /login          → Pública (redirige si ya autenticado)
- *   /register       → Pública
- *   /recover        → Pública
- *   /reset-password → Pública (con token en URL)
- *   /console/*      → Admin, Programmer
- *   /panel/*        → Owner, Agent
- *   /              → Redirige según rol
+ *   /login          → Publica (redirige si ya autenticado)
+ *   /su-access      → Login de superusuario (privado, sin enlace)
+ *   /register       → Publica
+ *   /recover        → Publica
+ *   /reset-password → Publica (con token en URL)
+ *   /home           → Home unificado (muestra contenido segun rol)
+ *   /profile        → Perfil de usuario
+ *   /              → Redirige a /home si autenticado
  */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './infrastructure/context/AuthContext';
@@ -17,21 +19,20 @@ import {
   LoginPage, AdminLoginPage, RegisterPage,
   RecoverPasswordPage, ResetPasswordPage
 } from './presentation/auth/AuthPages';
-import { AdminConsole } from './presentation/admin/AdminConsole';
-import { AgencyPanel } from './presentation/panel/AgencyPanel';
+import { HomePage } from './presentation/home/HomePage';
 import { ProfilePage } from './presentation/shared/ProfilePage';
 import { NotFoundPage } from './presentation/shared/ErrorPages';
 
 function RoleRedirect() {
-  const { isAuthenticated, isAdminGroup } = useAuth();
+  const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <Navigate to={isAdminGroup ? '/console' : '/panel'} replace />;
+  return <Navigate to="/home" replace />;
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Públicas */}
+      {/* Publicas */}
       <Route path="/login" element={
         <PublicOnlyRoute><LoginPage /></PublicOnlyRoute>
       } />
@@ -51,21 +52,16 @@ function AppRoutes() {
         <ProtectedRoute><ProfilePage /></ProtectedRoute>
       } />
 
-      {/* Admin Console – Admin y Programmer */}
-      <Route path="/console" element={
-        <ProtectedRoute roles={['admin', 'programmer']}>
-          <AdminConsole />
-        </ProtectedRoute>
+      {/* Home unificado – muestra contenido segun rol */}
+      <Route path="/home" element={
+        <ProtectedRoute><HomePage /></ProtectedRoute>
       } />
 
-      {/* Agency Panel – Owner y Agent */}
-      <Route path="/panel" element={
-        <ProtectedRoute roles={['owner', 'agent']}>
-          <AgencyPanel />
-        </ProtectedRoute>
-      } />
+      {/* Rutas legacy redirigen al home */}
+      <Route path="/console" element={<Navigate to="/home" replace />} />
+      <Route path="/panel" element={<Navigate to="/home" replace />} />
 
-      {/* Raíz → redirige al panel correcto */}
+      {/* Raiz → redirige al home */}
       <Route path="/" element={<RoleRedirect />} />
 
       {/* 404 */}
