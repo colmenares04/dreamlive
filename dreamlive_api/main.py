@@ -38,7 +38,7 @@ app = FastAPI(
 )
 
 # ── CORS & Security Headers ──────────────────────────────────────────────────
-_cors_origins = settings.ALLOWED_ORIGINS + ["http://localhost:5173", "http://127.0.0.1:5173"]
+_cors_origins = settings.ALLOWED_ORIGINS + ["http://localhost", "http://localhost:5173", "http://127.0.0.1:5173"]
 print(f"CORS activo para orígenes: {_cors_origins}")
 
 class SecurityHeadersMiddleware:
