@@ -57,7 +57,6 @@ export function AccountView() {
     superuser: 'Super Administrador',
     agency_admin: 'Admin de Agencia',
     agent: 'Agente',
-    visitor: 'Visitante',
   };
 
   return (

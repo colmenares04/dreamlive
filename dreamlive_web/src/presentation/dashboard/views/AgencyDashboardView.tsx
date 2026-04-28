@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAgencyData } from '../../agency/hooks/useAgencyData';
 import { PageHeader, Button, Badge, Card } from '../../shared';
 import { formatDate } from '../../../core/utils';
+import { useAuth } from '../../../contexts';
 import { AgentDetailModal } from '../components/AgentDetailModal';
 import { TrendChart, TimeRangeSelector, FunnelStat } from '../components/DashboardCharts';
 import type { License } from '../../../core/entities';
@@ -15,9 +16,9 @@ import type { License } from '../../../core/entities';
 // ─── Stat card ───────────────────────────────────────────────────────────────
 function StatCard({ label, value, color = '' }: { label: string; value: string | number; color?: string }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{label}</p>
-      <p className={`text-3xl font-black ${color || 'text-slate-800'}`}>
+    <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm p-5 glass-card">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">{label}</p>
+      <p className={`text-3xl font-black ${color || 'text-slate-800 dark:text-white'}`}>
         {value ?? '—'}
       </p>
     </div>
@@ -25,15 +26,17 @@ function StatCard({ label, value, color = '' }: { label: string; value: string |
 }
 
 // ─── Tarjeta de reclutador ────────────────────────────────────────────────────
-function RecruiterCard({ license, onClick }: { license: License; onClick: () => void }) {
+function RecruiterCard({ license, onClick, canInteract }: { license: License; onClick: () => void; canInteract: boolean }) {
   const initial   = license.recruiter_name.charAt(0).toUpperCase();
   const isExpired = license.expires_at ? new Date(license.expires_at) < new Date() : false;
   const isActive  = license.status === 'active' && !isExpired;
 
   return (
     <div 
-      onClick={onClick}
-      className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer relative"
+      onClick={canInteract ? onClick : undefined}
+      className={`bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm p-5 transition-all relative ${
+        canInteract ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer' : 'cursor-default opacity-90'
+      }`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -46,18 +49,18 @@ function RecruiterCard({ license, onClick }: { license: License; onClick: () => 
       </div>
 
       {/* Info */}
-      <p className="font-bold text-slate-800">{license.recruiter_name}</p>
-      <p className="font-mono text-xs text-indigo-600 mt-0.5">{license.key}</p>
+      <p className="font-bold text-slate-800 dark:text-white">{license.recruiter_name}</p>
+      <p className="font-mono text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">{license.key}</p>
 
       {/* Stats */}
       <div className="flex gap-4 mt-4 text-center">
         <div className="flex-1">
-          <p className="text-xs text-slate-500 font-semibold uppercase">Límite</p>
-          <p className="font-bold text-indigo-600 text-lg">{license.request_limit}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Límite</p>
+          <p className="font-bold text-indigo-600 dark:text-indigo-400 text-lg">{license.request_limit}</p>
         </div>
         <div className="flex-1">
-          <p className="text-xs text-slate-500 font-semibold uppercase">Ciclo</p>
-          <p className="font-bold text-slate-700 text-lg">{license.refresh_minutes}m</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Ciclo</p>
+          <p className="font-bold text-slate-700 dark:text-slate-300 text-lg">{license.refresh_minutes}m</p>
         </div>
       </div>
 
@@ -78,7 +81,10 @@ export function AgencyDashboardView() {
     dashboard, loadingDash, teamLicenses, loadingTeam, 
     loadDashboard, loadTeam, days, setDays 
   } = useAgencyData();
+  const { role } = useAuth();
   const navigate = useNavigate();
+
+  const canManageAgents = role === 'superuser' || role === 'agency_admin';
 
   // Pagination: 8 per page
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -158,25 +164,19 @@ export function AgencyDashboardView() {
             </div>
           </div>
 
-          <Button 
-            variant="outline" 
-            className="w-full mt-8 text-[10px] border-slate-100 dark:border-slate-800 py-3"
-            onClick={() => navigate('/settings/audit')}
-          >
-             Ver Detalles de Auditoría
-          </Button>
+
         </Card>
       </div>
 
       {/* Top keywords */}
       {!loadingDash && dashboard?.top_keywords?.length ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <p className="text-xs font-semibold uppercase text-slate-500 mb-3">
+        <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm p-5 glass-card">
+          <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-3">
             <i className="fas fa-tags mr-2 text-amber-500" />Top Palabras Clave
           </p>
           <div className="flex flex-wrap gap-2">
             {dashboard.top_keywords.map(kw => (
-              <span key={kw} className="bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold px-3 py-1 rounded-full">
+              <span key={kw} className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-bold px-3 py-1 rounded-full">
                 {kw}
               </span>
             ))}
@@ -187,7 +187,7 @@ export function AgencyDashboardView() {
       {/* Grid de agentes */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-black text-slate-800">
+          <h3 className="text-base font-black text-slate-800 dark:text-white">
             <i className="fas fa-users mr-2 text-indigo-500" />Monitoreo de Agentes
           </h3>
           {totalPages > 1 && (
@@ -230,7 +230,12 @@ export function AgencyDashboardView() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {paginatedAgents.map(lic => (
-                <RecruiterCard key={lic.id} license={lic} onClick={() => setSelectedAgent(lic)} />
+                <RecruiterCard 
+                  key={lic.id} 
+                  license={lic} 
+                  canInteract={canManageAgents}
+                  onClick={() => setSelectedAgent(lic)} 
+                />
               ))}
             </div>
           </>

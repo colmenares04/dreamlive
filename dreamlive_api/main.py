@@ -38,7 +38,13 @@ app = FastAPI(
 )
 
 # ── CORS & Security Headers ──────────────────────────────────────────────────
-_cors_origins = settings.ALLOWED_ORIGINS + ["http://localhost", "http://localhost:5173", "http://127.0.0.1:5173"]
+_cors_origins = [
+    "http://localhost", "http://127.0.0.1",
+    "http://localhost:5173", "http://127.0.0.1:5173",
+    "http://localhost:3000", "http://127.0.0.1:3000"
+]
+if settings.ALLOWED_ORIGINS:
+    _cors_origins = list(set(_cors_origins + settings.ALLOWED_ORIGINS))
 print(f"CORS activo para orígenes: {_cors_origins}")
 
 class SecurityHeadersMiddleware:
@@ -76,10 +82,6 @@ class SecurityHeadersMiddleware:
 
         await self.app(scope, receive, send_wrapper)
 
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitMiddleware) 
-app.add_middleware(RequestLoggingMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -87,6 +89,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware) 
+app.add_middleware(RequestLoggingMiddleware)
 register_exception_handlers(app)
 
 # ── Routers ───────────────────────────────────────────────────────────────────

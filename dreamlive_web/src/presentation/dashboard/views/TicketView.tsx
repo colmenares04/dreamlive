@@ -56,7 +56,7 @@ function NewTicketModal({ open, onClose, onCreated }: { open: boolean; onClose: 
               required 
               value={subject} 
               onChange={e => setSubject(e.target.value)}
-              className="w-full bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-800 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
               placeholder="Ej: Problema con activación de licencia" 
             />
           </div>
@@ -68,7 +68,7 @@ function NewTicketModal({ open, onClose, onCreated }: { open: boolean; onClose: 
               rows={4} 
               value={description} 
               onChange={e => setDesc(e.target.value)}
-              className="w-full bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-800 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
               placeholder="Describe detalladamente el problema que estás experimentando..." 
             />
           </div>
@@ -85,10 +85,10 @@ function NewTicketModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                   key={p.id}
                   type="button"
                   onClick={() => setPriority(p.id)}
-                  className={`py-3 px-1 text-[10px] font-black rounded-xl border-2 transition-all duration-300 uppercase tracking-widest ${
+                  className={`py-3 px-1 text-[10px] font-black rounded-xl border transition-all duration-300 uppercase tracking-widest ${
                     priority === p.id 
                       ? p.active 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   {p.label}

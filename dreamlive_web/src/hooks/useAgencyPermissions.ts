@@ -17,7 +17,7 @@ export function useAgencyPermissions() {
 
   const fetchPermissions = useCallback(async () => {
     // Solo si el usuario pertenece a una agencia y es administrador/agente
-    if (role === 'superuser' || role === 'agency_admin' || role === 'agent' || role === 'visitor') {
+    if (role === 'superuser' || role === 'agency_admin' || role === 'agent') {
       setLoading(true);
       try {
         const data = await AgenciesAdapter.getMyPermissions();

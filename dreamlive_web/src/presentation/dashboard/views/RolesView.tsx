@@ -31,7 +31,7 @@ export function RolesView() {
     if (permissions) setLocalConfig(JSON.parse(JSON.stringify(permissions)));
   }, [permissions]);
 
-  const handleToggle = (role: 'agent' | 'visitor', key: keyof RolePermissions) => {
+  const handleToggle = (role: 'agent', key: keyof RolePermissions) => {
     if (!localConfig) return;
     const newConfig = { ...localConfig };
     newConfig[role][key] = !newConfig[role][key];
@@ -71,7 +71,7 @@ export function RolesView() {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* PANEL: AGENTE */}
         <RoleCard 
           roleName="Agente"
@@ -83,16 +83,7 @@ export function RolesView() {
           onToggle={(key) => handleToggle('agent', key)}
         />
 
-        {/* PANEL: VISITANTE */}
-        <RoleCard 
-          roleName="Visitante"
-          roleId="visitor"
-          description="Acceso limitado, ideal para auditores o visualización de solo lectura."
-          icon="fa-eye"
-          color="slate"
-          config={localConfig?.visitor}
-          onToggle={(key) => handleToggle('visitor', key)}
-        />
+
       </div>
 
       {/* Info Alert */}
@@ -103,7 +94,7 @@ export function RolesView() {
         <div>
           <h4 className="text-sm font-black text-indigo-900 dark:text-indigo-400 uppercase tracking-widest mb-1">Nota de Seguridad</h4>
           <p className="text-sm text-indigo-700/70 dark:text-indigo-300/50 leading-relaxed">
-            Como <strong>Manager de Agencia</strong>, siempre tendrás acceso total. Estos cambios solo afectan a los usuarios registrados con roles de Agente o Visitante dentro de tu organización.
+            Como <strong>Manager de Agencia</strong>, siempre tendrás acceso total. Estos cambios solo afectan a los usuarios registrados con el rol de Agente dentro de tu organización.
           </p>
         </div>
       </div>

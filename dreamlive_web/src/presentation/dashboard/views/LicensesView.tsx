@@ -88,7 +88,12 @@ function CreateLicenseForm({ agencies, onCreate, onSuccess }: {
            ))}
         </div>
         {duration === 'custom' && (
-          <input type="number" value={customDays} onChange={e => setCustomDays(parseInt(e.target.value))} className="mt-4 w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 outline-none" />
+          <input 
+            type="number" 
+            value={isNaN(customDays) ? '' : customDays} 
+            onChange={e => setCustomDays(parseInt(e.target.value) || 0)} 
+            className="mt-4 w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 outline-none dark:text-white" 
+          />
         )}
       </div>
       <Button variant="primary" loading={loading} onClick={handleSubmit} full className="py-4">Generar Nueva Licencia</Button>
@@ -160,7 +165,12 @@ function ManualDateModal({ license, open, onClose, onSave }: { license: License 
 
   useEffect(() => {
     if (license?.expires_at) {
-      setDate(new Date(license.expires_at).toISOString().split('T')[0]);
+      const d = new Date(license.expires_at);
+      if (!isNaN(d.getTime())) {
+        setDate(d.toISOString().split('T')[0]);
+      } else {
+        setDate(new Date().toISOString().split('T')[0]);
+      }
     }
   }, [license]);
 
@@ -346,13 +356,13 @@ export function LicensesView() {
       key: 'today_leads' as const,
       header: 'Producción Hoy',
       render: (l: License) => {
-        const todayLeads = l.today_leads || metrics?.[l.id]?.today || 0;
+        const todayLeads = Number(l.today_leads || metrics?.[l.id]?.today || 0);
         return (
           <div className="flex items-center gap-3">
             <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden max-w-[60px]">
               <div className="h-full bg-gradient-to-r from-indigo-500 to-blue-500" style={{ width: `${Math.min(100, todayLeads * 2)}%` }} />
             </div>
-            <span className="text-sm font-black text-slate-700 dark:text-white tabular-nums">{todayLeads}</span>
+            <span className="text-sm font-black text-slate-700 dark:text-white tabular-nums">{isNaN(todayLeads) ? 0 : todayLeads}</span>
           </div>
         );
       },

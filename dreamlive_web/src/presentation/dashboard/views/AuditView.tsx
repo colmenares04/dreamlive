@@ -62,18 +62,18 @@ export function AuditView() {
       />
 
       {/* Filtros */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm p-4 flex flex-wrap gap-3 items-center glass-card">
         <div className="relative flex-1 min-w-48">
           <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar acción, categoría, entidad…"
-            className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-indigo-400 transition-colors focus:outline-none"
+            className="w-full pl-8 pr-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg text-sm bg-slate-50 dark:bg-slate-950 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-400 transition-colors focus:outline-none dark:text-white"
           />
         </div>
         <select
           value={category} onChange={e => setCategory(e.target.value)}
-          className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none min-w-32"
+          className="px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg text-sm bg-white dark:bg-slate-950 focus:outline-none dark:text-white min-w-32"
         >
           <option value="">Todas las categorías</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -81,7 +81,7 @@ export function AuditView() {
         <input
           value={agencyId} onChange={e => setAgencyId(e.target.value)}
           placeholder="Agency ID…"
-          className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-400 w-52"
+          className="px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg text-sm bg-white dark:bg-slate-950 focus:outline-none focus:border-indigo-400 dark:text-white w-52"
         />
         <span className="text-xs text-slate-400 ml-auto font-semibold">
           {filtered.length} registros
@@ -98,10 +98,10 @@ export function AuditView() {
           No hay registros de auditoría.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm overflow-hidden glass-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50 text-xs font-bold uppercase text-slate-500">
+              <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
                 <th className="px-5 py-3 text-left w-36">Fecha/Hora</th>
                 <th className="px-5 py-3 text-left">Categoría</th>
                 <th className="px-5 py-3 text-left">Acción</th>
@@ -114,8 +114,8 @@ export function AuditView() {
             <tbody>
               {filtered.map(log => (
                 <React.Fragment key={log.id}>
-                  <tr className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3 text-xs text-slate-400 whitespace-nowrap">
+                  <tr className="border-b border-slate-50 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-5 py-3 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })}
                     </td>
                     <td className="px-5 py-3">
@@ -123,43 +123,44 @@ export function AuditView() {
                         {log.category}
                       </Badge>
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs text-slate-700">{log.action}</td>
-                    <td className="px-5 py-3 text-xs text-slate-500">
+                    <td className="px-5 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">{log.action}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500 dark:text-slate-400">
                       {log.entity_name ? (
-                        <span>{log.entity_name} <span className="text-slate-300">#{log.entity_id?.substring(0, 8)}</span></span>
+                        <span>{log.entity_name} <span className="text-slate-300 dark:text-slate-600">#{log.entity_id?.substring(0, 8)}</span></span>
                       ) : '—'}
                     </td>
                     <td className="px-5 py-3">
-                      <code className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">
+                      <code className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400">
                         {log.user_id?.substring(0, 12) ?? 'sistema'}
                       </code>
                     </td>
-                    <td className="px-5 py-3 text-xs text-slate-400">{log.ip_address ?? '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 dark:text-slate-500">{log.ip_address ?? '—'}</td>
                     <td className="px-5 py-3 text-right">
                       {(log.old_data || log.new_data) && (
                         <Button size="sm" variant="outline"
-                          onClick={() => setExpanded(expanded === log.id ? null : log.id)}>
+                          onClick={() => setExpanded(expanded === log.id ? null : log.id)}
+                          className="dark:border-white/10 dark:hover:bg-white/5">
                           <i className={`fas fa-chevron-${expanded === log.id ? 'up' : 'down'} text-xs`} />
                         </Button>
                       )}
                     </td>
                   </tr>
                   {expanded === log.id && (
-                    <tr className="bg-slate-50">
+                    <tr className="bg-slate-50 dark:bg-black/20">
                       <td colSpan={7} className="px-5 py-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {log.old_data && (
                             <div>
-                              <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Antes</p>
-                              <pre className="text-[11px] bg-red-50 border border-red-100 rounded-lg p-3 overflow-auto max-h-32 text-red-700">
+                              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Antes</p>
+                              <pre className="text-[11px] bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/20 rounded-lg p-3 overflow-auto max-h-32 text-red-700 dark:text-red-400">
                                 {JSON.stringify(log.old_data, null, 2)}
                               </pre>
                             </div>
                           )}
                           {log.new_data && (
                             <div>
-                              <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Después</p>
-                              <pre className="text-[11px] bg-green-50 border border-green-100 rounded-lg p-3 overflow-auto max-h-32 text-green-700">
+                              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Después</p>
+                              <pre className="text-[11px] bg-green-50 dark:bg-green-500/5 border border-green-100 dark:border-green-500/20 rounded-lg p-3 overflow-auto max-h-32 text-green-700 dark:text-green-400">
                                 {JSON.stringify(log.new_data, null, 2)}
                               </pre>
                             </div>

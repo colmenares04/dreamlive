@@ -88,12 +88,12 @@ function AppRoutes() {
         {/* ── SECCION AGENCIA ── */}
         {/* Accesibles por Agency Admin, y también Superuser (developer root) */}
         <Route path="agency" element={
-          <ProtectedRoute roles={['agency_admin', 'superuser']}><OutletRouter /></ProtectedRoute>
+          <ProtectedRoute roles={['agency_admin', 'superuser', 'agent']}><OutletRouter /></ProtectedRoute>
         }>
           <Route path="overview" element={<AgencyDashboardView />} />
           <Route path="leads" element={<GlobalLeadsView />} />
-          <Route path="team" element={<TeamManagerView />} />
-          <Route path="licenses" element={<AgencyLicensesView />} />
+          <Route path="team" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><TeamManagerView /></ProtectedRoute>} />
+          <Route path="licenses" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><AgencyLicensesView /></ProtectedRoute>} />
           <Route index element={<Navigate to="overview" replace />} />
         </Route>
 

@@ -8,7 +8,7 @@ CREATE TABLE dreamtool.agencies (
   created_at timestamp with time zone DEFAULT now(),
   email text UNIQUE,
   password text DEFAULT 'administrador'::text,
-  role_permissions jsonb DEFAULT '{"agent": {"can_manage_team": false, "can_manage_licenses": true, "can_view_metrics": true, "can_purge_leads": false, "can_view_leads": true, "can_open_tickets": true}, "visitor": {"can_manage_team": false, "can_manage_licenses": false, "can_view_metrics": true, "can_purge_leads": false, "can_view_leads": false, "can_open_tickets": false}}'::jsonb,
+  role_permissions jsonb DEFAULT '{"agent": {"can_manage_team": false, "can_manage_licenses": true, "can_view_metrics": true, "can_purge_leads": false, "can_view_leads": true, "can_open_tickets": true}}'::jsonb,
   CONSTRAINT agencies_pkey PRIMARY KEY (id)
 );
 CREATE TABLE dreamtool.app_versions (

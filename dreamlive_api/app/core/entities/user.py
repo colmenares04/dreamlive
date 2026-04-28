@@ -9,7 +9,6 @@ class UserRole(str, Enum):
     SUPERUSER = "superuser"
     AGENCY_ADMIN = "agency_admin"
     AGENT = "agent"
-    VISITOR = "visitor"
 
 class UserStatus(str, Enum):
     ACTIVE = "active"

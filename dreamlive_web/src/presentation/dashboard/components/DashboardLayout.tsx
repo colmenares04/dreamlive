@@ -120,7 +120,7 @@ export function DashboardLayout() {
                 Agencia
               </div>
               <div className="space-y-1">
-                {canViewMetrics && <MenuLink to="/dashboard/agency/overview" icon="fa-chart-line" text="Dashboard Agencia" onClick={() => setSidebarOpen(false)} />}
+                {(canViewMetrics || role === 'agent') && <MenuLink to="/dashboard/agency/overview" icon="fa-chart-line" text="Dashboard Agencia" onClick={() => setSidebarOpen(false)} />}
                 <MenuLink to="/dashboard/agency/leads" icon="fa-address-book" text="Global Leads" onClick={() => setSidebarOpen(false)} />
                 {canManageTeam && <MenuLink to="/dashboard/agency/team" icon="fa-users-cog" text="Team Manager" onClick={() => setSidebarOpen(false)} />}
                 {canManageLicenses && <MenuLink to="/dashboard/agency/licenses" icon="fa-key" text="Mis Licencias" onClick={() => setSidebarOpen(false)} />}

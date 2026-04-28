@@ -120,7 +120,7 @@ audit_router = APIRouter(prefix="/audit", tags=["AuditLogs"])
 # ─────────────────────────────────────────────────────────────────────────────
 # Users
 # ─────────────────────────────────────────────────────────────────────────────
-@users_router.get("/", dependencies=[Depends(require_owner_or_admin)])
+@users_router.get("/", dependencies=[Depends(require_agency_group)])
 async def list_users(
     agency_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
@@ -385,6 +385,13 @@ async def update_ticket_status(ticket_id: str, body: dict, current_user: User = 
         updated_at=updated.updated_at.isoformat() if updated.updated_at else None,
         closed_at=updated.closed_at.isoformat() if updated.closed_at else None,
     )
+
+
+@tickets_router.delete("/{ticket_id}", dependencies=[Depends(require_admin)])
+async def delete_ticket(ticket_id: str, db: Client = Depends(get_db)):
+    repo = TicketRepository(db)
+    await repo.delete(ticket_id)
+    return {"ok": True}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 """
 Rutas relacionadas con Agencias (extraídas de routes.py).
 """
+from app.infrastructure.api.deps import require_agency_group
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -25,7 +26,7 @@ class AgencyOut(BaseModel):
     is_active: bool
 
 
-@agencies_router.get("/", dependencies=[Depends(require_admin)])
+@agencies_router.get("/", dependencies=[Depends(require_agency_group)])
 async def list_agencies(db: Client = Depends(get_db)):
     repo = AgencyRepository(db)
     agencies = await ListAgenciesUseCase(repo).execute()
@@ -72,7 +73,7 @@ async def get_agency_stats(agency_id: str, db: Client = Depends(get_db)):
 
 @agencies_router.get("/my/permissions")
 async def get_my_permissions(
-    current_user: User = Depends(require_owner_or_admin),
+    current_user: User = Depends(require_agency_group),
     db: Client = Depends(get_db)
 ):
     """Retorna la configuración de permisos de la agencia actual."""

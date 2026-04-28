@@ -283,7 +283,7 @@ async def get_me(
             email=agency.email,
             username=agency.name,
             full_name=agency.name,
-            role="owner",
+            role="agency_admin",
             status="active",
             agency_id=agency.id,
             logo_url=agency.logo_url,

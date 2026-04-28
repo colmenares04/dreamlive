@@ -123,9 +123,9 @@ export function TicketSupportView() {
                 <div className="flex items-center gap-3 mb-2">
                   <Badge variant={STATUS_COLORS[t.status] ?? 'gray'}>{STATUS_LABELS[t.status]}</Badge>
                   <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${
-                    t.priority === 'critical' ? 'border-red-200 bg-red-50 text-red-600' :
-                    t.priority === 'high'     ? 'border-amber-200 bg-amber-50 text-amber-600' :
-                    'border-slate-100 bg-slate-50 text-slate-500'
+                    t.priority === 'critical' ? 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' :
+                    t.priority === 'high'     ? 'border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                    'border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400'
                   }`}>
                     {t.priority}
                   </span>

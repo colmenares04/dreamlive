@@ -66,13 +66,13 @@ function PurgeModal({ open, onClose, onPurge }: PurgeModalProps) {
             key={o.type}
             disabled={busy}
             onClick={() => handle(o.type)}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 bg-slate-50
-              hover:bg-white hover:shadow-sm transition-all text-center disabled:opacity-50 ${
-                o.type === 'all' ? 'border-red-200 bg-red-50 hover:bg-red-100' : ''
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900
+              hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all text-center disabled:opacity-50 ${
+                o.type === 'all' ? 'border-red-200 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/20' : ''
               }`}>
             <i className={`fas ${o.icon} text-xl ${o.color}`} />
-            <span className="font-bold text-sm text-slate-700">{o.label}</span>
-            <span className="text-[10px] text-slate-500">{o.desc}</span>
+            <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{o.label}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">{o.desc}</span>
           </button>
         ))}
       </div>
@@ -194,7 +194,7 @@ export function GlobalLeadsView() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm overflow-hidden glass-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -207,7 +207,7 @@ export function GlobalLeadsView() {
                 <th className="px-6 py-4 text-left">Capturado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50 dark:divide-white/5">
               {leads.length === 0 && !loadingMore ? (
                 <tr>
                   <td colSpan={5} className="text-center py-12 text-slate-400">
@@ -261,7 +261,7 @@ export function GlobalLeadsView() {
         </div>
 
         {/* Footer con contador + sentinel infinite scroll */}
-        <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center">
+        <div className="px-4 py-3 border-t border-slate-100 dark:border-white/5 flex justify-between items-center">
           <span className="text-xs text-slate-500">
             Mostrando {leads.length} de {leadsTotal} leads
           </span>

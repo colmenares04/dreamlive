@@ -10,18 +10,16 @@ import { UsersAdapter } from '../../../services';
 import { useNotifications, useAuth } from '../../../contexts';
 import type { ProfileUser } from '../../../core/entities/settings';
 
-const ALLOWED_ROLES = ['agency_admin', 'agent', 'visitor'];
+const ALLOWED_ROLES = ['agency_admin', 'agent'];
 const ROLE_LABELS: Record<string, string> = {
   superuser: 'Super Admin',
   agency_admin: 'Admin Agencia',
   agent: 'Agente',
-  visitor: 'Visitante',
 };
 const ROLE_COLORS: Record<string, 'green' | 'blue' | 'yellow' | 'gray'> = {
   superuser: 'blue',
   agency_admin: 'green',
   agent: 'yellow',
-  visitor: 'gray',
 };
 
 // ─── Modal Invitar / Editar ───────────────────────────────────────────────────
@@ -219,9 +217,11 @@ export function ProfilesView() {
               </button>
             </div>
           )}
-          <Button variant="primary" onClick={() => { setSelected(null); setShowForm(true); }} className="!rounded-2xl !py-4 !px-8 font-black uppercase text-xs shadow-xl shadow-indigo-500/20">
-            <i className="fas fa-user-plus mr-2" /> Agregar Usuario
-          </Button>
+          {(myRole === 'superuser' || myRole === 'agency_admin') && (
+            <Button variant="primary" onClick={() => { setSelected(null); setShowForm(true); }} className="!rounded-2xl !py-4 !px-8 font-black uppercase text-xs shadow-xl shadow-indigo-500/20">
+              <i className="fas fa-user-plus mr-2" /> Agregar Usuario
+            </Button>
+          )}
         </div>
       </div>
 

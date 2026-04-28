@@ -198,8 +198,11 @@ async def update_license_date(license_id: str, body: UpdateLicenseDateBody, curr
         raise HTTPException(400, "Invalid date format. Use ISO format.")
 
 
+class DeleteLicenseBody(BaseModel):
+    password: Optional[str] = None
+
 @licenses_router.delete("/{license_id}", dependencies=[Depends(require_admin)])
-async def delete_license(license_id: str, current_user: User = Depends(get_current_user), db: Client = Depends(get_db)):
+async def delete_license(license_id: str, body: Optional[DeleteLicenseBody] = None, current_user: User = Depends(get_current_user), db: Client = Depends(get_db)):
     repo = LicenseRepository(db)
     await repo.delete(license_id)
     return {"status": "ok"}

@@ -4,7 +4,7 @@
  */
 
 // ── Roles ─────────────────────────────────────────────────────────────────────
-export type UserRole = 'superuser' | 'agency_admin' | 'agent' | 'visitor';
+export type UserRole = 'superuser' | 'agency_admin' | 'agent';
 export type UserStatus = 'active' | 'inactive' | 'pending';
 
 export interface User {
@@ -28,7 +28,6 @@ export interface RolePermissions {
 
 export interface AgencyPermissionsConfig {
   agent: RolePermissions;
-  visitor: RolePermissions;
 }
 
 // ── Permisos por rol ──────────────────────────────────────────────────────────
@@ -42,7 +41,7 @@ export class UserPermissions {
   }
 
   static isAgencyGroup(role: UserRole): boolean {
-    return role === 'agency_admin' || role === 'agent' || role === 'visitor';
+    return role === 'agency_admin' || role === 'agent';
   }
 
   // --- Herramientas de decisión dinámica ---

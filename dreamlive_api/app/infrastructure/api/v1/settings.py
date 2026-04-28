@@ -155,7 +155,7 @@ async def update_user(
     if body.role:
         if current_user.role.value != "superuser":
             raise HTTPException(403, "Solo superuser puede cambiar roles")
-        allowed_roles = {"agency_admin", "agent", "visitor"}
+        allowed_roles = {"agency_admin", "agent"}
         if body.role not in allowed_roles:
             raise HTTPException(400, f"Rol inválido. Permitidos: {allowed_roles}")
         updates["role"] = body.role
@@ -176,7 +176,7 @@ async def invite_user(
     db: Client = Depends(get_db),
 ):
     """Create a pending user record (invite flow)."""
-    allowed = {"agency_admin", "agent", "visitor"}
+    allowed = {"agency_admin", "agent"}
     if role not in allowed:
         raise HTTPException(400, f"Rol inválido. Permitidos: {allowed}")
     row = {
