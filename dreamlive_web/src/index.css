@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light Theme - High Contrast Premium */
+  --background: 0 0% 100%;
+  --foreground: 224 71% 4%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 224 71% 4%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 71% 4%;
+  
+  --primary: 243 75% 59%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 224 71% 4%;
+  
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 15% 35%; /* Darkened from 46% for AA+ contrast */
+  
+  --accent: 220 14% 96%;
+  --accent-foreground: 224 71% 4%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 220 13% 88%;
+  --input: 220 13% 88%;
+  --ring: 243 75% 59%;
+  --radius: 1rem;
+}
+
+.dark {
+  /* Dark Theme - High Visibility Tech */
+  --background: 224 71% 4%;
+  --foreground: 0 0% 100%;
+  
+  --card: 224 71% 6%;
+  --card-foreground: 0 0% 100%;
+  
+  --popover: 224 71% 6%;
+  --popover-foreground: 0 0% 100%;
+  
+  --primary: 243 75% 59%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 215 28% 17%;
+  --secondary-foreground: 0 0% 100%;
+  
+  --muted: 215 28% 17%;
+  --muted-foreground: 215 25% 75%; /* Lightened from 65% for better dark-mode legibility */
+  
+  --accent: 215 28% 17%;
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 215 28% 22%;
+  --input: 215 28% 22%;
+  --ring: 243 75% 59%;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.2); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl;
+  }
+  
+  /* Solid card specifically tuned for high visibility and contrast */
+  .glass-card {
+    @apply bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { 
+    @apply bg-slate-200 dark:bg-slate-800 rounded-full;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+    @apply bg-slate-300 dark:bg-slate-700;
+  }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-fade-in { animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-float { animation: float 5s ease-in-out infinite; }
+.animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+.shimmer-mask {
+  @apply relative overflow-hidden;
+}
+.shimmer-mask::after {
+  content: '';
+  @apply absolute inset-0 -translate-x-full;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  animation: shimmer 2s infinite;
+}

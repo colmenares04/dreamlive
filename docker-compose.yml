@@ -1,0 +1,52 @@
+services:
+  # --- Base de datos en memoria (Caché) ---
+  redis:
+    image: redis:alpine
+    container_name: dreamlive_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - dreamlive-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Backend API (FastAPI) ---
+  api:
+    build:
+      context: ./dreamlive_api
+      dockerfile: Dockerfile
+    container_name: dreamlive_api
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - dreamlive-net
+
+  # --- Frontend (React + Nginx) ---
+  web:
+    build:
+      context: ./dreamlive_web
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:8000/api/v1
+    container_name: dreamlive_web
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    networks:
+      - dreamlive-net
+
+networks:
+  dreamlive-net:
+    driver: bridge

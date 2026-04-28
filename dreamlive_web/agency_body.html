@@ -1,0 +1,1864 @@
+
+    <!-- Mobile hamburger + sidebar overlay -->
+    <button class="hamburger" aria-label="Abrir menú" onclick="toggleSidebar()">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div
+      class="sidebar-overlay"
+      id="sidebarOverlay"
+      onclick="closeSidebar()"
+    ></div>
+    <div id="loginScreen">
+      <div class="login-box">
+        <div
+          style="font-size: 48px; color: var(--primary); margin-bottom: 16px"
+        >
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <h1
+          style="
+            font-size: 24px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 8px;
+          "
+        >
+          DreamLive Manager
+        </h1>
+        <p style="color: #64748b; margin-bottom: 32px">
+          Acceso administrativo seguro
+        </p>
+        <form onsubmit="login(event)">
+          <input
+            type="text"
+            id="licenseKey"
+            class="form-input"
+            style="margin-bottom: 12px"
+            placeholder="Licencia de Agencia"
+            required
+          />
+          <input
+            type="password"
+            id="adminPass"
+            class="form-input"
+            style="margin-bottom: 24px"
+            placeholder="Contraseña Admin"
+            required
+          />
+          <button
+            type="submit"
+            class="btn btn-primary"
+            style="width: 100%; justify-content: center; padding: 14px"
+            id="loginBtn"
+          >
+            Ingresar al Panel
+          </button>
+          <p
+            id="errorMsg"
+            style="
+              color: var(--danger);
+              font-size: 13px;
+              margin-top: 16px;
+              display: none;
+            "
+          ></p>
+        </form>
+      </div>
+    </div>
+
+    <div id="app" style="display: none">
+      <aside class="sidebar">
+        <div class="brand">
+          <i class="fas fa-layer-group"></i>
+          <span id="sidebarAgencyName">AGENCIA</span>
+        </div>
+        <nav class="menu">
+          <div class="nav-item active" onclick="nav('dashboard', this)">
+            <i class="fas fa-chart-pie"></i> Dashboard
+          </div>
+          <div class="nav-item" onclick="nav('leads', this)">
+            <i class="fas fa-address-book"></i> Global Leads
+          </div>
+          <div class="nav-item" onclick="nav('team', this)">
+            <i class="fas fa-users-cog"></i> Team Manager
+          </div>
+        </nav>
+        <div class="user-info">
+          <button class="btn-logout" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section id="dashboard" class="section active">
+          <div class="header">
+            <div>
+              <h1 class="page-title">Dashboard General</h1>
+              <p class="page-subtitle">
+                Supervisión en tiempo real de toda la operación
+              </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px">
+              <select
+                id="chartLicenseFilter"
+                class="select-input"
+                onchange="updateChartsByFilter()"
+              >
+                <option value="all">🌍 Toda la Agencia</option>
+              </select>
+              <button class="btn btn-outline" onclick="loadDashboard()">
+                <i class="fas fa-sync"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid-4">
+            <div class="card">
+              <div class="stat-label">Licencias Activas</div>
+              <div class="stat-num" id="statLicenses">-</div>
+            </div>
+            <div class="card">
+              <div class="stat-label">Total Leads Capturados</div>
+              <div class="stat-num" id="statTotalLeads">-</div>
+            </div>
+            <div class="card">
+              <div class="stat-label">Contactados (Histórico)</div>
+              <div
+                class="stat-num"
+                style="color: var(--primary)"
+                id="statContacted"
+              >
+                -
+              </div>
+            </div>
+            <div class="card keyword-card">
+              <div class="stat-label">Top palabras clave</div>
+              <div id="statTopKeywords" class="badge-container" style="min-height:28px; align-items:center; display:flex; flex-wrap:wrap; gap:6px;">
+                <span class="badge bg-yellow" style="font-size:14px;">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dashboard-charts"
+            style="
+              display: grid;
+              grid-template-columns: 2fr 1fr;
+              gap: 24px;
+              margin-bottom: 32px;
+            "
+          >
+            <div class="card">
+              <h3 style="font-weight: 700; margin-bottom: 20px">
+                Tendencia de Contacto (7 Días)
+              </h3>
+              <div style="height: 250px; position: relative">
+                <canvas id="mainChart"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <h3 style="font-weight: 700; margin-bottom: 20px">
+                Estado de la Base de Datos
+              </h3>
+              <div
+                style="height: 180px; position: relative; margin-bottom: 20px"
+              >
+                <canvas id="pieChart"></canvas>
+              </div>
+              <div style="font-size: 13px">
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  <span
+                    ><i
+                      class="fas fa-circle"
+                      style="color: var(--success); font-size: 8px"
+                    ></i>
+                    Disponibles</span
+                  >
+                  <strong id="valAvailable">0</strong>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                  "
+                >
+                  <span
+                    ><i
+                      class="fas fa-circle"
+                      style="color: var(--warning); font-size: 8px"
+                    ></i>
+                    Recopilados</span
+                  >
+                  <strong id="valCollected">0</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 20px">
+            Monitoreo de Agentes
+          </h3>
+          <div class="team-grid" id="recruiterGrid"></div>
+        </section>
+
+        <section id="leads" class="section">
+          <div class="header">
+            <div>
+              <h1 class="page-title">Global Leads Database</h1>
+              <p class="page-subtitle">Gestión unificada de prospectos</p>
+            </div>
+            <div style="display: flex; gap: 12px">
+              <button
+                class="btn btn-danger"
+                onclick="openPurgeModal('global', 'Agencia Completa')"
+              >
+                <i class="fas fa-trash-alt"></i> Herramientas de Limpieza
+              </button>
+              <button class="btn btn-success" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Exportar Excel (.xlsx)
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="card leads-filter-row"
+            style="
+              padding: 16px;
+              margin-bottom: 24px;
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+            "
+          >
+            <div class="input-group">
+              <i class="fas fa-search input-icon"></i>
+              <input
+                type="text"
+                class="form-input"
+                style="width: 30vw !important"
+                placeholder="Buscar usuario..."
+                id="searchInput"
+                onkeyup="debounceSearch()"
+              />
+            </div>
+            <select
+              class="select-input"
+              id="filterStatus"
+              style="width: 250px"
+              onchange="resetAndLoadLeads()"
+            >
+              <option value="all">Todos los Estados</option>
+              <option value="disponible">🟢 Disponibles</option>
+              <option value="contactado">🔵 Contactados</option>
+              <option value="recopilado">🟡 Recopilados</option>
+            </select>
+            <select
+              class="select-input"
+              id="filterRecruiter"
+              style="width: 250px"
+              onchange="resetAndLoadLeads()"
+            >
+              <option value="all">Todos los Reclutadores</option>
+            </select>
+          </div>
+
+          <div class="table-card">
+            <div class="table-container" id="leadsScrollContainer">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 25%">Usuario</th>
+                    <th style="width: 15%">Métrica</th>
+                    <th style="width: 15%">Estado</th>
+                    <th style="width: 20%">Reclutador</th>
+                    <th style="width: 25%">Fechas</th>
+                  </tr>
+                </thead>
+                <tbody id="leadsTableBody">
+                  <tr>
+                    <td
+                      colspan="5"
+                      style="
+                        text-align: center;
+                        padding: 40px;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Cargando...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div
+                id="loadingIndicator"
+                style="
+                  text-align: center;
+                  padding: 20px;
+                  display: none;
+                  color: var(--text-muted);
+                "
+              >
+                <i class="fas fa-spinner fa-spin"></i> Cargando más datos...
+              </div>
+            </div>
+            <div class="table-footer">
+              <span id="leadsCounter">...</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="team" class="section">
+          <div class="header">
+            <div>
+              <h1 class="page-title">Team Management</h1>
+              <p class="page-subtitle">
+                Administración de credenciales y límites
+              </p>
+            </div>
+            <button
+              class="btn btn-primary"
+              style="width: 250px"
+              onclick="syncAllPasswords()"
+            >
+              <i class="fas fa-key"></i> Sincronizar Claves
+            </button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Reclutador</th>
+                    <th>Licencia</th>
+                    <th>Contraseña</th>
+                    <th>Límite</th>
+                    <th>Refresh (min)</th>
+                    <th>Estado</th>
+                    <th>Expiración</th>
+                  </tr>
+                </thead>
+                <tbody id="teamTableBody">
+                  <tr>
+                    <td colspan="7" style="text-align: center; padding: 20px">
+                      Cargando...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-wrap" id="purgeModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+          "
+        >
+          <div>
+            <h2
+              style="
+                width: 100%;
+                font-size: 20px;
+                font-weight: 800;
+                color: var(--text-main);
+              "
+            >
+              Limpieza de Datos
+            </h2>
+            <p
+              style="color: var(--text-muted); font-size: 13px; margin-top: 4px"
+            >
+              Selecciona qué deseas eliminar para:
+              <strong id="purgeTargetName" style="color: var(--primary)"
+                >Global</strong
+              >
+            </p>
+          </div>
+          <button
+            onclick="closePurgeModal()"
+            style="
+              background: none;
+              border: none;
+              font-size: 24px;
+              color: var(--text-muted);
+              cursor: pointer;
+              width: 10px;
+            "
+          >
+            &times;
+          </button>
+        </div>
+
+        <div id="purgeScopeContainer" style="margin: 20px 0">
+          <label
+            style="
+              font-size: 12px;
+              font-weight: 700;
+              color: var(--text-muted);
+              display: block;
+              margin-bottom: 6px;
+            "
+            >ALCANCE</label
+          >
+          <select
+            id="purgeScopeSelect"
+            class="select-input"
+            style="width: 100%"
+          >
+            <option value="global">🌍 Toda la Agencia</option>
+          </select>
+        </div>
+
+        <div class="purge-options">
+          <div class="purge-card" onclick="executePurge('recopilado')">
+            <i class="fas fa-filter" style="color: var(--warning)"></i>
+            <span style="font-weight: 700; font-size: 13px"
+              >Solo Recopilados</span
+            >
+            <small style="font-size: 11px; color: var(--text-muted)"
+              >Sin procesar</small
+            >
+          </div>
+          <div class="purge-card" onclick="executePurge('disponible')">
+            <i class="fas fa-check-circle" style="color: var(--success)"></i>
+            <span style="font-weight: 700; font-size: 13px"
+              >Solo Disponibles</span
+            >
+            <small style="font-size: 11px; color: var(--text-muted)"
+              >Listos para contactar</small
+            >
+          </div>
+          <div class="purge-card" onclick="executePurge('contactado')">
+            <i class="fas fa-paper-plane" style="color: var(--primary)"></i>
+            <span style="font-weight: 700; font-size: 13px"
+              >Solo Contactados</span
+            >
+            <small style="font-size: 11px; color: var(--text-muted)"
+              >Mensajes enviados</small
+            >
+          </div>
+          <div class="purge-card danger" onclick="executePurge('all')">
+            <i class="fas fa-bomb" style="color: var(--danger)"></i>
+            <span style="font-weight: 700; font-size: 13px">Eliminar TODO</span>
+            <small style="font-size: 11px; color: var(--text-muted)"
+              >Irreversible</small
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="drawer-overlay"
+      id="drawerOverlay"
+      onclick="closeRecruiterDetail()"
+    ></div>
+    <div class="drawer" id="recruiterDetail">
+      <div
+        class="drawer-header"
+        style="
+          background: linear-gradient(to bottom, #f8fafc, #fff);
+          padding-bottom: 0;
+          border-bottom: none;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
+          "
+        >
+          <div
+            class="rd-avatar-lg"
+            id="detailAvatar"
+            style="
+              width: 64px;
+              height: 64px;
+              background: var(--primary);
+              color: white;
+              border-radius: 16px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 28px;
+              font-weight: 800;
+              box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+            "
+          >
+            A
+          </div>
+          <div style="flex: 1">
+            <h2
+              style="
+                font-size: 22px;
+                font-weight: 800;
+                color: var(--text-main);
+                margin-bottom: 4px;
+              "
+              id="detailName"
+            >
+              Agente
+            </h2>
+            <div style="display: flex; gap: 8px">
+              <span
+                id="detailKey"
+                style="
+                  font-family: monospace;
+                  font-size: 11px;
+                  background: #f1f5f9;
+                  padding: 4px 8px;
+                  border-radius: 6px;
+                  color: var(--text-muted);
+                  border: 1px solid var(--border);
+                "
+                >KEY-123</span
+              >
+              <span
+                id="detailStatus"
+                style="
+                  font-size: 11px;
+                  padding: 4px 8px;
+                  border-radius: 6px;
+                  font-weight: 600;
+                "
+                >Estado</span
+              >
+            </div>
+          </div>
+          <button
+            onclick="closeRecruiterDetail()"
+            class="btn btn-outline btn-sm"
+            style="
+              height: 36px;
+              width: 36px;
+              padding: 0;
+              justify-content: center;
+              border-radius: 50%;
+            "
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div style="margin-bottom: 24px">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 6px;
+              font-size: 12px;
+              font-weight: 600;
+            "
+          >
+            <span style="color: var(--text-muted)">Tasa de Conversión</span>
+            <span style="color: var(--primary)" id="detailConversion">0%</span>
+          </div>
+          <div
+            style="
+              width: 100%;
+              height: 6px;
+              background: #f1f5f9;
+              border-radius: 3px;
+              overflow: hidden;
+            "
+          >
+            <div
+              id="detailProgressBar"
+              style="
+                width: 0%;
+                height: 100%;
+                background: var(--primary);
+                border-radius: 3px;
+                transition: width 0.5s;
+              "
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-body" style="padding-top: 0">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+          "
+        >
+          <div
+            style="
+              background: white;
+              border: 1px solid var(--border);
+              padding: 12px;
+              border-radius: 12px;
+              text-align: center;
+              box-shadow: var(--shadow-sm);
+            "
+          >
+            <div
+              style="
+                font-size: 10px;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                font-weight: 700;
+                margin-bottom: 4px;
+              "
+            >
+              Total Leads
+            </div>
+            <div
+              style="font-size: 18px; font-weight: 800; color: var(--text-main)"
+              id="detTotal"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="
+              background: #ecfdf5;
+              border: 1px solid #d1fae5;
+              padding: 12px;
+              border-radius: 12px;
+              text-align: center;
+            "
+          >
+            <div
+              style="
+                font-size: 10px;
+                text-transform: uppercase;
+                color: #047857;
+                font-weight: 700;
+                margin-bottom: 4px;
+              "
+            >
+              Contactados
+            </div>
+            <div
+              style="font-size: 18px; font-weight: 800; color: #059669"
+              id="detContacted"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="
+              background: #fffbeb;
+              border: 1px solid #fde68a;
+              padding: 12px;
+              border-radius: 12px;
+              text-align: center;
+            "
+          >
+            <div
+              style="
+                font-size: 10px;
+                text-transform: uppercase;
+                color: #b45309;
+                font-weight: 700;
+                margin-bottom: 4px;
+              "
+            >
+              Disponibles
+            </div>
+            <div
+              style="font-size: 18px; font-weight: 800; color: #d97706"
+              id="detAvailable"
+            >
+              0
+            </div>
+          </div>
+
+          <div
+            style="
+              background: #f8fafc;
+              border: 1px solid var(--border);
+              padding: 12px;
+              border-radius: 12px;
+              text-align: center;
+            "
+          >
+            <div
+              style="
+                font-size: 10px;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                font-weight: 700;
+                margin-bottom: 4px;
+              "
+            >
+              Capturados Hoy
+            </div>
+            <div
+              style="font-size: 16px; font-weight: 700; color: var(--text-main)"
+              id="detCapToday"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="
+              background: #f8fafc;
+              border: 1px solid var(--border);
+              padding: 12px;
+              border-radius: 12px;
+              text-align: center;
+            "
+          >
+            <div
+              style="
+                font-size: 10px;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                font-weight: 700;
+                margin-bottom: 4px;
+              "
+            >
+              Contactados Hoy
+            </div>
+            <div
+              style="font-size: 16px; font-weight: 700; color: var(--primary)"
+              id="detConToday"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="
+              background: #f8fafc;
+              border: 1px solid var(--border);
+              padding: 12px;
+              border-radius: 12px;
+              text-align: center;
+            "
+          >
+            <div
+              style="
+                font-size: 10px;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                font-weight: 700;
+                margin-bottom: 4px;
+              "
+            >
+              Pendientes Hoy
+            </div>
+            <div
+              style="font-size: 16px; font-weight: 700; color: var(--text-main)"
+              id="detAvailToday"
+            >
+              0
+            </div>
+          </div>
+        </div>
+
+        <div class="config-box">
+          <div class="config-title">
+            <i class="fas fa-chart-bar"></i> Actividad Semanal
+          </div>
+          <div style="height: 180px; position: relative">
+            <canvas id="detailChart"></canvas>
+          </div>
+        </div>
+
+        <div class="config-box">
+          <div class="config-title">
+            <i class="fas fa-search"></i> Búsqueda & Mensajes
+          </div>
+
+          <div style="margin-bottom: 12px">
+            <strong>Enfoque de búsqueda:</strong>
+            <div id="detailKeywords" style="margin-top:4px; color:var(--text-main); font-weight:600;">N/A</div>
+          </div>
+          <div style="margin-bottom: 12px">
+            <strong>Plantillas de mensaje:</strong>
+            <ul id="detailMessages" style="margin-top:4px; padding-left:18px; color:var(--text-main);">
+              <li>N/A</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Filtro de invitaciones:</strong>
+            <div id="detailInvites" style="margin-top:4px; color:var(--text-main); font-weight:600;">Todos</div>
+          </div>
+        </div>
+
+        <div class="config-box">
+          <div class="config-title">
+            <i class="fas fa-cog"></i> Configuración de Acceso
+          </div>
+
+          <div style="margin-bottom: 12px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-muted);
+                display: block;
+                margin-bottom: 6px;
+              "
+              >Contraseña de Acceso</label
+            >
+            <div style="position: relative">
+              <i class="fas fa-lock input-icon" style="font-size: 12px"></i>
+              <input
+                type="text"
+                id="detailPass"
+                class="form-input"
+                style="background: #f8fafc"
+              />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+            <div>
+              <label
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: var(--text-muted);
+                  display: block;
+                  margin-bottom: 6px;
+                "
+                >Límite Diario</label
+              >
+              <input
+                type="number"
+                id="detailLimit"
+                class="form-input"
+                style="background: #f8fafc"
+              />
+            </div>
+            <div>
+              <label
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: var(--text-muted);
+                  display: block;
+                  margin-bottom: 6px;
+                "
+                >Refresh (Min)</label
+              >
+              <input
+                type="number"
+                id="detailRefresh"
+                class="form-input"
+                style="background: #f8fafc"
+              />
+            </div>
+          </div>
+
+          <button
+            class="btn btn-primary"
+            style="width: 100%; margin-top: 16px; justify-content: center"
+            onclick="saveRecruiterConfig()"
+          >
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+ const SB_URL = "https://vcdynhqtslgtkmmxoire.supabase.co";
+    const SB_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjZHluaHF0c2xndGttbXhvaXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2OTgzMjIsImV4cCI6MjA4NzI3NDMyMn0.M6aDkbQVjCkTjRqsPP5s7wq7iFZEF5TJDIdWEeY2HqY";
+      const { createClient } = supabase;
+      const db = createClient(SB_URL, SB_KEY, { db: { schema: "dreamtool" } });
+
+      let currentAgencyId = null;
+      let agencyLicenses = [];
+      let currentEditingLicenseId = null; // For Detail View
+      let currentPurgeScope = null; // For Purge Modal
+
+      // Pagination
+      let currentPage = 0;
+      const PAGE_SIZE = 50;
+      let hasMoreLeads = true;
+      let isLoadingLeads = false;
+      let totalLeadsCount = 0;
+
+      /* ================= LOGIN ================= */
+      async function login(e) {
+        e.preventDefault();
+        const key = document.getElementById("licenseKey").value.trim();
+        const pass = document.getElementById("adminPass").value.trim();
+        const btn = document.getElementById("loginBtn");
+        const err = document.getElementById("errorMsg");
+
+        btn.disabled = true;
+        btn.innerText = "Verificando...";
+        err.style.display = "none";
+
+        try {
+          // Get License
+          const { data: lic, error } = await db
+            .from("licenses")
+            .select("*")
+            .eq("license_key", key)
+            .single();
+          if (error || !lic) throw new Error("Licencia no encontrada");
+          if (lic.admin_password !== pass)
+            throw new Error("Contraseña incorrecta");
+          if (!lic.agency_id)
+            throw new Error("Esta licencia no pertenece a una agencia");
+
+          // Get Agency Name
+          const { data: ag } = await db
+            .from("agencies")
+            .select("name")
+            .eq("id", lic.agency_id)
+            .single();
+
+          // Create Session
+          const session = {
+            agencyId: lic.agency_id,
+            agencyName: ag ? ag.name : "Agencia",
+          };
+          localStorage.setItem("agency_session", JSON.stringify(session));
+          initApp(session);
+        } catch (error) {
+          err.innerText = error.message;
+          err.style.display = "block";
+          btn.disabled = false;
+          btn.innerText = "Ingresar al Panel";
+        }
+      }
+
+      function initApp(session) {
+        currentAgencyId = session.agencyId;
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("app").style.display = "flex";
+        document.getElementById("sidebarAgencyName").innerText =
+          session.agencyName.toUpperCase();
+
+        loadDashboard();
+
+        // Infinite Scroll Listener
+        const container = document.getElementById("leadsScrollContainer");
+        container.addEventListener("scroll", () => {
+          if (
+            container.scrollTop + container.clientHeight >=
+            container.scrollHeight - 100
+          ) {
+            loadMoreLeads();
+          }
+        });
+      }
+
+      function logout() {
+        localStorage.removeItem("agency_session");
+        location.reload();
+      }
+
+      /* ================= DASHBOARD ================= */
+      async function loadDashboard() {
+        const { data: licenses } = await db
+          .from("licenses")
+          .select("id, recruiter_name, license_key, keywords")
+          .eq("agency_id", currentAgencyId);
+        agencyLicenses = licenses || [];
+        const licenseIds = agencyLicenses.map((l) => l.id);
+
+        // Populate Filters
+        const recruiterSelect = document.getElementById("filterRecruiter");
+        const chartFilterSelect = document.getElementById("chartLicenseFilter");
+        const purgeScopeSelect = document.getElementById("purgeScopeSelect"); // Populate here for modal
+
+        let opts = '<option value="all">Todos los Reclutadores</option>';
+        let chartOpts = '<option value="all">🌍 Toda la Agencia</option>';
+        let purgeOpts =
+          '<option value="global">🌍 Toda la Agencia (Global)</option>';
+
+        agencyLicenses.forEach((lic) => {
+          const label = lic.recruiter_name;
+          opts += `<option value="${lic.id}">${label}</option>`;
+          chartOpts += `<option value="${lic.id}">${label}</option>`;
+          purgeOpts += `<option value="${lic.id}">👤 ${label}</option>`;
+        });
+
+        recruiterSelect.innerHTML = opts;
+        chartFilterSelect.innerHTML = chartOpts;
+        purgeScopeSelect.innerHTML = purgeOpts;
+
+        document.getElementById("statLicenses").innerText =
+          agencyLicenses.length;
+
+        // compute top keywords across recruiters
+        console.log("[dashboard] recruiter keywords:", agencyLicenses.map(l=>l.keywords));
+        const wordCounts = {};
+        agencyLicenses.forEach(l => {
+          if (l.keywords) {
+            l.keywords
+              .split("/")
+              .map(w => w.trim().toLowerCase())
+              .filter(w => w.length > 0)
+              .forEach(w => {
+                wordCounts[w] = (wordCounts[w] || 0) + 1;
+              });
+          }
+        });
+        const top = Object.entries(wordCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5);
+        const keywordsContainer = document.getElementById("statTopKeywords");
+        keywordsContainer.innerHTML = "";
+        if (top.length > 0) {
+          top.forEach(([w, c]) => {
+            const span = document.createElement("span");
+            span.className = "badge bg-yellow";
+            span.style.fontSize = "14px";
+            span.innerText = `${w} (${c})`;
+            keywordsContainer.appendChild(span);
+          });
+        } else {
+          const span = document.createElement("span");
+          span.className = "badge bg-gray";
+          span.style.fontSize = "14px";
+          span.innerText = agencyLicenses.length === 0 ? "-" : "(ninguna)";
+          keywordsContainer.appendChild(span);
+        }
+
+        if (licenseIds.length === 0) return;
+
+        // Stats Globales
+        const { count: totalLeads } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .in("license_id", licenseIds);
+        const { count: contacted } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .in("license_id", licenseIds)
+          .eq("status", "contactado");
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { count: contactedToday } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .in("license_id", licenseIds)
+          .eq("status", "contactado")
+          .gte("contacted_at", today.toISOString());
+
+        document.getElementById("statTotalLeads").innerText = totalLeads || 0;
+        document.getElementById("statContacted").innerText = contacted || 0;
+
+        // Cargar Gráficas
+        updateChartsByFilter();
+        // Cargar Tarjetas
+        renderRecruiterCards();
+      }
+
+      /* ================= CHARTS ================= */
+      async function updateChartsByFilter() {
+        const filterId = document.getElementById("chartLicenseFilter").value;
+        let targetIds = agencyLicenses.map((l) => l.id);
+        if (filterId !== "all") targetIds = [filterId];
+
+        // Pie Data
+        const { count: cContacted } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .in("license_id", targetIds)
+          .eq("status", "contactado");
+        const { count: cAvailable } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .in("license_id", targetIds)
+          .eq("status", "disponible");
+        const { count: cCollected } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .in("license_id", targetIds)
+          .eq("status", "recopilado");
+
+        document.getElementById("valAvailable").innerText = cAvailable || 0;
+        document.getElementById("valCollected").innerText = cCollected || 0;
+
+        renderPieChart(cContacted, cAvailable, cCollected);
+
+        // Line Data (7 Days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        const { data: historyData } = await db
+          .from("tiktok_leads")
+          .select("captured_at, contacted_at")
+          .in("license_id", targetIds)
+          .or(
+            `captured_at.gte.${sevenDaysAgo.toISOString()},contacted_at.gte.${sevenDaysAgo.toISOString()}`,
+          );
+
+        renderLineChart(historyData || [], "mainChart");
+      }
+
+      function renderPieChart(con, ava, col) {
+        const ctx = document.getElementById("pieChart");
+        if (window.myPie) window.myPie.destroy();
+        window.myPie = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Contactado", "Disponible", "Recopilado"],
+            datasets: [
+              {
+                data: [con, ava, col],
+                backgroundColor: ["#4f46e5", "#10b981", "#f59e0b"],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "right" } },
+          },
+        });
+      }
+
+      function renderLineChart(data, canvasId) {
+        const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+        const labels = [],
+          capData = [],
+          conData = [];
+
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          d.setHours(0, 0, 0, 0);
+          labels.push(days[d.getDay()]);
+          const nextD = new Date(d);
+          nextD.setDate(d.getDate() + 1);
+
+          capData.push(
+            data.filter(
+              (r) =>
+                new Date(r.captured_at) >= d && new Date(r.captured_at) < nextD,
+            ).length,
+          );
+          conData.push(
+            data.filter(
+              (r) =>
+                r.contacted_at &&
+                new Date(r.contacted_at) >= d &&
+                new Date(r.contacted_at) < nextD,
+            ).length,
+          );
+        }
+
+        const ctx = document.getElementById(canvasId);
+        if (canvasId === "mainChart" && window.myLine) window.myLine.destroy();
+        if (canvasId === "detailChart" && window.detailLine)
+          window.detailLine.destroy();
+
+        const chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Capturados",
+                data: capData,
+                borderColor: "#f59e0b",
+                tension: 0.4,
+                backgroundColor: "rgba(245, 158, 11, 0.1)",
+              },
+              {
+                label: "Contactados",
+                data: conData,
+                borderColor: "#4f46e5",
+                tension: 0.4,
+                fill: true,
+                backgroundColor: "rgba(79, 70, 229, 0.1)",
+              },
+            ],
+          },
+          options: { responsive: true, maintainAspectRatio: false },
+        });
+
+        if (canvasId === "mainChart") window.myLine = chart;
+        else window.detailLine = chart;
+      }
+      // ✅ ESTA ES LA FUNCIÓN QUE TE FALTABA
+      function closePurgeModal() {
+        document.getElementById("purgeModal").classList.remove("active");
+      }
+      /* ================= AGENT CARDS ================= */
+      async function renderRecruiterCards() {
+        const container = document.getElementById("recruiterGrid");
+        container.innerHTML = "Cargando...";
+
+        const { data: licenses } = await db
+          .from("licenses")
+          .select("*, license_sessions(last_ping)")
+          .eq("agency_id", currentAgencyId)
+          .order("created_at", { ascending: false });
+
+        container.innerHTML = "";
+        licenses.forEach((lic) => {
+          // Logic Last Seen
+          let lastPing = null;
+          if (lic.license_sessions?.length > 0) {
+            lic.license_sessions.sort(
+              (a, b) => new Date(b.last_ping) - new Date(a.last_ping),
+            );
+            lastPing = new Date(lic.license_sessions[0].last_ping);
+          }
+
+          let statusHtml =
+            '<span class="status-indicator offline" style="padding:2px 8px; border-radius:12px; font-size:11px; background:#f1f5f9; color:#64748b;"><div class="dot" style="display:inline-block; width:6px; height:6px; background:currentColor; border-radius:50%; margin-right:4px;"></div> Inactivo</span>';
+          let lastSeenText = "Nunca";
+
+          if (lastPing) {
+            const diffMins = Math.floor((new Date() - lastPing) / 1000 / 60);
+            if (diffMins < 5) {
+              statusHtml =
+                '<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:#dcfce7; color:#15803d;"><div class="dot" style="display:inline-block; width:6px; height:6px; background:currentColor; border-radius:50%; margin-right:4px;"></div> En Línea</span>';
+              lastSeenText = "Ahora";
+            } else if (diffMins < 60) {
+              lastSeenText = `Hace ${diffMins} min`;
+            } else {
+              lastSeenText = `Hace ${Math.floor(diffMins / 60)} h`;
+            }
+          }
+
+          const div = document.createElement("div");
+          div.className = "agent-card";
+          div.onclick = () => openRecruiterDetail(lic);
+          div.innerHTML = `
+                <div class="agent-header">
+                    <div class="avatar">${lic.recruiter_name.charAt(0).toUpperCase()}</div>
+                    ${statusHtml}
+                </div>
+                <div class="agent-name">${lic.recruiter_name}</div>
+                <div class="agent-key">${lic.license_key}</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:8px;"><i class="fas fa-history"></i> ${lastSeenText}</div>
+                
+                <div class="agent-stats">
+                    <div class="as-item">
+                        <span class="as-val" style="color:var(--primary)">${lic.limit_requests}</span>
+                        <span class="as-lbl">Límite</span>
+                    </div>
+                    <div class="as-item">
+                        <span class="as-val">${lic.refresh_minutes}m</span>
+                        <span class="as-lbl">Ciclo</span>
+                    </div>
+                </div>
+            `;
+          container.appendChild(div);
+        });
+      }
+
+      /* ================= DETAIL DRAWER ================= */
+      async function openRecruiterDetail(lic) {
+        currentEditingLicenseId = lic.id;
+
+        // 1. Datos Básicos
+        document.getElementById("detailName").innerText = lic.recruiter_name;
+        document.getElementById("detailKey").innerText = lic.license_key;
+        document.getElementById("detailAvatar").innerText = lic.recruiter_name
+          .charAt(0)
+          .toUpperCase();
+
+        // 2. Estado Visual (Online/Offline)
+        let isOnline = false;
+        if (lic.license_sessions && lic.license_sessions.length > 0) {
+          lic.license_sessions.sort(
+            (a, b) => new Date(b.last_ping) - new Date(a.last_ping),
+          );
+          const diff = Math.floor(
+            (new Date() - new Date(lic.license_sessions[0].last_ping)) / 60000,
+          );
+          if (diff < 5) isOnline = true;
+        }
+        const statusEl = document.getElementById("detailStatus");
+        if (isOnline) {
+          statusEl.innerText = "En Línea";
+          statusEl.style.background = "#dcfce7";
+          statusEl.style.color = "#15803d";
+        } else {
+          statusEl.innerText = "Desconectado";
+          statusEl.style.background = "#f1f5f9";
+          statusEl.style.color = "#64748b";
+        }
+
+        // 3. Config Inputs
+        document.getElementById("detailPass").value = lic.admin_password;
+        document.getElementById("detailLimit").value = lic.limit_requests;
+        document.getElementById("detailRefresh").value = lic.refresh_minutes;
+
+        // 3b. Additional info – keywords, templates, invitation filter
+        // keywords badges
+        const kwContainer = document.getElementById("detailKeywords");
+        kwContainer.innerHTML = "";
+        if (lic.keywords) {
+          const words = lic.keywords
+            .split("/")
+            .map((w) => w.trim())
+            .filter((w) => w.length > 0);
+          if (words.length > 0) {
+            words.forEach((w) => {
+              const span = document.createElement("span");
+              span.className = "badge bg-blue";
+              span.innerText = w;
+              kwContainer.appendChild(span);
+            });
+          } else kwContainer.innerText = "N/A";
+        } else kwContainer.innerText = "N/A";
+
+        const msgEl = document.getElementById("detailMessages");
+        msgEl.innerHTML = "";
+        if (lic.message_templates && lic.message_templates.length) {
+          lic.message_templates.forEach((m) => {
+            const li = document.createElement("li");
+            const span = document.createElement("span");
+            span.className = "badge bg-green";
+            span.innerText = m;
+            li.appendChild(span);
+            msgEl.appendChild(li);
+          });
+        } else {
+          const li = document.createElement("li");
+          li.innerHTML = '<span class="badge bg-green">N/A</span>';
+          msgEl.appendChild(li);
+        }
+
+        document.getElementById("detailInvites").innerText =
+          lic.invitation_types && lic.invitation_types.length
+            ? lic.invitation_types.join(", ")
+            : "Todos";
+
+        document.getElementById("drawerOverlay").classList.add("open");
+        document.getElementById("recruiterDetail").classList.add("open");
+
+        // 4. CONSULTA DE ESTADÍSTICAS AVANZADAS
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Total Histórico
+        const { count: total } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("license_id", lic.id);
+        const { count: contacted } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("license_id", lic.id)
+          .eq("status", "contactado");
+        const { count: available } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("license_id", lic.id)
+          .eq("status", "disponible");
+
+        // Estadísticas de HOY
+        const { count: capToday } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("license_id", lic.id)
+          .gte("captured_at", today.toISOString());
+
+        const { count: conToday } = await db
+          .from("tiktok_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("license_id", lic.id)
+          .eq("status", "contactado")
+          .gte("contacted_at", today.toISOString());
+
+        // Calcular Disponibles Hoy (Capturados hoy que aun siguen disponibles)
+        // O simplemente "Disponibles" es un stock global, asi que usaremos la resta logica si se prefiere,
+        // pero mostraremos "Disponibles Total" y "Capturados Hoy" que es mas util.
+
+        // Llenar DOM
+        document.getElementById("detTotal").innerText = total || 0;
+        document.getElementById("detContacted").innerText = contacted || 0;
+        document.getElementById("detAvailable").innerText = available || 0;
+
+        document.getElementById("detCapToday").innerText = capToday || 0;
+        document.getElementById("detConToday").innerText = conToday || 0;
+        document.getElementById("detAvailToday").innerText = available || 0; // Disponibles siempre es stock actual
+
+        // Barra de Conversión
+        const rate = total > 0 ? Math.round((contacted / total) * 100) : 0;
+        document.getElementById("detailConversion").innerText = rate + "%";
+        document.getElementById("detailProgressBar").style.width = rate + "%";
+
+        // 5. GRÁFICA SEMANAL
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const { data: hist } = await db
+          .from("tiktok_leads")
+          .select("captured_at, contacted_at")
+          .eq("license_id", lic.id)
+          .or(
+            `captured_at.gte.${sevenDaysAgo.toISOString()},contacted_at.gte.${sevenDaysAgo.toISOString()}`,
+          );
+
+        renderDetailChart(hist || []);
+      }
+      function closeRecruiterDetail() {
+        document.getElementById("drawerOverlay").classList.remove("open");
+        document.getElementById("recruiterDetail").classList.remove("open");
+        currentEditingLicenseId = null;
+      }
+      function renderDetailChart(data) {
+        const ctx = document.getElementById("detailChart");
+
+        // Destruir instancia previa para evitar errores de superposición
+        if (window.detailChartInstance) {
+          window.detailChartInstance.destroy();
+        }
+
+        const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+        const labels = [];
+        const contactCounts = [];
+
+        // Calcular los últimos 7 días
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          d.setHours(0, 0, 0, 0);
+          labels.push(days[d.getDay()]);
+
+          const nextD = new Date(d);
+          nextD.setDate(d.getDate() + 1);
+
+          // Filtrar datos por día
+          const count = data.filter((r) => {
+            if (!r.contacted_at) return false;
+            const date = new Date(r.contacted_at);
+            return date >= d && date < nextD;
+          }).length;
+
+          contactCounts.push(count);
+        }
+
+        // Crear nueva gráfica
+        window.detailChartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Contactados",
+                data: contactCounts,
+                backgroundColor: "#4f46e5",
+                borderRadius: 6,
+                barThickness: 24,
+                borderSkipped: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "#1e293b",
+                padding: 12,
+                titleFont: { size: 13 },
+                bodyFont: { size: 13 },
+                cornerRadius: 8,
+                displayColors: false,
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: "#f1f5f9", drawBorder: false },
+                ticks: { font: { size: 11 }, color: "#64748b" },
+              },
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 11 }, color: "#64748b" },
+              },
+            },
+          },
+        });
+      }
+      async function saveRecruiterConfig() {
+        const updates = {
+          admin_password: document.getElementById("detailPass").value,
+          limit_requests: document.getElementById("detailLimit").value,
+          refresh_minutes: document.getElementById("detailRefresh").value,
+        };
+        const { error } = await db
+          .from("licenses")
+          .update(updates)
+          .eq("id", currentEditingLicenseId);
+        if (error) alert(error.message);
+        else {
+          alert("Guardado.");
+          closeRecruiterDetail();
+          loadDashboard();
+          loadTeam();
+        }
+      }
+
+      function openPurgeFromDetail() {
+        // Open Purge Modal pre-selected with this agent
+        closeRecruiterDetail();
+        openPurgeModal(
+          currentEditingLicenseId,
+          document.getElementById("detailName").innerText,
+        );
+      }
+
+      /* ================= GLOBAL LEADS & SCROLL ================= */
+      let searchTimeout;
+      function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(resetAndLoadLeads, 500);
+      }
+      function resetAndLoadLeads() {
+        currentPage = 0;
+        hasMoreLeads = true;
+        document.getElementById("leadsTableBody").innerHTML = "";
+        loadMoreLeads();
+      }
+
+      async function loadMoreLeads() {
+        if (!hasMoreLeads || isLoadingLeads) return;
+        isLoadingLeads = true;
+        document.getElementById("loadingIndicator").style.display = "block";
+
+        const status = document.getElementById("filterStatus").value;
+        const recruiter = document.getElementById("filterRecruiter").value;
+        const q = document.getElementById("searchInput").value.trim();
+
+        let targetIds = agencyLicenses.map((l) => l.id);
+        if (recruiter !== "all") targetIds = [recruiter];
+
+        if (targetIds.length === 0) {
+          isLoadingLeads = false;
+          return;
+        }
+
+        let query = db
+          .from("tiktok_leads")
+          .select("*", { count: "exact" })
+          .in("license_id", targetIds)
+          .order("captured_at", { ascending: false })
+          .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
+        if (status !== "all") query = query.eq("status", status);
+        if (q) query = query.ilike("username", `%${q}%`);
+
+        const { data, count, error } = await query;
+        document.getElementById("loadingIndicator").style.display = "none";
+        isLoadingLeads = false;
+
+        if (error) return;
+
+        totalLeadsCount = count;
+        if (data.length < PAGE_SIZE) hasMoreLeads = false;
+        currentPage++;
+        renderLeadsRows(data);
+        document.getElementById("leadsCounter").innerText =
+          `Total: ${totalLeadsCount}`;
+      }
+
+      function renderLeadsRows(leads) {
+        const tbody = document.getElementById("leadsTableBody");
+        const recruiterMap = {};
+        agencyLicenses.forEach((l) => (recruiterMap[l.id] = l.recruiter_name));
+
+        if (currentPage === 1 && leads.length === 0)
+          tbody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center; padding:20px;">Sin resultados</td></tr>';
+
+        leads.forEach((l) => {
+          const rName = recruiterMap[l.license_id] || "N/A";
+          let badge = "bg-blue";
+          let icon = "clock";
+          if (l.status === "contactado") {
+            badge = "bg-green";
+            icon = "check";
+          }
+          if (l.status === "recopilado") {
+            badge = "bg-yellow";
+            icon = "filter";
+          }
+
+          let metric = `<span class="badge bg-gray"><i class="fas fa-eye"></i> 0</span>`;
+          if (l.likes_count > 0)
+            metric = `<span class="badge bg-pink"><i class="fas fa-heart"></i> ${formatNumber(l.likes_count)}</span>`;
+          else if (l.viewer_count > 0)
+            metric = `<span class="badge bg-gray"><i class="fas fa-eye"></i> ${formatNumber(l.viewer_count)}</span>`;
+
+          const row = `<tr>
+                <td><strong>@${l.username}</strong></td>
+                <td>${metric}</td>
+                <td><span class="badge ${badge}"><i class="fas fa-${icon}"></i> ${l.status}</span></td>
+                <td>${rName}</td>
+                <td style="font-size:11px; color:#64748b;">${new Date(l.captured_at).toLocaleDateString()}</td>
+            </tr>`;
+          tbody.innerHTML += row;
+        });
+      }
+
+      function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+        if (num >= 1000) return (num / 1000).toFixed(1) + "k";
+        return num;
+      }
+
+      /* ================= EXCEL & PURGE ================= */
+      async function exportToExcel() {
+        const btn = document.querySelector(".btn-success");
+        const oldText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
+        // Fetch All Data (Filtered)
+        const status = document.getElementById("filterStatus").value;
+        const recruiter = document.getElementById("filterRecruiter").value;
+        let targetIds = agencyLicenses.map((l) => l.id);
+        if (recruiter !== "all") targetIds = [recruiter];
+
+        let query = db
+          .from("tiktok_leads")
+          .select("*")
+          .in("license_id", targetIds)
+          .order("captured_at", { ascending: false });
+        if (status !== "all") query = query.eq("status", status);
+
+        const { data, error } = await query;
+        if (error) {
+          alert("Error");
+          btn.innerHTML = oldText;
+          return;
+        }
+
+        // Format for SheetJS
+        const rows = data.map((l) => ({
+          Usuario: l.username,
+          Estado: l.status,
+          Visualizaciones: l.viewer_count,
+          Likes: l.likes_count,
+          "Fecha Captura": new Date(l.captured_at).toLocaleString(),
+          "Fecha Contacto": l.contacted_at
+            ? new Date(l.contacted_at).toLocaleString()
+            : "",
+          LicenseID: l.license_id,
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Leads");
+        XLSX.writeFile(
+          wb,
+          `DreamLive_Leads_${new Date().toISOString().slice(0, 10)}.xlsx`,
+        );
+
+        btn.innerHTML = oldText;
+      }
+
+      // Purge Modal Logic
+      function openPurgeModal(scope, name) {
+        const select = document.getElementById("purgeScopeSelect");
+
+        // 1. REGENERAR OPCIONES (Crucial para asegurar que el ID exista en la lista)
+        let opts =
+          '<option value="global">🌍 Toda la Agencia (Global)</option>';
+        if (agencyLicenses && agencyLicenses.length > 0) {
+          agencyLicenses.forEach((lic) => {
+            opts += `<option value="${lic.id}">👤 ${lic.recruiter_name} (${lic.license_key})</option>`;
+          });
+        }
+        select.innerHTML = opts;
+
+        // 2. ASIGNAR VALOR
+        // Si scope es null, undefined o 'global', va a global. Si no, busca el ID.
+        if (!scope || scope === "global") {
+          select.value = "global";
+          currentPurgeScope = "global";
+        } else {
+          select.value = scope;
+          currentPurgeScope = scope;
+        }
+
+        // 3. ACTUALIZAR UI
+        document.getElementById("purgeTargetName").innerText = name || "Global";
+        document.getElementById("purgeModal").classList.add("active");
+      }
+
+      async function executePurge(type) {
+        // Obtener valor del selector
+        const scope = document.getElementById("purgeScopeSelect").value;
+        const scopeName =
+          document.getElementById("purgeScopeSelect").selectedOptions[0]
+            ?.text || "Selección";
+
+        // VALIDACIÓN DE SEGURIDAD
+        if (!scope || scope === "") {
+          alert("Error: No se ha seleccionado una licencia válida.");
+          return;
+        }
+
+        let confirmMsg = "";
+        if (type === "all") {
+          confirmMsg = `⚠️ PELIGRO EXTREMO ⚠️\n\nVas a borrar TODO el historial de: ${scopeName}.\nEsta acción NO se puede deshacer.\n\n¿Estás seguro?`;
+        } else {
+          confirmMsg = `¿Seguro que deseas eliminar los leads '${type}' de: ${scopeName}?`;
+        }
+
+        if (!confirm(confirmMsg)) return;
+
+        // Construir Query
+        let query = db.from("tiktok_leads").delete();
+
+        // LÓGICA DE ALCANCE
+        if (scope === "global") {
+          // Si es global, borramos todo lo que pertenezca a las licencias de esta agencia
+          const allIds = agencyLicenses.map((l) => l.id);
+          if (allIds.length === 0)
+            return alert("No hay licencias para limpiar.");
+          query = query.in("license_id", allIds);
+        } else {
+          // Si es específico, usamos el UUID
+          query = query.eq("license_id", scope);
+        }
+
+        // Filtro de Tipo (recopilado, contactado, etc)
+        if (type !== "all") {
+          query = query.eq("status", type);
+        }
+
+        // UI Feedback
+        const btns = document.querySelectorAll(".purge-option-card");
+        btns.forEach((b) => (b.style.opacity = "0.5"));
+
+        const { error } = await query;
+
+        btns.forEach((b) => (b.style.opacity = "1"));
+
+        if (error) {
+          console.error(error);
+          alert("Error al borrar: " + error.message);
+        } else {
+          alert("✅ Limpieza realizada correctamente.");
+          closePurgeModal();
+
+          // Actualizar datos si estamos en vista de detalle
+          if (currentEditingLicenseId) {
+            // Si el modal de detalle sigue abierto, refrescarlo
+            // (Opcional, depende de tu lógica, pero recomendable cerrar para evitar desincronización)
+            closeRecruiterDetail();
+          }
+
+          resetAndLoadLeads();
+          loadDashboard();
+        }
+      }
+      /* ================= TEAM MANAGER TABLE ================= */
+      async function loadTeam() {
+        const tbody = document.getElementById("teamTableBody");
+        tbody.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+        const { data } = await db
+          .from("licenses")
+          .select("*")
+          .eq("agency_id", currentAgencyId)
+          .order("created_at");
+        tbody.innerHTML = "";
+        data.forEach((lic) => {
+          const tr = `<tr>
+                <td><input class="table-input" value="${lic.recruiter_name}" onchange="updateLic('${lic.id}', 'recruiter_name', this)"></td>
+                <td style="font-family:monospace;">${lic.license_key}</td>
+                <td><input class="table-input" value="${lic.admin_password}" onchange="updateLic('${lic.id}', 'admin_password', this)"></td>
+                <td><input class="table-input" type="number" value="${lic.limit_requests}" onchange="updateLic('${lic.id}', 'limit_requests', this)"></td>
+                <td><input class="table-input" type="number" value="${lic.refresh_minutes}" onchange="updateLic('${lic.id}', 'refresh_minutes', this)"></td>
+                <td>${lic.is_active ? "✅" : "❌"}</td>
+                <td>${new Date(lic.expiration_date).toLocaleDateString()}</td>
+            </tr>`;
+          tbody.innerHTML += tr;
+        });
+      }
+
+      async function updateLic(id, field, input) {
+        const { error } = await db
+          .from("licenses")
+          .update({ [field]: input.value })
+          .eq("id", id);
+        if (error) {
+          input.style.border = "1px solid red";
+          alert(error.message);
+        } else {
+          input.classList.add("saved");
+          setTimeout(() => input.classList.remove("saved"), 1000);
+        }
+      }
+
+      async function syncAllPasswords() {
+        const p = prompt("Nueva contraseña para TODOS:");
+        if (p) {
+          await db
+            .from("licenses")
+            .update({ admin_password: p })
+            .eq("agency_id", currentAgencyId);
+          alert("Hecho.");
+          loadTeam();
+        }
+      }
+
+      /* ================= NAVIGATION ================= */
+      function nav(section, el) {
+        document
+          .querySelectorAll(".section")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(section).classList.add("active");
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((i) => i.classList.remove("active"));
+        el.classList.add("active");
+
+        if (section === "dashboard") loadDashboard();
+        if (section === "team") loadTeam();
+        if (section === "leads") resetAndLoadLeads();
+      }
+
+      window.onload = () => {
+        const s = JSON.parse(localStorage.getItem("agency_session"));
+        if (s) initApp(s);
+      };
+
+      /* ======= MOBILE SIDEBAR TOGGLE ======= */
+      function toggleSidebar() {
+        const sidebar = document.querySelector(".sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+        sidebar.classList.toggle("open");
+        overlay.classList.toggle("open");
+      }
+      function closeSidebar() {
+        document.querySelector(".sidebar").classList.remove("open");
+        document.getElementById("sidebarOverlay").classList.remove("open");
+      }
+
+      // Close sidebar on mobile after nav item click
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          if (window.innerWidth < 640) closeSidebar();
+        });
+      });
+    </script>
+  
