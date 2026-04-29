@@ -42,6 +42,7 @@ class CreateUserBody(BaseModel):
     username: str
     password: str
     role: UserRole
+    full_name: Optional[str] = None
     agency_id: Optional[str] = None
 
 
@@ -135,6 +136,11 @@ async def list_users(
         agency_id = str(current_user.agency_id)
     
     users = await repo.list_all(agency_id=agency_id)
+    
+    # [SECURITY] Non-superusers should NEVER see superusers
+    if current_user.role != UserRole.SUPERUSER:
+        users = [u for u in users if u.role != UserRole.SUPERUSER]
+        
     return [
         UserOut(
             id=user.id,
@@ -162,6 +168,12 @@ async def create_user(
     if not effective_agency_id:
         effective_agency_id = str(current_user.agency_id) if current_user.agency_id else None
         
+    if current_user.role != UserRole.SUPERUSER and not effective_agency_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Error de integridad: El administrador no tiene una agencia asignada."
+        )
+        
     try:
         result = await use_case.execute(
             CreateUserInput(
@@ -169,6 +181,7 @@ async def create_user(
                 username=body.username,
                 password=body.password,
                 role=body.role,
+                full_name=body.full_name,
                 agency_id=effective_agency_id,
             )
         )

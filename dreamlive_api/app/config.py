@@ -29,11 +29,11 @@ class Settings(BaseSettings):
 
     # ── CORS ──────────────────────────────────────────────────────────────────
     ALLOWED_ORIGINS: List[str] = [
-        "http://localhost",
+        "http://217.216.94.178",
         "http://127.0.0.1",
-        "http://localhost:5173",
+        "http://217.216.94.178:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:3000",
+        "http://217.216.94.178:3000",
     ]
 
     # ── Email (recuperación de contraseña) ───────────────────────────────────
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
 
     # ── Redis (Caché) ─────────────────────────────────────────────────────────
-    REDIS_HOST: str = "localhost"
+    REDIS_HOST: str = "217.216.94.178"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
     REDIS_DB: int = 0

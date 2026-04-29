@@ -137,10 +137,10 @@ export function DashboardLayout() {
               <MenuLink to="/dashboard/settings/profiles" icon="fa-users" text="Perfiles" onClick={() => setSidebarOpen(false)} />
               <MenuLink to="/dashboard/settings/account" icon="fa-user-circle" text="Mi Cuenta" onClick={() => setSidebarOpen(false)} />
               <MenuLink to="/dashboard/settings/support" icon="fa-headset" text="Soporte" onClick={() => setSidebarOpen(false)} />
-              {/* Opción Elegante y Hermosa de Roles */}
-              {role === 'agency_admin' && (
+              {/* Opción Elegante y Hermosa de Roles (Desactivada temporalmente) */}
+              {/* {role === 'agency_admin' && (
                 <MenuLink to="/dashboard/settings/roles" icon="fa-user-shield" text="Roles y Permisos" onClick={() => setSidebarOpen(false)} />
-              )}
+              )} */}
             </div>
           </div>
         </nav>

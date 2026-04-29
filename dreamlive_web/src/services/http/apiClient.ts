@@ -9,7 +9,7 @@ import axios, { AxiosInstance } from 'axios';
 import { TokenStorage } from './tokenStorage';
 import type { AuthTokens } from '../../core/entities';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://217.216.94.178:8000/api/v1';
 
 class ApiClient {
   private readonly http: AxiosInstance;

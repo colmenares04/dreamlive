@@ -39,9 +39,9 @@ app = FastAPI(
 
 # ── CORS & Security Headers ──────────────────────────────────────────────────
 _cors_origins = [
-    "http://localhost", "http://127.0.0.1",
-    "http://localhost:5173", "http://127.0.0.1:5173",
-    "http://localhost:3000", "http://127.0.0.1:3000"
+    "http://217.216.94.178", "http://127.0.0.1",
+    "http://217.216.94.178:5173", "http://127.0.0.1:5173",
+    "http://217.216.94.178:3000", "http://127.0.0.1:3000"
 ]
 if settings.ALLOWED_ORIGINS:
     _cors_origins = list(set(_cors_origins + settings.ALLOWED_ORIGINS))

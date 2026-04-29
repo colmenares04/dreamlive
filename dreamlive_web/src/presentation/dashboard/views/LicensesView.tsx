@@ -175,9 +175,14 @@ function ManualDateModal({ license, open, onClose, onSave }: { license: License 
   }, [license]);
 
   const handleSave = async () => {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) {
+      alert("La fecha seleccionada no es válida.");
+      return;
+    }
     setLoading(true);
     try {
-      await onSave(new Date(date).toISOString());
+      await onSave(d.toISOString());
       onClose();
     } finally {
       setLoading(false);

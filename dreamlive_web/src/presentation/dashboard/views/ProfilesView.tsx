@@ -80,7 +80,10 @@ function UserFormModal({
         success('Usuario creado correctamente.');
       }
       onSaved(); onClose();
-    } catch { error('Error al guardar el usuario.'); }
+    } catch (err: any) { 
+      const msg = err.response?.data?.detail || 'Error al guardar el usuario.';
+      error(msg); 
+    }
     finally { setSaving(false); }
   };
 
@@ -196,6 +199,16 @@ export function ProfilesView() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleDelete = async (user: ProfileUser) => {
+    if (!window.confirm(`¿Estás seguro de eliminar a ${user.username}? Esta acción es irreversible.`)) return;
+    try {
+      await UsersAdapter.remove(user.id);
+      load();
+    } catch {
+      error('Error al eliminar el usuario.');
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in p-2">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -285,9 +298,23 @@ export function ProfilesView() {
                   </td>
                   {(myRole === 'superuser' || myRole === 'agency_admin') && u.role !== 'superuser' && (
                     <td className="px-6 py-4 text-right">
-                      <Button size="sm" variant="outline" onClick={() => { setSelected(u); setShowForm(true); }} className="!rounded-xl border-border hover:bg-card">
-                        <i className="fas fa-pen mr-2 text-[10px]" /> Gestionar
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => { setSelected(u); setShowForm(true); }} className="!rounded-xl border-border hover:bg-card">
+                          <i className="fas fa-pen mr-2 text-[10px]" /> Gestionar
+                        </Button>
+                        
+                        {/* 
+                          RESTRICTIONS:
+                          1. Cannot delete yourself.
+                          2. Agency Admins can ONLY delete Agents (not other admins).
+                          3. Superusers can delete anyone (except themselves).
+                        */}
+                        {u.id !== currentUser?.id && (myRole === 'superuser' || (myRole === 'agency_admin' && u.role === 'agent')) && (
+                          <Button size="sm" variant="danger" onClick={() => handleDelete(u)} className="!rounded-xl shadow-lg shadow-rose-500/10">
+                            <i className="fas fa-trash text-[10px]" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

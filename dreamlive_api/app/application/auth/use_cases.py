@@ -175,7 +175,7 @@ class CreateUserUseCase:
         user = User(
             id=None,
             email=data.email,
-            username=data.username,
+            username=data.full_name or data.username,
             role=UserRole(data.role),
             agency_id=data.agency_id,
             password_hash=hashed_password,

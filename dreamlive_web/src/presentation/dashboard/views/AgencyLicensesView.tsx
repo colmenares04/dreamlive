@@ -7,7 +7,7 @@
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAdminData } from '../../admin/hooks/useAdminData';
-import { useNotifications } from '../../../contexts';
+import { useNotifications, useAuth } from '../../../contexts';
 import { PageHeader, Badge, DataTable, Button } from '../../shared';
 import clsx from 'clsx';
 import type { License } from '../../../core/entities';
@@ -36,6 +36,7 @@ export function AgencyLicensesView() {
     licenses, loadingDeps, metrics, agencies, 
     loadDeps, loadMetrics 
   } = useAdminData();
+  const { role } = useAuth();
   const { success } = useNotifications();
 
   const [tab, setTab] = useState<TabFilter>('all');
@@ -150,18 +151,20 @@ export function AgencyLicensesView() {
         subtitle="Supervisa el rendimiento en tiempo real y métricas de producción de cualquier agencia."
         actions={
           <div className="flex items-center gap-3">
-            <div className="relative group">
-              <i className="fas fa-building absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 text-xs" />
-              <select 
-                value={selectedAgencyId} 
-                onChange={e => setSelectedAgencyId(e.target.value)} 
-                className="pl-11 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
-              >
-                <option value="">TODAS LAS AGENCIAS</option>
-                {agencies.map(a => <option key={a.id} value={a.id}>{a.name.toUpperCase()}</option>)}
-              </select>
-              <i className="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none" />
-            </div>
+            {role === 'superuser' && (
+              <div className="relative group">
+                <i className="fas fa-building absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 text-xs" />
+                <select 
+                  value={selectedAgencyId} 
+                  onChange={e => setSelectedAgencyId(e.target.value)} 
+                  className="pl-11 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
+                >
+                  <option value="">TODAS LAS AGENCIAS</option>
+                  {agencies.map(a => <option key={a.id} value={a.id}>{a.name.toUpperCase()}</option>)}
+                </select>
+                <i className="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none" />
+              </div>
+            )}
             <Button variant="outline" size="sm" className="!rounded-2xl h-[44px] w-[44px] !p-0" onClick={() => { loadDeps(selectedAgencyId); loadMetrics(selectedAgencyId); }}>
                <i className="fas fa-sync-alt" />
             </Button>

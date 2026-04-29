@@ -251,6 +251,11 @@ class TicketRepository(ITicketRepository):
         )
         return self._to_domain(resp.data[0])
 
+    async def delete(self, ticket_id: str) -> None:
+        await asyncio.to_thread(
+            lambda: self._db.table("tickets").delete().eq("id", ticket_id).execute()
+        )
+
     async def get_avg_resolution_time(self) -> float:
         def _query():
             return self._db.table("tickets").select("created_at, closed_at")\

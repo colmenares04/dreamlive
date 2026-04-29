@@ -15,11 +15,11 @@ logger = logging.getLogger("dreamlive.socket")
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins=settings.ALLOWED_ORIGINS + [
-        "http://localhost",
+        "http://217.216.94.178",
         "http://127.0.0.1",
-        "http://localhost:5173", 
+        "http://217.216.94.178:5173", 
         "http://127.0.0.1:5173",
-        "http://localhost:8000",
+        "http://217.216.94.178:8000",
         "http://127.0.0.1:8000"
     ],
     logger=True,

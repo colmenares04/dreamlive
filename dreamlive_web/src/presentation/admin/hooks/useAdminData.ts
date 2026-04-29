@@ -8,7 +8,7 @@ import {
   OverviewAdapter, LicenseAdapter, AgencyAdapter,
   VersionAdapter, LeadAdapter,
 } from '../../../services';
-import { useNotifications } from '../../../contexts';
+import { useNotifications, useAuth } from '../../../contexts';
 import { DataCache } from '../../../infrastructure/cache/dataCache';
 import type { AdminOverview, License, Agency, AppVersion } from '../../../core/entities';
 
@@ -19,6 +19,7 @@ const CACHE_VERSIONS = 'admin:versions';
 
 export function useAdminData() {
   const { success, error: showError, confirm } = useNotifications();
+  const { user, role } = useAuth();
 
   const [overview, setOverview]     = useState<AdminOverview | null>(() => DataCache.get(CACHE_OVERVIEW));
   const [licenses, setLicenses]     = useState<License[]>(() => DataCache.get(CACHE_LICENSES) ?? []);
@@ -32,6 +33,11 @@ export function useAdminData() {
 
   // ── Overview ──────────────────────────────────────────────────────────────
   const loadOverview = useCallback(async (force = false, rangeDays = days) => {
+    if (role !== 'superuser') {
+      setLoadingOverview(false);
+      return;
+    }
+    
     if (!force) {
       const cached = DataCache.get<AdminOverview>(`${CACHE_OVERVIEW}:${rangeDays}`);
       if (cached) { setOverview(cached); setLoadingOverview(false); return; }
@@ -46,19 +52,22 @@ export function useAdminData() {
     } finally {
       setLoadingOverview(false);
     }
-  }, [showError, days]);
+  }, [showError, days, role]);
 
   // ── Metrics ──────────────────────────────────────────────────────────────
   const loadMetrics = useCallback(async (agencyId?: string) => {
+    // If not superuser, force their agency
+    const effectiveAgencyId = role === 'superuser' ? agencyId : (user?.agency_id || undefined);
+    
     try {
-      const data = await LicenseAdapter.getMetrics(agencyId);
+      const data = await LicenseAdapter.getMetrics(effectiveAgencyId);
       setMetrics(data);
     } catch (err) {
       console.warn("Failed to load license metrics", err);
-      showError('Error al cargar métricas de licencias (500).');
-      setMetrics({}); // Reset to empty on error to avoid stale data
+      showError('Error al cargar métricas de licencias.');
+      setMetrics({}); 
     }
-  }, [showError]);
+  }, [showError, role, user?.agency_id]);
 
   // Polling para "Pulso del Sistema" (cada 30s)
   useEffect(() => {
@@ -71,34 +80,48 @@ export function useAdminData() {
 
   // ── Dependencias (licencias / agencias / versiones) ───────────────────────
   const loadDeps = useCallback(async (force = false, agencyId?: string) => {
+    const effectiveAgencyId = role === 'superuser' ? agencyId : (user?.agency_id || undefined);
+
     if (!force) {
-      const cl = DataCache.get<License[]>(`${CACHE_LICENSES}:${agencyId || 'all'}`);
+      const cl = DataCache.get<License[]>(`${CACHE_LICENSES}:${effectiveAgencyId || 'all'}`);
       const ca = DataCache.get<Agency[]>(CACHE_AGENCIES);
       const cv = DataCache.get<AppVersion[]>(CACHE_VERSIONS);
-      if (cl && ca && cv) {
-        setLicenses(cl); setAgencies(ca); setVersions(cv);
+      if (cl && ca && (role !== 'superuser' || cv)) {
+        setLicenses(cl); setAgencies(ca); 
+        if (cv) setVersions(cv);
         setLoadingDeps(false); return;
       }
     }
     setLoadingDeps(true);
     try {
-      const [l, a, v] = await Promise.all([
-        LicenseAdapter.list({ agency_id: agencyId }),
+      const tasks: any[] = [
+        LicenseAdapter.list({ agency_id: effectiveAgencyId }),
         AgencyAdapter.list(),
-        VersionAdapter.list(),
-      ]);
-      DataCache.set(`${CACHE_LICENSES}:${agencyId || 'all'}`, l, 120_000);
+      ];
+      
+      // Only superusers need versions
+      if (role === 'superuser') {
+        tasks.push(VersionAdapter.list());
+      }
+
+      const results = await Promise.all(tasks);
+      const l = results[0];
+      const a = results[1];
+      const v = role === 'superuser' ? results[2] : [];
+
+      DataCache.set(`${CACHE_LICENSES}:${effectiveAgencyId || 'all'}`, l, 120_000);
       DataCache.set(CACHE_AGENCIES, a, 120_000);
-      DataCache.set(CACHE_VERSIONS, v, 120_000);
+      if (role === 'superuser') DataCache.set(CACHE_VERSIONS, v, 120_000);
+      
       setLicenses(l); setAgencies(a); setVersions(v);
     } catch (err) {
       console.error('Error loading administrative dependencies:', err);
-      showError('Error de servidor (500) al cargar licencias/agencias.');
-      setLicenses([]); // Avoid infinite loading by crashing view
+      showError('Error al cargar dependencias (licencias/agencias).');
+      setLicenses([]); 
     } finally {
       setLoadingDeps(false);
     }
-  }, [showError]);
+  }, [showError, role, user?.agency_id]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const createLicense = useCallback(async (payload: {
@@ -256,10 +279,12 @@ export function useAdminData() {
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    loadOverview();
-    loadDeps();
-    loadMetrics();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (user?.id) {
+      loadOverview();
+      loadDeps();
+      loadMetrics();
+    }
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Merge metrics into licenses for the view
   const licensesWithMetrics = licenses.map(l => ({

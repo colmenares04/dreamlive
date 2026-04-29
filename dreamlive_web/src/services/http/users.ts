@@ -19,4 +19,8 @@ export class UsersAdapter {
     const { data } = await http.post<ProfileUser>('/users/', payload);
     return data;
   }
+
+  static async remove(userId: string): Promise<void> {
+    await http.delete(`/users/${userId}`);
+  }
 }
