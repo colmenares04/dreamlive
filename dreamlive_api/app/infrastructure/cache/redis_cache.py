@@ -3,10 +3,11 @@ import logging
 from typing import Any, Optional
 import redis.asyncio as redis
 from app.config import settings
+from app.core.ports.cache import ICacheService
 
 logger = logging.getLogger("dreamlive.cache")
 
-class RedisCacheService:
+class RedisCacheService(ICacheService):
     """
     Servicio de caché basado en Redis para acelerar consultas pesadas
     y reducir la carga a la base de datos principal.
@@ -32,7 +33,7 @@ class RedisCacheService:
             logger.warning(f"Error recuperando llave {key} de Redis: {e}")
         return None
 
-    async def set(self, key: str, value: Any, ttl_seconds: int = 60) -> bool:
+    async def set(self, key: str, value: Any, ttl_seconds: Optional[int] = 60) -> None:
         if not self._redis: return False
         try:
             await self._redis.set(

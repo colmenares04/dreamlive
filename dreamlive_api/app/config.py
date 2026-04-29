@@ -3,8 +3,8 @@ DreamLive – Configuración central de la aplicación.
 Carga variables de entorno con validación Pydantic.
 """
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
-from typing import List
+from pydantic import field_validator, BeforeValidator
+from typing import List, Union, Annotated, Any
 import secrets
 
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    ALLOWED_ORIGINS: List[str] = [
+    ALLOWED_ORIGINS: Union[str, List[str]] = [
         "http://217.216.94.178",
         "http://127.0.0.1",
         "http://217.216.94.178:5173",
@@ -65,8 +65,15 @@ class Settings(BaseSettings):
     @field_validator("SUPABASE_URL", mode="before")
     @classmethod
     def validate_supabase_url(cls, v: str) -> str:
-        if not v.startswith("http"):
+        if not v or not v.startswith("http"):
             raise ValueError("URL de Supabase inválida.")
+        return v
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def validate_allowed_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            return [item.strip() for item in v.split(",") if item.strip()]
         return v
 
     class Config:

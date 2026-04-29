@@ -84,6 +84,16 @@ class ILicenseRepository(ABC):
     @abstractmethod
     async def count_active_sessions(self, agency_id: Optional[str] = None) -> int: ...
 
+    @abstractmethod
+    async def upsert_session(
+        self,
+        license_id: str,
+        device_id: str,
+        browser_name: Optional[str] = None,
+        os_name: Optional[str] = None,
+        ip_address: Optional[str] = None,
+    ) -> bool: ...
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LEAD PORT
@@ -94,6 +104,9 @@ class ILeadRepository(ABC):
 
     @abstractmethod
     async def create(self, lead: Lead) -> Lead: ...
+
+    @abstractmethod
+    async def get_by_username(self, license_id: str, username: str) -> Optional[Lead]: ...
 
     @abstractmethod
     async def update(self, lead: Lead) -> Lead: ...

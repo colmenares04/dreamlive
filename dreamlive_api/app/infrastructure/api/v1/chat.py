@@ -4,9 +4,10 @@ from datetime import datetime
 import json
 
 from app.adapters.db.session import get_db
-from app.adapters.db.repositories.all_repos import TicketMessageRepository, UserRepository
+from app.adapters.db.repositories.ticket_repository import TicketMessageRepository
+from app.adapters.db.repositories.user_repository import UserRepository
 from app.adapters.security.handlers import JWTHandler
-from app.core.entities.models import TicketMessage
+from app.core.entities.ticket import TicketMessage
 from .socket_manager import socket_manager
 
 router = APIRouter(prefix="/chat", tags=["Chat"])

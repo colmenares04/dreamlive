@@ -1,19 +1,22 @@
 """
-Rutas relacionadas con Leads (extraídas de routes.py).
+Rutas relacionadas con Leads — Controladores "tontos".
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
-from supabase import Client
 
-from app.adapters.db.session import get_db
-from app.adapters.db.repositories.all_repos import LeadRepository, LicenseRepository
 from app.application.leads.use_cases import (
-    ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase
+    ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase,
 )
 from app.core.entities.user import User
 from app.infrastructure.api.deps import (
-    get_current_user, require_agency_group, require_owner_or_admin
+    get_current_user, require_agency_group, require_owner_or_admin,
+)
+from app.infrastructure.api.providers import (
+    get_list_leads_use_case,
+    get_purge_leads_use_case,
+    get_save_lead_use_case,
+    get_update_lead_status_use_case,
 )
 
 
@@ -30,15 +33,13 @@ async def list_leads(
     min_viewers: Optional[int] = None,
     min_likes: Optional[int] = None,
     current_user: User = Depends(require_agency_group),
-    db: Client = Depends(get_db),
+    use_case: ListLeadsUseCase = Depends(get_list_leads_use_case),
 ):
-    repo = LeadRepository(db)
-    license_repo = LicenseRepository(db)
-    leads, total = await ListLeadsUseCase(repo, license_repo).execute(
+    leads, total = await use_case.execute(
         agency_id=str(current_user.agency_id),
-        license_id=license_id, page=page, page_size=page_size, 
-        status=status_filter, search=search, 
-        min_viewers=min_viewers, min_likes=min_likes
+        license_id=license_id, page=page, page_size=page_size,
+        status=status_filter, search=search,
+        min_viewers=min_viewers, min_likes=min_likes,
     )
     return {
         "total": total, "page": page, "page_size": page_size,
@@ -51,7 +52,7 @@ async def list_leads(
                 "viewer_count": l.viewer_count,
                 "likes_count": l.likes_count,
                 "source": l.source,
-                "created_at": l.captured_at.isoformat() if getattr(l, 'captured_at', None) else None,
+                "created_at": l.captured_at.isoformat() if getattr(l, "captured_at", None) else None,
             } for l in leads
         ],
     }
@@ -60,12 +61,11 @@ async def list_leads(
 @leads_router.post("/purge")
 async def purge_leads(
     current_user: User = Depends(require_owner_or_admin),
-    db: Client = Depends(get_db),
+    use_case: PurgeLeadsUseCase = Depends(get_purge_leads_use_case),
 ):
-    repo = LeadRepository(db)
     agency_id = None if current_user.role.value == "superuser" else str(current_user.agency_id)
-    result = await PurgeLeadsUseCase(repo).execute(agency_id=agency_id)
-    return result
+    return await use_case.execute(agency_id=agency_id)
+
 
 class SaveLeadBody(BaseModel):
     license_id: str
@@ -78,30 +78,34 @@ class SaveLeadBody(BaseModel):
 @leads_router.post("/")
 async def save_lead(
     body: SaveLeadBody,
-    db: Client = Depends(get_db)
+    use_case: SaveLeadUseCase = Depends(get_save_lead_use_case),
 ):
-    repo = LeadRepository(db)
-    lead = await SaveLeadUseCase(repo).execute(
+    lead = await use_case.execute(
         license_id=body.license_id,
         username=body.username,
         viewer_count=body.viewer_count,
         likes_count=body.likes_count,
-        source=body.source
+        source=body.source,
     )
     return {"status": "ok", "id": lead.id}
 
 
 class UpdateLeadStatusBody(BaseModel):
     license_id: str
+    username: str
     status: str
 
 
-@leads_router.patch("/{username}/status")
+@leads_router.patch("/status", dependencies=[Depends(require_agency_group)])
 async def update_lead_status(
-    username: str,
     body: UpdateLeadStatusBody,
-    db: Client = Depends(get_db)
+    use_case: UpdateLeadStatusUseCase = Depends(get_update_lead_status_use_case),
 ):
-    # Nota: Este requiere que el repo sea capaz de filtrar por username y license_id.
-    # Por ahora devolvemos ok para permitir que la extensión fluya.
+    success = await use_case.execute(
+        license_id=body.license_id,
+        username=body.username,
+        new_status=body.status
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Lead no encontrado")
     return {"status": "ok"}

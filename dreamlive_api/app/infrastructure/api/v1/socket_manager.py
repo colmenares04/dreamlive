@@ -4,8 +4,9 @@ from datetime import datetime
 from typing import Any, Dict, List
 from app.adapters.security.handlers import JWTHandler
 from app.adapters.db.session import get_supabase
-from app.adapters.db.repositories.all_repos import TicketMessageRepository, LicenseRepository
-from app.core.entities.models import TicketMessage
+from app.adapters.db.repositories.ticket_repository import TicketMessageRepository
+from app.adapters.db.repositories.license_repository import LicenseRepository
+from app.core.entities.ticket import TicketMessage
 
 from app.config import settings
 

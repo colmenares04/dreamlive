@@ -1,23 +1,20 @@
 """
-Casos de uso: Leads y Vista General del sistema (Supabase adapters).
+Casos de uso: Leads y Vista General del sistema (Unit of Work).
 """
 from typing import List, Optional, Tuple, Dict, Any
+import asyncio
 
-from app.core.entities.models import Lead, LeadStatus
-from app.core.ports.repositories import (
-    ILeadRepository, ILicenseRepository, IAgencyRepository,
-    ITicketRepository, IAuditLogRepository
-)
-from app.infrastructure.cache.redis_cache import cache_service
+from app.core.entities.lead import Lead, LeadStatus
+from app.core.ports.unit_of_work import IUnitOfWork
+from app.core.ports.cache import ICacheService
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LEADS
 # ═══════════════════════════════════════════════════════════════════════════════
 class ListLeadsUseCase:
-    def __init__(self, lead_repo: ILeadRepository, license_repo: ILicenseRepository):
-        self._repo = lead_repo
-        self._license_repo = license_repo
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
 
     async def execute(
         self,
@@ -37,13 +34,13 @@ class ListLeadsUseCase:
             target_licenses = [license_id]
         else:
             # Fetch all licenses for agency
-            licenses = await self._license_repo.list_all(agency_id=agency_id)
+            licenses = await self._uow.licenses.list_all(agency_id=agency_id)
             target_licenses = [str(l.id) for l in licenses]
             
         if not target_licenses:
             return [], 0
             
-        return await self._repo.list_paginated(
+        return await self._uow.leads.list_paginated(
             license_ids=target_licenses,
             page=page,
             page_size=page_size,
@@ -57,62 +54,38 @@ class ListLeadsUseCase:
 class PurgeLeadsUseCase:
     """Elimina leads en estado 'recopilado' sin procesar."""
 
-    def __init__(self, lead_repo: ILeadRepository):
-        self._repo = lead_repo
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
 
     async def execute(self, agency_id: Optional[str] = None) -> Dict[str, int]:
-        # Para purgar requerimos license_id en Supabase o logica batch.
         return {"deleted": 0}
-
-
-class ExportLeadsUseCase:
-    """Retorna todos los leads para exportación."""
-
-    def __init__(self, lead_repo: ILeadRepository):
-        self._repo = lead_repo
-
-    async def execute(self, agency_id: str) -> List[Lead]:
-        return []
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # OVERVIEW / DASHBOARD
 # ═══════════════════════════════════════════════════════════════════════════════
 class GetAdminOverviewUseCase:
-    def __init__(
-        self,
-        lead_repo: ILeadRepository,
-        license_repo: ILicenseRepository,
-        agency_repo: IAgencyRepository,
-        ticket_repo: ITicketRepository,
-        audit_repo: IAuditLogRepository
-    ):
-        self._leads = lead_repo
-        self._licenses = license_repo
-        self._agencies = agency_repo
-        self._tickets = ticket_repo
-        self._audit = audit_repo
+    def __init__(self, uow: IUnitOfWork, cache_service: ICacheService):
+        self._uow = uow
+        self._cache = cache_service
 
     async def execute(self, days: int = 7) -> Dict[str, Any]:
-        # --- Redis Cache Layer ---
         cache_key = f"admin:overview:{days}"
-        cached = await cache_service.get(cache_key)
+        cached = await self._cache.get(cache_key)
         if cached: return cached
 
-        # Perform highly optimized parallel fetching
-        import asyncio
         tasks = [
-            self._licenses.list_all(),
-            self._agencies.list_all(),
-            self._licenses.count_active_sessions(),
-            self._tickets.get_avg_resolution_time(),
-            self._audit.get_recent_activity(limit=10)
+            self._uow.licenses.list_all(),
+            self._uow.agencies.list_all(),
+            self._uow.licenses.count_active_sessions(),
+            self._uow.tickets.get_avg_resolution_time(),
+            self._uow.audit_logs.get_recent_activity(limit=10)
         ]
         licenses, agencies, active_sessions, avg_sla, recent_audit = await asyncio.gather(*tasks)
 
         license_ids = [str(l.id) for l in licenses]
-        counts = await self._leads.count_by_status_bulk(license_ids)
-        trends = await self._leads.get_daily_stats_bulk(license_ids, days)
+        counts = await self._uow.leads.count_by_status_bulk(license_ids)
+        trends = await self._uow.leads.get_daily_stats_bulk(license_ids, days)
 
         result = {
             "total_licenses":    len(licenses),
@@ -130,27 +103,21 @@ class GetAdminOverviewUseCase:
             } for a in recent_audit]
         }
 
-        # Save to cache for 60s
-        await cache_service.set(cache_key, result, ttl_seconds=60)
+        await self._cache.set(cache_key, result, ttl_seconds=60)
         return result
 
 
 class GetAgencyDashboardUseCase:
-    def __init__(
-        self,
-        lead_repo: ILeadRepository,
-        license_repo: ILicenseRepository,
-    ):
-        self._leads = lead_repo
-        self._licenses = license_repo
+    def __init__(self, uow: IUnitOfWork, cache_service: ICacheService):
+        self._uow = uow
+        self._cache = cache_service
 
     async def execute(self, agency_id: str, days: int = 7) -> Dict[str, Any]:
-        # --- Redis Cache Layer ---
         cache_key = f"agency:{agency_id}:dashboard:{days}"
-        cached = await cache_service.get(cache_key)
+        cached = await self._cache.get(cache_key)
         if cached: return cached
 
-        licenses = await self._licenses.list_all(agency_id=agency_id)
+        licenses = await self._uow.licenses.list_all(agency_id=agency_id)
         license_ids = [str(l.id) for l in licenses]
 
         if not license_ids:
@@ -160,15 +127,11 @@ class GetAgencyDashboardUseCase:
                 "trends": [], "top_keywords": []
             }
 
-        counts = await self._leads.count_by_status_bulk(license_ids)
-        trends = await self._leads.get_daily_stats_bulk(license_ids, days)
+        counts = await self._uow.leads.count_by_status_bulk(license_ids)
+        trends = await self._uow.leads.get_daily_stats_bulk(license_ids, days)
 
         contacted = counts.get("contactado", 0)
-        collected = counts.get("recopilado", 0)
-        available = counts.get("disponible", 0)
         total     = sum(counts.values())
-
-        # Conversion Rate: Contacted / (Collected + Contacted + Available)
         conversion = (contacted / total * 100) if total > 0 else 0
 
         from collections import Counter
@@ -182,22 +145,20 @@ class GetAgencyDashboardUseCase:
             "active_licenses":  sum(1 for l in licenses if l.is_active),
             "total_leads":      total,
             "contacted_total":  contacted,
-            "available_leads":  available,
-            "collected_leads":  collected,
+            "available_leads":  counts.get("disponible", 0),
+            "collected_leads":  counts.get("recopilado", 0),
             "conversion_rate":  round(conversion, 1),
             "trends":           trends,
             "top_keywords":     [w for w, _ in word_counter.most_common(5)],
         }
 
-        # Save to cache for 60s
-        await cache_service.set(cache_key, result, ttl_seconds=60)
+        await self._cache.set(cache_key, result, ttl_seconds=60)
         return result
 
-class SaveLeadUseCase:
-    """Guarda o actualiza un lead capturado."""
 
-    def __init__(self, lead_repo: ILeadRepository):
-        self._repo = lead_repo
+class SaveLeadUseCase:
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
 
     async def execute(
         self,
@@ -207,10 +168,6 @@ class SaveLeadUseCase:
         likes_count: int = 0,
         source: str = "unknown"
     ) -> Lead:
-        # Nota: Por ahora usamos create, pero idealmente sería un upsert
-        # Para simplificar con el repositorio actual, intentamos crear.
-        # Si ya existe, podríamos actualizarlo, pero el repo actual no tiene get_by_username_and_license.
-        # Vamos a asumir que el repo manejará la lógica de inserción básica por ahora.
         lead = Lead(
             id=None,
             license_id=license_id,
@@ -220,14 +177,15 @@ class SaveLeadUseCase:
             likes_count=likes_count,
             source=source
         )
-        return await self._repo.create(lead)
+        async with self._uow:
+            created = await self._uow.leads.create(lead)
+            await self._uow.commit()
+            return created
 
 
 class UpdateLeadStatusUseCase:
-    """Actualiza el estado de un lead."""
-
-    def __init__(self, lead_repo: ILeadRepository):
-        self._repo = lead_repo
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
 
     async def execute(
         self,
@@ -235,10 +193,35 @@ class UpdateLeadStatusUseCase:
         username: str,
         new_status: str
     ) -> bool:
-        # Buscamos el lead primero (necesitaríamos un método en el repo)
-        # Como el repo no lo tiene, vamos a delegar esto a una mejora del repo o usar list_paginated para buscarlo
-        # Pero lo más limpio es añadir get_by_username a ILeadRepository.
-        
-        # Por ahora, implementemos la lógica asumiendo que el repo puede filtrar por username
-        # (Esto requerirá cambios en all_repos.py)
-        pass
+        async with self._uow:
+            lead = await self._uow.leads.get_by_username(license_id, username)
+            if not lead:
+                return False
+            
+            lead.status = LeadStatus(new_status)
+            await self._uow.leads.update(lead)
+            await self._uow.commit()
+            return True
+
+
+class GetLicensePerformanceUseCase:
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
+
+    async def execute(self, agency_id: Optional[str] = None) -> dict:
+        licenses = await self._uow.licenses.list_all(agency_id=agency_id) if agency_id else await self._uow.licenses.list_all()
+        license_ids = [str(l.id) for l in licenses]
+        if not license_ids: return {}
+
+        stats, pings = await asyncio.gather(
+            self._uow.leads.get_license_performance_stats(license_ids),
+            self._uow.licenses.get_last_pings(license_ids)
+        )
+
+        return {
+            lid: {
+                "today": stats.get(lid, {}).get("today", 0),
+                "total": stats.get(lid, {}).get("total", 0),
+                "last_ping": pings.get(lid),
+            } for lid in license_ids
+        }

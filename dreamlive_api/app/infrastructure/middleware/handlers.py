@@ -1,13 +1,15 @@
 """
 Middleware de la aplicación:
   - RequestLoggingMiddleware: Logea método, ruta, status y tiempo de respuesta.
-  - GlobalExceptionHandler: Captura excepciones no manejadas y retorna JSON limpio.
+  - GlobalExceptionHandler: Captura excepciones de dominio y retorna JSON RFC 7807.
 """
 import time
 import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.core.domain.exceptions import DomainException
 
 logger = logging.getLogger("dreamlive")
 logging.basicConfig(
@@ -51,18 +53,13 @@ class RequestLoggingMiddleware:
 def register_exception_handlers(app: FastAPI) -> None:
     """Registra handlers globales de excepciones en la app FastAPI."""
 
-    @app.exception_handler(ValueError)
-    async def value_error_handler(request: Request, exc: ValueError):
+    @app.exception_handler(DomainException)
+    async def domain_exception_handler(request: Request, exc: DomainException):
+        """Mapea excepciones de dominio tipadas a respuestas HTTP usando el status_code
+        y message que cada excepción define internamente."""
         return JSONResponse(
-            status_code=400,
-            content={"detail": str(exc)},
-        )
-
-    @app.exception_handler(PermissionError)
-    async def permission_error_handler(request: Request, exc: PermissionError):
-        return JSONResponse(
-            status_code=403,
-            content={"detail": str(exc)},
+            status_code=exc.status_code,
+            content={"detail": exc.message},
         )
 
     @app.exception_handler(Exception)
@@ -70,9 +67,6 @@ def register_exception_handlers(app: FastAPI) -> None:
         import traceback
         stack = traceback.format_exc()
         logger.error("Unhandled exception on %s: %s\n%s", request.url.path, exc, stack)
-        
-        # NOTE: Deshabilitado el logueo a DB en el handler para evitar fallos en cascada.
-        # Los errores críticos ya se registran en los logs del servidor (Uvicorn).
 
         return JSONResponse(
             status_code=500,

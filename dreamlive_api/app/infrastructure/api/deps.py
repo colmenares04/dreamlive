@@ -1,17 +1,24 @@
 """
-Dependencias de FastAPI, refactorizadas para cliente sincrónico Supabase.
+Dependencias de FastAPI para autenticación y autorización.
+
+Usa ITokenService (puerto) para decodificar tokens, no el adaptador directamente.
 """
-from typing import Any
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import Client
-
 from app.adapters.db.session import get_db
-from app.adapters.db.repositories.all_repos import AgencyRepository, UserRepository
-from app.adapters.security.handlers import JWTHandler
+from app.core.ports.unit_of_work import IUnitOfWork
+from app.adapters.db.supabase_uow import SupabaseUnitOfWork
+from app.core.ports.security import ITokenService
 from app.core.entities.user import User, UserRole, UserStatus
 
 bearer_scheme = HTTPBearer()
+
+
+def _get_token_service() -> ITokenService:
+    """Obtiene el singleton del servicio de tokens."""
+    from app.infrastructure.api.providers import get_token_service
+    return get_token_service()
 
 
 def _decode_token_or_401(credentials: HTTPAuthorizationCredentials) -> dict:
@@ -22,13 +29,19 @@ def _decode_token_or_401(credentials: HTTPAuthorizationCredentials) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        return JWTHandler.decode_token(credentials.credentials)
-    except ValueError:
+        token_service = _get_token_service()
+        return token_service.decode_token(credentials.credentials)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido o expirado.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def get_uow(db: Client = Depends(get_db)) -> IUnitOfWork:
+    """Provee una instancia compartida del Unit of Work por request."""
+    return SupabaseUnitOfWork(db)
 
 
 async def get_current_agency(
@@ -71,11 +84,11 @@ async def get_current_user(
 
     user_type = payload.get("user_type", "agency")
     raw_role = payload.get("role", "agent" if user_type == "user" else "agency_admin")
-    
+
     # Normalización de roles antiguos (owner -> agency_admin)
     if raw_role == "owner":
         raw_role = "agency_admin"
-        
+
     try:
         user_role = UserRole(raw_role)
     except ValueError:
@@ -113,7 +126,7 @@ async def get_current_user(
         id=user.id,
         email=user.email or "",
         username=user.username,
-        role=user_role, # Usamos el rol normalizado
+        role=user_role,  # Usamos el rol normalizado
         agency_id=user.agency_id,
         status=user.status,
     )

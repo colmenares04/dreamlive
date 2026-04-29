@@ -1,19 +1,21 @@
 """
-Rutas relacionadas con Agencias (extraídas de routes.py).
+Rutas relacionadas con Agencias — Controladores "tontos".
 """
-from app.infrastructure.api.deps import require_agency_group
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from supabase import Client
 
-from app.adapters.db.session import get_db
-from app.adapters.db.repositories.all_repos import AgencyRepository, LicenseRepository, LeadRepository, UserRepository
 from app.application.licenses.use_cases import (
-    CreateAgencyUseCase, ListAgenciesUseCase,
-    GetAgencyStatsUseCase, DeleteAgencyUseCase,
+    ListAgenciesUseCase, GetAgencyStatsUseCase, DeleteAgencyUseCase,
+    GetAgencyPermissionsUseCase, UpdateAgencyPermissionsUseCase,
 )
-from app.infrastructure.api.deps import require_admin, require_owner_or_admin, get_current_user
+from app.infrastructure.api.deps import require_admin, require_owner_or_admin, require_agency_group
+from app.infrastructure.api.providers import (
+    get_list_agencies_use_case,
+    get_delete_agency_use_case,
+    get_agency_stats_use_case,
+    get_get_agency_permissions_use_case,
+    get_update_agency_permissions_use_case,
+)
 from app.core.entities.user import User
 
 
@@ -27,9 +29,10 @@ class AgencyOut(BaseModel):
 
 
 @agencies_router.get("/", dependencies=[Depends(require_agency_group)])
-async def list_agencies(db: Client = Depends(get_db)):
-    repo = AgencyRepository(db)
-    agencies = await ListAgenciesUseCase(repo).execute()
+async def list_agencies(
+    use_case: ListAgenciesUseCase = Depends(get_list_agencies_use_case),
+):
+    agencies = await use_case.execute()
     return [AgencyOut(id=a.id, name=a.name, is_active=True) for a in agencies]
 
 
@@ -41,32 +44,23 @@ class ConfirmDeleteAgencyBody(BaseModel):
 async def delete_agency(
     agency_id: str,
     body: ConfirmDeleteAgencyBody,
-    current_user: User = Depends(get_current_user),
-    db: Client = Depends(get_db)
+    current_user: User = Depends(require_admin), # Ya requiere admin por dependencias
+    use_case: DeleteAgencyUseCase = Depends(get_delete_agency_use_case),
 ):
-    repo = AgencyRepository(db)
-    user_repo = UserRepository(db)
-    try:
-        await DeleteAgencyUseCase(repo, user_repo).execute(
-            agency_id=agency_id,
-            admin_user_id=str(current_user.id),
-            password=body.password
-        )
-    except ValueError as e:
-        raise HTTPException(401, detail=str(e))
+    await use_case.execute(
+        agency_id=agency_id,
+        admin_user_id=str(current_user.id),
+        password=body.password,
+    )
     return {"status": "deleted"}
 
 
 @agencies_router.get("/{agency_id}/stats", dependencies=[Depends(require_admin)])
-async def get_agency_stats(agency_id: str, db: Client = Depends(get_db)):
-    repo = AgencyRepository(db)
-    lic_repo = LicenseRepository(db)
-    lead_repo = LeadRepository(db)
-    try:
-        stats = await GetAgencyStatsUseCase(repo, lic_repo, lead_repo).execute(agency_id)
-        return stats
-    except ValueError as e:
-        raise HTTPException(404, detail=str(e))
+async def get_agency_stats(
+    agency_id: str,
+    use_case: GetAgencyStatsUseCase = Depends(get_agency_stats_use_case),
+):
+    return await use_case.execute(agency_id)
 
 
 # ─── Gestión de Permisos Dinámicos ───────────────────────────────────────────
@@ -74,37 +68,25 @@ async def get_agency_stats(agency_id: str, db: Client = Depends(get_db)):
 @agencies_router.get("/my/permissions")
 async def get_my_permissions(
     current_user: User = Depends(require_agency_group),
-    db: Client = Depends(get_db)
+    use_case: GetAgencyPermissionsUseCase = Depends(get_get_agency_permissions_use_case),
 ):
     """Retorna la configuración de permisos de la agencia actual."""
     if not current_user.agency_id:
+        from fastapi import HTTPException
         raise HTTPException(400, detail="El usuario no pertenece a una agencia")
-    
-    repo = AgencyRepository(db)
-    agency = await repo.get_by_id(str(current_user.agency_id))
-    if not agency:
-        raise HTTPException(404, detail="Agencia no encontrada")
-    
-    return agency.role_permissions
+
+    return await use_case.execute(str(current_user.agency_id))
 
 
 @agencies_router.patch("/my/permissions")
 async def update_my_permissions(
     permissions: dict,
     current_user: User = Depends(require_owner_or_admin),
-    db: Client = Depends(get_db)
+    use_case: UpdateAgencyPermissionsUseCase = Depends(get_update_agency_permissions_use_case),
 ):
     """Actualiza la configuración de permisos de la agencia actual."""
     if not current_user.agency_id:
+        from fastapi import HTTPException
         raise HTTPException(400, detail="El usuario no pertenece a una agencia")
-    
-    repo = AgencyRepository(db)
-    agency = await repo.get_by_id(str(current_user.agency_id))
-    if not agency:
-        raise HTTPException(404, detail="Agencia no encontrada")
-    
-    # Actualizar permisos
-    agency.role_permissions = permissions
-    await repo.update(agency)
-    
-    return {"status": "updated", "role_permissions": agency.role_permissions}
+
+    return await use_case.execute(str(current_user.agency_id), permissions)
