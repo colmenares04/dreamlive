@@ -6,17 +6,13 @@ from pydantic import BaseModel
 
 from app.application.licenses.use_cases import (
     ListAgenciesUseCase, GetAgencyStatsUseCase, DeleteAgencyUseCase,
-    GetAgencyPermissionsUseCase, UpdateAgencyPermissionsUseCase,
 )
-from app.infrastructure.api.deps import require_admin, require_owner_or_admin, require_agency_group
+from app.infrastructure.api.deps import require_admin, require_owner_or_admin, require_agency_group, AuthUser
 from app.infrastructure.api.providers import (
     get_list_agencies_use_case,
     get_delete_agency_use_case,
     get_agency_stats_use_case,
-    get_get_agency_permissions_use_case,
-    get_update_agency_permissions_use_case,
 )
-from app.core.entities.user import User
 
 
 agencies_router = APIRouter(prefix="/agencies", tags=["Agencies"])
@@ -44,12 +40,11 @@ class ConfirmDeleteAgencyBody(BaseModel):
 async def delete_agency(
     agency_id: str,
     body: ConfirmDeleteAgencyBody,
-    current_user: User = Depends(require_admin), # Ya requiere admin por dependencias
+    current_user: AuthUser = Depends(require_admin), # Ya requiere admin por dependencias
     use_case: DeleteAgencyUseCase = Depends(get_delete_agency_use_case),
 ):
     await use_case.execute(
         agency_id=agency_id,
-        admin_user_id=str(current_user.id),
         password=body.password,
     )
     return {"status": "deleted"}
@@ -61,32 +56,3 @@ async def get_agency_stats(
     use_case: GetAgencyStatsUseCase = Depends(get_agency_stats_use_case),
 ):
     return await use_case.execute(agency_id)
-
-
-# ─── Gestión de Permisos Dinámicos ───────────────────────────────────────────
-
-@agencies_router.get("/my/permissions")
-async def get_my_permissions(
-    current_user: User = Depends(require_agency_group),
-    use_case: GetAgencyPermissionsUseCase = Depends(get_get_agency_permissions_use_case),
-):
-    """Retorna la configuración de permisos de la agencia actual."""
-    if not current_user.agency_id:
-        from fastapi import HTTPException
-        raise HTTPException(400, detail="El usuario no pertenece a una agencia")
-
-    return await use_case.execute(str(current_user.agency_id))
-
-
-@agencies_router.patch("/my/permissions")
-async def update_my_permissions(
-    permissions: dict,
-    current_user: User = Depends(require_owner_or_admin),
-    use_case: UpdateAgencyPermissionsUseCase = Depends(get_update_agency_permissions_use_case),
-):
-    """Actualiza la configuración de permisos de la agencia actual."""
-    if not current_user.agency_id:
-        from fastapi import HTTPException
-        raise HTTPException(400, detail="El usuario no pertenece a una agencia")
-
-    return await use_case.execute(str(current_user.agency_id), permissions)

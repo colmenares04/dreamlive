@@ -3,10 +3,10 @@ import { licenseService, LicenseInfo } from "@/services/licenseService";
 import { TemplatesTab } from "./tabs/TemplatesTab";
 import { UpdatesTab } from "./tabs/UpdatesTab";
 import { LicenseTab } from "./tabs/LicenseTab";
-import { AdvancedTab } from "./tabs/AdvancedTab";
-import { FileText, RefreshCw, Key, Settings } from "lucide-react";
 
-type TabType = "templates" | "updates" | "license" | "advanced";
+import { FileText, RefreshCw, Key } from "lucide-react";
+
+type TabType = "templates" | "updates" | "license";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -57,7 +57,6 @@ export const SettingsModal = ({
     { id: "license", label: "LICENCIA", icon: Key },
     { id: "templates", label: "PLANTILLAS", icon: FileText },
     { id: "updates", label: "ACTUALIZAR", icon: RefreshCw },
-    { id: "advanced", label: "AVANZADO", icon: Settings },
   ] as const;
 
   return (
@@ -117,7 +116,6 @@ export const SettingsModal = ({
              {activeTab === "license" && (
                <LicenseTab data={licenseData} onUpdate={handleLicenseChange} />
              )}
-             {activeTab === "advanced" && <AdvancedTab />}
           </div>
         </div>
 

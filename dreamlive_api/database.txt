@@ -8,7 +8,6 @@ CREATE TABLE dreamtool.agencies (
   created_at timestamp with time zone DEFAULT now(),
   email text UNIQUE,
   password text DEFAULT 'administrador'::text,
-  role_permissions jsonb DEFAULT '{"agent": {"can_manage_team": false, "can_manage_licenses": true, "can_view_metrics": true, "can_purge_leads": false, "can_view_leads": true, "can_open_tickets": true}}'::jsonb,
   CONSTRAINT agencies_pkey PRIMARY KEY (id)
 );
 CREATE TABLE dreamtool.app_versions (
@@ -123,8 +122,10 @@ CREATE TABLE dreamtool.users (
   last_login timestamp with time zone,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  license_id uuid,
   CONSTRAINT users_pkey PRIMARY KEY (id),
-  CONSTRAINT users_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES dreamtool.agencies(id)
+  CONSTRAINT users_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES dreamtool.agencies(id),
+  CONSTRAINT users_license_id_fkey FOREIGN KEY (license_id) REFERENCES dreamtool.licenses(id)
 );
 CREATE TABLE dreamtool.version_downloads (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

@@ -17,5 +17,4 @@ class Agency:
     logo_url: Optional[str] = None
     email: Optional[str] = None
     password: Optional[str] = None
-    role_permissions: Dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)

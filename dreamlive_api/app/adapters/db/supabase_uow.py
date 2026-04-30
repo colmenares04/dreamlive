@@ -12,7 +12,6 @@ from supabase import Client
 
 from app.core.ports.unit_of_work import IUnitOfWork
 from app.adapters.db.repositories.agency_repository import AgencyRepository
-from app.adapters.db.repositories.user_repository import UserRepository
 from app.adapters.db.repositories.license_repository import LicenseRepository
 from app.adapters.db.repositories.lead_repository import LeadRepository
 from app.adapters.db.repositories.ticket_repository import TicketRepository, TicketMessageRepository
@@ -32,16 +31,15 @@ class SupabaseUnitOfWork(IUnitOfWork):
 
     def __init__(self, db: Client) -> None:
         self._db = db
-
-    async def __aenter__(self) -> "SupabaseUnitOfWork":
         self.agencies = AgencyRepository(self._db)
-        self.users = UserRepository(self._db)
         self.licenses = LicenseRepository(self._db)
         self.leads = LeadRepository(self._db)
         self.tickets = TicketRepository(self._db)
         self.ticket_messages = TicketMessageRepository(self._db)
         self.audit_logs = AuditLogRepository(self._db)
         self.app_versions = AppVersionRepository(self._db)
+
+    async def __aenter__(self) -> "SupabaseUnitOfWork":
         return self
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:

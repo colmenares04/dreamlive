@@ -12,6 +12,8 @@ from app.infrastructure.api.deps import get_uow
 from app.adapters.security.handlers import JWTHandler, PasswordHandler
 from app.infrastructure.cache.redis_cache import cache_service
 from app.core.ports.cache import ICacheService
+from app.core.ports.realtime import IRealTimeGateway
+from app.infrastructure.api.v1.socket_manager import socket_manager
 
 _token_service = JWTHandler()
 _password_hasher = PasswordHandler()
@@ -19,16 +21,14 @@ _password_hasher = PasswordHandler()
 def get_token_service(): return _token_service
 def get_password_hasher(): return _password_hasher
 def get_cache_service() -> ICacheService: return cache_service
+def get_realtime_gateway() -> IRealTimeGateway: return socket_manager
 
 
 # ── Auth Use Cases ────────────────────────────────────────────────────────────
 from app.application.auth.use_cases import (
     LoginUseCase,
-    SelectProfileUseCase,
-    CreateUserUseCase,
     RefreshTokenUseCase,
     GetProfileUseCase,
-    ListAgencyUsersUseCase,
 )
 
 # ── License & Agency Use Cases ────────────────────────────────────────────────
@@ -53,6 +53,8 @@ from app.application.licenses.use_cases import (
     DeleteVersionUseCase,
     ListVersionsUseCase,
     RegisterSessionUseCase,
+    LinkLicenseUseCase,
+    LoginExtensionUseCase,
 )
 
 # ── Lead & Overview Use Cases ─────────────────────────────────────────────────
@@ -68,16 +70,16 @@ from app.application.leads.use_cases import (
 
 # ── User, Ticket & Audit Use Cases ────────────────────────────────────────────
 from app.application.users.use_cases import (
-    ListUsersUseCase,
-    UpdateUserUseCase,
-    DeleteUserUseCase,
-    InviteUserUseCase,
     ListTicketsUseCase,
     CreateTicketUseCase,
     UpdateTicketStatusUseCase,
     DeleteTicketUseCase,
     ListAuditLogsUseCase,
     CreateAuditLogUseCase,
+)
+from app.application.tickets.use_cases import (
+    SaveChatMessageUseCase,
+    ListChatMessagesUseCase,
 )
 
 
@@ -87,20 +89,11 @@ from app.application.users.use_cases import (
 async def get_login_use_case(uow: IUnitOfWork = Depends(get_uow)) -> LoginUseCase:
     return LoginUseCase(uow=uow, token_service=_token_service)
 
-async def get_select_profile_use_case(uow: IUnitOfWork = Depends(get_uow)) -> SelectProfileUseCase:
-    return SelectProfileUseCase(uow=uow, token_service=_token_service, password_hasher=_password_hasher)
-
-async def get_create_user_use_case(uow: IUnitOfWork = Depends(get_uow)) -> CreateUserUseCase:
-    return CreateUserUseCase(uow=uow, password_hasher=_password_hasher)
-
 async def get_refresh_token_use_case(uow: IUnitOfWork = Depends(get_uow)) -> RefreshTokenUseCase:
     return RefreshTokenUseCase(uow=uow, token_service=_token_service)
 
 async def get_profile_use_case(uow: IUnitOfWork = Depends(get_uow)) -> GetProfileUseCase:
     return GetProfileUseCase(uow=uow, token_service=_token_service)
-
-async def get_list_agency_users_use_case(uow: IUnitOfWork = Depends(get_uow)) -> ListAgencyUsersUseCase:
-    return ListAgencyUsersUseCase(uow=uow)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -133,9 +126,18 @@ async def get_update_license_date_use_case(uow: IUnitOfWork = Depends(get_uow)) 
 async def get_delete_license_use_case(uow: IUnitOfWork = Depends(get_uow)) -> DeleteLicenseUseCase:
     return DeleteLicenseUseCase(uow=uow)
 
-async def get_register_session_use_case(uow: IUnitOfWork = Depends(get_uow)) -> RegisterSessionUseCase:
-    return RegisterSessionUseCase(uow=uow)
+async def get_register_session_use_case(
+    uow: IUnitOfWork = Depends(get_uow),
+    cache: ICacheService = Depends(get_cache_service),
+    gateway: IRealTimeGateway = Depends(get_realtime_gateway)
+) -> RegisterSessionUseCase:
+    return RegisterSessionUseCase(uow=uow, cache=cache, gateway=gateway)
 
+async def get_link_license_use_case(uow: IUnitOfWork = Depends(get_uow)) -> LinkLicenseUseCase:
+    return LinkLicenseUseCase(uow=uow)
+
+async def get_login_extension_use_case(uow: IUnitOfWork = Depends(get_uow)) -> LoginExtensionUseCase:
+    return LoginExtensionUseCase(uow=uow)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # AGENCY PROVIDERS
@@ -147,7 +149,7 @@ async def get_list_agencies_use_case(uow: IUnitOfWork = Depends(get_uow)) -> Lis
     return ListAgenciesUseCase(uow=uow)
 
 async def get_delete_agency_use_case(uow: IUnitOfWork = Depends(get_uow)) -> DeleteAgencyUseCase:
-    return DeleteAgencyUseCase(uow=uow, password_hasher=_password_hasher)
+    return DeleteAgencyUseCase(uow=uow)
 
 async def get_agency_stats_use_case(uow: IUnitOfWork = Depends(get_uow)) -> GetAgencyStatsUseCase:
     return GetAgencyStatsUseCase(uow=uow)
@@ -193,17 +195,7 @@ async def get_license_performance_use_case(uow: IUnitOfWork = Depends(get_uow)) 
 # ═══════════════════════════════════════════════════════════════════════════════
 # USER, TICKET & AUDIT PROVIDERS
 # ═══════════════════════════════════════════════════════════════════════════════
-async def get_list_users_use_case(uow: IUnitOfWork = Depends(get_uow)) -> ListUsersUseCase:
-    return ListUsersUseCase(uow=uow)
 
-async def get_update_user_use_case(uow: IUnitOfWork = Depends(get_uow)) -> UpdateUserUseCase:
-    return UpdateUserUseCase(uow=uow, password_hasher=_password_hasher)
-
-async def get_delete_user_use_case(uow: IUnitOfWork = Depends(get_uow)) -> DeleteUserUseCase:
-    return DeleteUserUseCase(uow=uow)
-
-async def get_invite_user_use_case(uow: IUnitOfWork = Depends(get_uow)) -> InviteUserUseCase:
-    return InviteUserUseCase(uow=uow)
 
 async def get_list_tickets_use_case(uow: IUnitOfWork = Depends(get_uow)) -> ListTicketsUseCase:
     return ListTicketsUseCase(uow=uow)
@@ -222,6 +214,16 @@ async def get_list_audit_logs_use_case(uow: IUnitOfWork = Depends(get_uow)) -> L
 
 async def get_create_audit_log_use_case(uow: IUnitOfWork = Depends(get_uow)) -> CreateAuditLogUseCase:
     return CreateAuditLogUseCase(uow=uow)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHAT PROVIDERS
+# ═══════════════════════════════════════════════════════════════════════════════
+async def get_save_chat_message_use_case(uow: IUnitOfWork = Depends(get_uow)) -> SaveChatMessageUseCase:
+    return SaveChatMessageUseCase(uow=uow)
+
+async def get_list_chat_messages_use_case(uow: IUnitOfWork = Depends(get_uow)) -> ListChatMessagesUseCase:
+    return ListChatMessagesUseCase(uow=uow)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

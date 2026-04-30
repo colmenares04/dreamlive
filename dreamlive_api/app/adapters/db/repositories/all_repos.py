@@ -12,7 +12,7 @@ from app.core.entities.models import (
     Agency, License, LicenseStatus, Lead, LeadStatus, AppVersion,
     Ticket, TicketMessage, AuditLog
 )
-from app.core.entities.user import User, UserRole, UserStatus
+, UserStatus
 from app.core.ports.repositories import (
     IUserRepository, IAgencyRepository, ILicenseRepository,
     ILeadRepository, IAppVersionRepository, ITicketRepository, 

@@ -20,6 +20,9 @@ class ILicenseRepository(ABC):
     async def get_by_key(self, key: str) -> Optional[License]: ...
 
     @abstractmethod
+    async def get_by_email(self, email: str) -> Optional[License]: ...
+
+    @abstractmethod
     async def create(self, license_: License) -> License: ...
 
     @abstractmethod
@@ -46,3 +49,14 @@ class ILicenseRepository(ABC):
 
     @abstractmethod
     async def get_last_pings(self, license_ids: List[str]) -> Dict[str, str]: ...
+
+    @abstractmethod
+    async def upsert_session(
+        self,
+        license_id: str,
+        session_id: str,
+        device_id: str,
+        browser_name: Optional[str] = None,
+        os_name: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> None: ...

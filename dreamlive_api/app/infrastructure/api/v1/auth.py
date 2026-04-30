@@ -8,25 +8,32 @@ El Exception Handler global de DomainException se encarga de los errores.
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
+from typing import Any, Dict, List, Optional
 
 from app.core.domain.exceptions import UnauthorizedAccess
-from app.infrastructure.api.deps import get_current_agency
+from app.infrastructure.api.deps import get_current_agency, AuthUser
+from app.core.ports.security import ITokenService
 from app.infrastructure.api.schemas import TokenResponse
 from app.infrastructure.api.providers import (
     get_login_use_case,
-    get_select_profile_use_case,
-    get_create_user_use_case,
     get_refresh_token_use_case,
     get_profile_use_case,
-    get_list_agency_users_use_case,
+    get_verify_license_use_case,
+    get_register_session_use_case,
+    get_link_license_use_case,
+    get_login_extension_use_case,
+    get_token_service,
 )
 from app.application.auth.use_cases import (
     LoginInput, LoginUseCase,
-    SelectProfileInput, SelectProfileUseCase,
-    CreateUserInput, CreateUserUseCase,
     RefreshTokenUseCase,
     GetProfileUseCase,
-    ListAgencyUsersUseCase,
+)
+from app.application.licenses.use_cases import (
+    VerifyLicenseUseCase,
+    RegisterSessionUseCase,
+    LinkLicenseUseCase,
+    LoginExtensionUseCase,
 )
 from app.core.entities.agency import Agency
 
@@ -41,28 +48,46 @@ class LoginRequest(BaseModel):
     password: str
     captcha_token: str | None = None
 
-
-class SelectProfileRequest(BaseModel):
-    user_id: str
-    password: str | None = None
-
-
-class CreateProfileRequest(BaseModel):
-    username: str
-    email: str
+class LinkLicenseRequest(BaseModel):
+    licenseKey: str
+    email: EmailStr
     password: str
-    role: str = "agency_admin"
+    fullName: str
+    device_id: str = "unknown"
+    browser: str | None = None
+    os: str | None = None
+
+class LoginExtensionRequest(BaseModel):
+    email: EmailStr
+    password: str
+    device_id: str = "unknown"
+    browser: str | None = None
+    os: str | None = None
+
+class LoginLicenseRequest(BaseModel):
+    licenseKey: str
+    device_id: str = "unknown"
+    browser: str | None = None
+    os: str | None = None
+
+
+class LoginLicenseResponse(BaseModel):
+    license: dict
+    hasAdminUser: bool
+    token: str
+    session_id: str
 
 
 class UserOut(BaseModel):
     """Respuesta de /me – campos que el frontend espera en el objeto User."""
     id: str | None
-    email: str | None
+    email: str
     username: str
     full_name: str
     role: str
     status: str
     agency_id: str | None
+    license_id: str | None = None
     logo_url: str | None = None
 
     class Config:
@@ -92,76 +117,132 @@ async def login(
     )
 
 
-@router.get("/agency/users")
-async def get_agency_users(
-    agency: Agency = Depends(get_current_agency),
-    use_case: ListAgencyUsersUseCase = Depends(get_list_agency_users_use_case),
-):
-    """Paso 2: Retorna los perfiles (usuarios) vinculados a la agencia autenticada."""
-    users = await use_case.execute(agency_id=str(agency.id))
-    return [
-        {
-            "id": u.id,
-            "username": u.username,
-            "email": u.email,
-            "role": u.role.value,
-            "has_password": bool(u.password_hash),
-        }
-        for u in users
-    ]
 
 
-@router.post("/agency/users", status_code=201)
-async def create_agency_user(
-    payload: CreateProfileRequest,
-    agency: Agency = Depends(get_current_agency),
-    use_case: CreateUserUseCase = Depends(get_create_user_use_case),
+
+@router.post("/login-license", response_model=LoginLicenseResponse)
+async def login_license(
+    payload: LoginLicenseRequest,
+    verify_use_case: VerifyLicenseUseCase = Depends(get_verify_license_use_case),
+    register_session_use_case: RegisterSessionUseCase = Depends(get_register_session_use_case),
+    token_service: ITokenService = Depends(get_token_service),
 ):
-    """Paso 2 Opcional: Crear un nuevo perfil en la agencia."""
-    result = await use_case.execute(
-        CreateUserInput(
-            email=payload.email,
-            username=payload.username,
-            password=payload.password,
-            role=payload.role,
-            agency_id=str(agency.id),
-        )
+    """Autenticación por llave de licencia (SSO para Agentes)."""
+    # 1. Verificar licencia
+    lic = await verify_use_case.execute(payload.licenseKey)
+    if not lic:
+        raise UnauthorizedAccess("Licencia inválida o expirada.")
+
+    # 2. Registrar sesión y manejar límite de dispositivos
+    session_id = await register_session_use_case.execute(
+        license_id=str(lic.id),
+        device_id=payload.device_id,
+        browser_name=payload.browser,
+        os_name=payload.os
     )
-    return {
-        "id": result.user.id,
-        "username": result.user.username,
-        "email": result.user.email,
-        "role": result.user.role.value,
-        "has_password": True,
-    }
 
-
-@router.post("/users/select", response_model=TokenResponse)
-async def select_user(
-    payload: SelectProfileRequest,
-    use_case: SelectProfileUseCase = Depends(get_select_profile_use_case),
-):
-    """Paso 3: Validar el perfil seleccionado y retornar el token de usuario final."""
-    result = await use_case.execute(
-        SelectProfileInput(
-            user_id=payload.user_id,
-            password=payload.password,
-        )
+    # 3. Crear token JWT real para la licencia
+    access_token = token_service.create_access_token(
+        subject=str(lic.id),
+        role="agent",
+        agency_id=str(lic.agency_id),
+        extra={"user_type": "license"}
     )
-    return TokenResponse(
-        access_token=result.access_token,
-        refresh_token=result.refresh_token,
-        role=result.user.role.value,
-        user_id=str(result.user.id),
-        agency_id=result.user.agency_id,
+
+    # 4. Preparar respuesta
+    return LoginLicenseResponse(
+        license={
+            "id": str(lic.id),
+            "key": lic.license_key,
+            "status": "active"
+        },
+        hasAdminUser=bool(lic.email),
+        token=access_token,
+        session_id=session_id
     )
 
 
-@router.post("/register", status_code=501)
-async def register():
-    """No implementado - Creación manual en Supabase por ahora."""
-    from fastapi import HTTPException, status
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@router.post("/link-license", response_model=LoginLicenseResponse)
+async def link_license(
+    payload: LinkLicenseRequest,
+    link_use_case: LinkLicenseUseCase = Depends(get_link_license_use_case),
+    register_session_use_case: RegisterSessionUseCase = Depends(get_register_session_use_case),
+    token_service: ITokenService = Depends(get_token_service),
+):
+    """Vincula un nuevo email a una licencia vacía."""
+    lic = await link_use_case.execute(
+        license_key=payload.licenseKey,
+        email=payload.email,
+        password=payload.password,
+        full_name=payload.fullName
+    )
+    
+    session_id = await register_session_use_case.execute(
+        license_id=str(lic.id),
+        device_id=payload.device_id,
+        browser_name=payload.browser,
+        os_name=payload.os
+    )
+
+    # Crear token JWT real para la licencia vinculada
+    access_token = token_service.create_access_token(
+        subject=str(lic.id),
+        role="agent",
+        agency_id=str(lic.agency_id),
+        extra={"user_type": "license"}
+    )
+
+    return LoginLicenseResponse(
+        license={
+            "id": str(lic.id),
+            "key": lic.license_key,
+            "status": "active"
+        },
+        hasAdminUser=True,
+        token=access_token,
+        session_id=session_id
+    )
+
+
+@router.post("/login-extension", response_model=LoginLicenseResponse)
+async def login_extension(
+    payload: LoginExtensionRequest,
+    login_use_case: LoginExtensionUseCase = Depends(get_login_extension_use_case),
+    register_session_use_case: RegisterSessionUseCase = Depends(get_register_session_use_case),
+    token_service: ITokenService = Depends(get_token_service),
+):
+    """Autentica a un agente usando email/password y retorna su licencia."""
+    lic = await login_use_case.execute(
+        email=payload.email,
+        password=payload.password
+    )
+    
+    session_id = await register_session_use_case.execute(
+        license_id=str(lic.id),
+        device_id=payload.device_id,
+        browser_name=payload.browser,
+        os_name=payload.os
+    )
+
+    # Crear token JWT real para la licencia autenticada
+    access_token = token_service.create_access_token(
+        subject=str(lic.id),
+        role="agent",
+        agency_id=str(lic.agency_id),
+        extra={"user_type": "license"}
+    )
+
+    return LoginLicenseResponse(
+        license={
+            "id": str(lic.id),
+            "key": lic.license_key,
+            "status": "active"
+        },
+        hasAdminUser=True,
+        token=access_token,
+        session_id=session_id
+    )
+
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -208,12 +289,13 @@ async def get_me(
     profile = await use_case.execute(credentials.credentials)
 
     return UserOut(
-        id=profile.id,
-        email=profile.email,
+        id=str(profile.id) if profile.id else None,
+        email=profile.email or "",
         username=profile.username,
         full_name=profile.full_name,
         role=profile.role,
         status=profile.status,
-        agency_id=profile.agency_id,
-        logo_url=profile.logo_url,
+        agency_id=str(profile.agency_id) if profile.agency_id else None,
+        license_id=getattr(profile, "license_id", None),
+        logo_url=getattr(profile, "logo_url", None),
     )

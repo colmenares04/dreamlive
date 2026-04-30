@@ -3,7 +3,6 @@ DreamLive API – Punto de entrada principal.
 Registra routers, middleware CORS y crea tablas en startup.
 """
 import uvicorn
-import socketio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -106,10 +105,8 @@ app.include_router(audit_router,     prefix=PREFIX)
 for router in getattr(v1_routes, "ROUTERS", []):
     app.include_router(router, prefix=PREFIX)
 
-# ── ASGI Wrapper (The "Standard" Way) ────────────────────────────────────────
-# Envolvemos la app de FastAPI con Socket.io (Ruta estándar /socket.io)
-from app.infrastructure.api.v1.socket_manager import sio
-main_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='socket.io')
+# Native WebSockets are handled directly by the FastAPI app routers.
+# No extra ASGI wrapper needed.
 
 
 @app.get("/health")
@@ -120,7 +117,7 @@ async def health():
 if __name__ == "__main__":
     print(f"SUPABASE URL DETECTADA: {settings.SUPABASE_URL}")
     uvicorn.run(
-        "main:main_app", 
+        "main:app", 
         host=settings.HOST_IP, 
         port=settings.HOST_PORT, 
         reload=True

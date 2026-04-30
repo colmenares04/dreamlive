@@ -1,8 +1,5 @@
-"""
-Dependencias de FastAPI para autenticación y autorización.
-
-Usa ITokenService (puerto) para decodificar tokens, no el adaptador directamente.
-"""
+from enum import Enum
+from dataclasses import dataclass
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import Client
@@ -10,16 +7,29 @@ from app.adapters.db.session import get_db
 from app.core.ports.unit_of_work import IUnitOfWork
 from app.adapters.db.supabase_uow import SupabaseUnitOfWork
 from app.core.ports.security import ITokenService
-from app.core.entities.user import User, UserRole, UserStatus
+from app.adapters.db.repositories.agency_repository import AgencyRepository
+from app.adapters.db.repositories.license_repository import LicenseRepository
 
 bearer_scheme = HTTPBearer()
 
+class UserRole(str, Enum):
+    SUPERUSER = "superuser"
+    AGENCY_ADMIN = "agency_admin"
+    AGENT = "agent"
+
+@dataclass
+class AuthUser:
+    id: str
+    email: str
+    username: str
+    role: UserRole
+    agency_id: str | None = None
+    license_id: str | None = None
 
 def _get_token_service() -> ITokenService:
     """Obtiene el singleton del servicio de tokens."""
     from app.infrastructure.api.providers import get_token_service
     return get_token_service()
-
 
 def _decode_token_or_401(credentials: HTTPAuthorizationCredentials) -> dict:
     if not credentials or not getattr(credentials, "credentials", None):
@@ -38,11 +48,10 @@ def _decode_token_or_401(credentials: HTTPAuthorizationCredentials) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-
 async def get_uow(db: Client = Depends(get_db)) -> IUnitOfWork:
-    """Provee una instancia compartida del Unit of Work por request."""
-    return SupabaseUnitOfWork(db)
-
+    """Provee una instancia gestionada del Unit of Work por cada request."""
+    async with SupabaseUnitOfWork(db) as uow:
+        yield uow
 
 async def get_current_agency(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
@@ -68,12 +77,11 @@ async def get_current_agency(
 
     return agency
 
-
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Client = Depends(get_db),
-) -> User:
-    """Decodifica el JWT y retorna un usuario (agency/user) según el token."""
+) -> AuthUser:
+    """Decodifica el JWT y retorna AuthUser (Agency o License) según el token."""
     payload = _decode_token_or_401(credentials)
 
     if payload.get("type") != "access":
@@ -83,9 +91,8 @@ async def get_current_user(
         )
 
     user_type = payload.get("user_type", "agency")
-    raw_role = payload.get("role", "agent" if user_type == "user" else "agency_admin")
+    raw_role = payload.get("role", "agent" if user_type == "license" else "agency_admin")
 
-    # Normalización de roles antiguos (owner -> agency_admin)
     if raw_role == "owner":
         raw_role = "agency_admin"
 
@@ -102,35 +109,35 @@ async def get_current_user(
         if not agency:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Usuario (Agencia) no encontrado.",
+                detail="Agencia no encontrada.",
             )
 
-        return User(
-            id=agency.id,
+        return AuthUser(
+            id=agency.id or "",
             email=agency.email or "",
             username=agency.name,
             role=user_role,
             agency_id=agency.id,
-            status=UserStatus.ACTIVE,
         )
 
-    repo = UserRepository(db)
-    user = await repo.get_by_id(str(payload["sub"]))
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario no encontrado.",
+    elif user_type in ["license", "user"]:
+        license_id = str(payload["sub"])
+        repo = LicenseRepository(db)
+        lic = await repo.get_by_id(license_id)
+        if not lic:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Licencia no encontrada.",
+            )
+
+        return AuthUser(
+            id=lic.id or "",
+            email=lic.email or "",
+            username=lic.full_name or lic.recruiter_name,
+            role=user_role,
+            agency_id=lic.agency_id,
+            license_id=lic.id,
         )
-
-    return User(
-        id=user.id,
-        email=user.email or "",
-        username=user.username,
-        role=user_role,  # Usamos el rol normalizado
-        agency_id=user.agency_id,
-        status=user.status,
-    )
-
 
 def require_roles(*roles: UserRole):
     """
@@ -138,8 +145,8 @@ def require_roles(*roles: UserRole):
     al menos uno de los roles especificados.
     """
     async def _check(
-        current_user: User = Depends(get_current_user),
-    ) -> User:
+        current_user: AuthUser = Depends(get_current_user),
+    ) -> AuthUser:
         if current_user.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -150,7 +157,6 @@ def require_roles(*roles: UserRole):
             )
         return current_user
     return _check
-
 
 # Atajos semánticos
 require_admin = require_roles(UserRole.SUPERUSER)

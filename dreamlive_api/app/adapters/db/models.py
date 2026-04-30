@@ -10,7 +10,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, DeclarativeBase
 from sqlalchemy.sql import func
 
-from app.core.entities.user import UserRole, UserStatus
+
 from app.core.entities.license import LicenseStatus
 from app.core.entities.lead import LeadStatus
 from app.core.entities.app_version import Platform, VersionTag

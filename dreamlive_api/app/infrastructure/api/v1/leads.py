@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from app.application.leads.use_cases import (
     ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase,
 )
-from app.core.entities.user import User
+from app.infrastructure.api.deps import AuthUser
 from app.infrastructure.api.deps import (
     get_current_user, require_agency_group, require_owner_or_admin,
 )
@@ -32,7 +32,7 @@ async def list_leads(
     search: Optional[str] = None,
     min_viewers: Optional[int] = None,
     min_likes: Optional[int] = None,
-    current_user: User = Depends(require_agency_group),
+    current_user: AuthUser = Depends(require_agency_group),
     use_case: ListLeadsUseCase = Depends(get_list_leads_use_case),
 ):
     leads, total = await use_case.execute(
@@ -60,7 +60,7 @@ async def list_leads(
 
 @leads_router.post("/purge")
 async def purge_leads(
-    current_user: User = Depends(require_owner_or_admin),
+    current_user: AuthUser = Depends(require_owner_or_admin),
     use_case: PurgeLeadsUseCase = Depends(get_purge_leads_use_case),
 ):
     agency_id = None if current_user.role.value == "superuser" else str(current_user.agency_id)

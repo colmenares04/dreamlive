@@ -13,7 +13,7 @@ from app.application.licenses.use_cases import (
     SyncLicensePasswordsUseCase, UpdateLicenseDateUseCase,
     DeleteLicenseUseCase, RegisterSessionUseCase,
 )
-from app.core.entities.user import User, UserRole
+from app.infrastructure.api.deps import AuthUser, UserRole
 from app.infrastructure.api.deps import (
     get_current_user,
     require_admin,
@@ -68,7 +68,7 @@ class ExtendLicenseBody(BaseModel):
 async def list_licenses(
     status_filter: Optional[str] = Query(None, alias="status"),
     agency_id: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
+    current_user: AuthUser = Depends(get_current_user),
     use_case: ListLicensesUseCase = Depends(get_list_licenses_use_case),
 ):
     if current_user.role.value != "superuser":
@@ -89,7 +89,7 @@ async def list_licenses(
 @licenses_router.get("/metrics", dependencies=[Depends(require_agency_group)])
 async def get_license_metrics(
     agency_id: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: AuthUser = Depends(get_current_user),
     use_case: GetLicensePerformanceUseCase = Depends(get_license_performance_use_case),
 ):
     if current_user.role != UserRole.SUPERUSER:
@@ -142,7 +142,7 @@ class ConfigLicenseBody(BaseModel):
 async def config_license(
     license_id: str,
     body: ConfigLicenseBody,
-    current_user: User = Depends(get_current_user),
+    current_user: AuthUser = Depends(get_current_user),
     use_case: UpdateLicenseConfigUseCase = Depends(get_update_license_config_use_case),
 ):
     # El Use Case debe manejar la lógica de negocio y seguridad (o el router delega la verificación)
@@ -165,7 +165,7 @@ class SyncPasswordsBody(BaseModel):
 @licenses_router.post("/sync-passwords", dependencies=[Depends(require_agency_group)])
 async def sync_passwords(
     body: SyncPasswordsBody,
-    current_user: User = Depends(get_current_user),
+    current_user: AuthUser = Depends(get_current_user),
     use_case: SyncLicensePasswordsUseCase = Depends(get_sync_license_passwords_use_case),
 ):
     if not current_user.agency_id:

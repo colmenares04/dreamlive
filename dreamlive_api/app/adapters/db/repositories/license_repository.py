@@ -38,6 +38,7 @@ class LicenseRepository(ILicenseRepository):
             is_active=row.get("is_active", True),
             max_devices=row.get("max_devices", 1),
             expiration_date=expires_at,
+            full_name=row.get("full_name"),
             keywords=row.get("keywords", ""),
             message_templates=row.get("message_templates") or [],
             recruiter_name=row.get("recruiter_name", ""),
@@ -60,11 +61,18 @@ class LicenseRepository(ILicenseRepository):
         )
         return self._to_domain(resp.data[0]) if resp.data else None
 
+    async def get_by_email(self, email: str) -> Optional[License]:
+        resp = await asyncio.to_thread(
+            lambda: self._db.table("licenses").select("*").eq("email", email).execute()
+        )
+        return self._to_domain(resp.data[0]) if resp.data else None
+
     async def create(self, license_: License) -> License:
         data = {
             "agency_id": license_.agency_id,
             "license_key": license_.license_key,
             "email": license_.email,
+            "full_name": license_.full_name,
             "is_active": license_.is_active,
             "max_devices": license_.max_devices,
             "expiration_date": license_.expiration_date.isoformat() if license_.expiration_date else None,
@@ -85,6 +93,7 @@ class LicenseRepository(ILicenseRepository):
     async def update(self, license_: License) -> License:
         data = {
             "email": license_.email,
+            "full_name": license_.full_name,
             "is_active": license_.is_active,
             "max_devices": license_.max_devices,
             "expiration_date": license_.expiration_date.isoformat() if license_.expiration_date else None,
@@ -162,3 +171,25 @@ class LicenseRepository(ILicenseRepository):
             .execute()
         )
         return {r["license_id"]: r["last_ping"] for r in resp.data}
+
+    async def upsert_session(
+        self,
+        license_id: str,
+        session_id: str,
+        device_id: str,
+        browser_name: Optional[str] = None,
+        os_name: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> None:
+        data = {
+            "id": session_id,
+            "license_id": license_id,
+            "device_id": device_id,
+            "browser": browser_name,
+            "os": os_name,
+            "ip_address": ip_address,
+            "last_ping": datetime.utcnow().isoformat()
+        }
+        await asyncio.to_thread(
+            lambda: self._db.table("license_sessions").upsert(data, on_conflict="device_id").execute()
+        )

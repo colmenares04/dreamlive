@@ -9,12 +9,10 @@ Reglas:
 from typing import Optional, List
 
 from app.core.entities.agency import Agency
-from app.core.entities.user import User, UserRole, UserStatus
 from app.core.ports.unit_of_work import IUnitOfWork
 from app.core.ports.security import ITokenService, IPasswordHasher
 from app.core.domain.exceptions import (
     InvalidCredentials,
-    UserNotFound,
     AgencyNotFound,
     EntityAlreadyExists,
     UnauthorizedAccess,
@@ -39,40 +37,7 @@ class LoginOutput:
         self.agency = agency
 
 
-class SelectProfileInput:
-    def __init__(self, user_id: str, password: Optional[str] = None):
-        self.user_id = user_id
-        self.password = password
 
-
-class SelectProfileOutput:
-    def __init__(self, access_token: str, refresh_token: str, user: User):
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.user = user
-
-
-class CreateUserInput:
-    def __init__(
-        self,
-        email: str,
-        username: str,
-        password: str,
-        role: str,
-        full_name: str | None = None,
-        agency_id: str | None = None,
-    ):
-        self.email = email
-        self.username = username
-        self.password = password
-        self.role = role
-        self.full_name = full_name or username
-        self.agency_id = agency_id
-
-
-class CreateUserOutput:
-    def __init__(self, user: User):
-        self.user = user
 
 
 class RefreshTokenOutput:
@@ -148,80 +113,7 @@ class LoginUseCase:
         )
 
 
-class SelectProfileUseCase:
-    """Paso 3: Valida el perfil seleccionado y genera tokens de usuario."""
 
-    def __init__(
-        self,
-        uow: IUnitOfWork,
-        token_service: ITokenService,
-        password_hasher: IPasswordHasher,
-    ) -> None:
-        self._uow = uow
-        self._token_service = token_service
-        self._password_hasher = password_hasher
-
-    async def execute(self, data: SelectProfileInput) -> SelectProfileOutput:
-        user = await self._uow.users.get_by_id(data.user_id)
-        if not user:
-            raise UserNotFound()
-
-        if user.password_hash:
-            if not data.password:
-                raise InvalidCredentials("Este perfil requiere contraseña.")
-            if not self._password_hasher.verify(data.password, user.password_hash):
-                raise InvalidCredentials("Contraseña de perfil incorrecta.")
-
-        access_token = self._token_service.create_access_token(
-            subject=str(user.id),
-            role=user.role.value,
-            agency_id=user.agency_id,
-            extra={"user_type": "user"},
-        )
-        refresh_token = self._token_service.create_refresh_token(
-            subject=str(user.id),
-            role=user.role.value,
-            user_type="user",
-            agency_id=user.agency_id,
-        )
-
-        return SelectProfileOutput(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            user=user,
-        )
-
-
-class CreateUserUseCase:
-    """Crea un nuevo usuario con contraseña hasheada."""
-
-    def __init__(
-        self,
-        uow: IUnitOfWork,
-        password_hasher: IPasswordHasher,
-    ) -> None:
-        self._uow = uow
-        self._password_hasher = password_hasher
-
-    async def execute(self, data: CreateUserInput) -> CreateUserOutput:
-        existing = await self._uow.users.get_by_email(data.email)
-        if existing:
-            raise EntityAlreadyExists("Email ya registrado.")
-
-        hashed_password = self._password_hasher.hash(data.password)
-        user = User(
-            id=None,
-            email=data.email,
-            username=data.full_name or data.username,
-            role=UserRole(data.role),
-            agency_id=data.agency_id,
-            password_hash=hashed_password,
-            status=UserStatus.ACTIVE,
-        )
-        async with self._uow:
-            created = await self._uow.users.create(user)
-            await self._uow.commit()
-        return CreateUserOutput(created)
 
 
 class RefreshTokenUseCase:
@@ -271,29 +163,29 @@ class RefreshTokenUseCase:
                 agency_id=str(agency.id),
             )
 
-        # user
-        user = await self._uow.users.get_by_id(subject)
-        if not user:
-            raise UserNotFound()
+        # license
+        lic = await self._uow.licenses.get_by_id(subject)
+        if not lic:
+            raise UnauthorizedAccess("Licencia no encontrada.")
 
         access_token = self._token_service.create_access_token(
             subject=subject,
-            role=role or user.role.value,
-            agency_id=user.agency_id,
-            extra={"user_type": "user"},
+            role=role or "agent",
+            agency_id=lic.agency_id,
+            extra={"user_type": "license"},
         )
         refresh = self._token_service.create_refresh_token(
             subject=subject,
-            role=role or user.role.value,
-            user_type="user",
-            agency_id=user.agency_id,
+            role=role or "agent",
+            user_type="license",
+            agency_id=lic.agency_id,
         )
         return RefreshTokenOutput(
             access_token=access_token,
             refresh_token=refresh,
-            role=user.role.value,
-            user_id=str(user.id),
-            agency_id=user.agency_id,
+            role="agent",
+            user_id=str(lic.id),
+            agency_id=lic.agency_id,
         )
 
 
@@ -333,26 +225,16 @@ class GetProfileUseCase:
                 logo_url=agency.logo_url,
             )
 
-        user = await self._uow.users.get_by_id(str(payload["sub"]))
-        if not user:
-            raise UserNotFound()
+        lic = await self._uow.licenses.get_by_id(str(payload["sub"]))
+        if not lic:
+            raise UnauthorizedAccess("Licencia no encontrada.")
 
         return ProfileOutput(
-            id=user.id,
-            email=user.email,
-            username=user.username,
-            full_name=user.username,
-            role=user.role.value,
-            status=user.status.value,
-            agency_id=user.agency_id,
+            id=lic.id,
+            email=lic.email,
+            username=lic.full_name or lic.recruiter_name,
+            full_name=lic.full_name or lic.recruiter_name,
+            role="agent",
+            status="active" if lic.is_active else "inactive",
+            agency_id=lic.agency_id,
         )
-
-
-class ListAgencyUsersUseCase:
-    """Lista los usuarios/perfiles vinculados a una agencia."""
-
-    def __init__(self, uow: IUnitOfWork) -> None:
-        self._uow = uow
-
-    async def execute(self, agency_id: str) -> List[User]:
-        return await self._uow.users.list_all(agency_id=agency_id)

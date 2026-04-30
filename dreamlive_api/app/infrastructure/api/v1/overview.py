@@ -9,7 +9,7 @@ from app.infrastructure.api.providers import (
     get_admin_overview_use_case,
     get_agency_dashboard_use_case,
 )
-from app.core.entities.user import User
+from app.infrastructure.api.deps import AuthUser
 
 
 overview_router = APIRouter(prefix="/overview", tags=["Overview"])
@@ -27,7 +27,7 @@ async def get_overview(
 @dashboard_router.get("/")
 async def get_dashboard(
     days: int = 7,
-    current_user: User = Depends(require_agency_group),
+    current_user: AuthUser = Depends(require_agency_group),
     use_case: GetAgencyDashboardUseCase = Depends(get_agency_dashboard_use_case),
 ):
     return await use_case.execute(str(current_user.agency_id), days=days)

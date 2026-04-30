@@ -33,6 +33,7 @@ class License:
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
     # Configuración operativa de la licencia
+    full_name: Optional[str] = None
     keywords: str = "batallas/versus/duelo/pk"
     message_templates: List[str] = field(default_factory=list)
     recruiter_name: str = "Agente DreamLive"

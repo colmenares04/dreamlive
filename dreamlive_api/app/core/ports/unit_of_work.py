@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from app.core.ports.agency_repository import IAgencyRepository
-from app.core.ports.user_repository import IUserRepository
 from app.core.ports.license_repository import ILicenseRepository
 from app.core.ports.lead_repository import ILeadRepository
 from app.core.ports.ticket_repository import ITicketRepository, ITicketMessageRepository
@@ -31,7 +30,6 @@ class IUnitOfWork(ABC):
     """
 
     agencies: IAgencyRepository
-    users: IUserRepository
     licenses: ILicenseRepository
     leads: ILeadRepository
     tickets: ITicketRepository

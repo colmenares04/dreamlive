@@ -29,9 +29,9 @@ function licenseStatus(lic: License): 'active' | 'expired' | 'inactive' {
 function StatusBadge({ lic }: { lic: License }) {
   const s = licenseStatus(lic);
   const map: Record<string, { variant: 'green' | 'red' | 'yellow' | 'gray'; label: string }> = {
-    active:   { variant: 'green',  label: 'ACTIVA' },
-    expired:  { variant: 'yellow', label: 'EXPIRADA' },
-    inactive: { variant: 'gray',   label: 'INACTIVA' },
+    active: { variant: 'green', label: 'ACTIVA' },
+    expired: { variant: 'yellow', label: 'EXPIRADA' },
+    inactive: { variant: 'gray', label: 'INACTIVA' },
   };
   const { variant, label } = map[s];
   return <Badge variant={variant}>{label}</Badge>;
@@ -40,16 +40,16 @@ function StatusBadge({ lic }: { lic: License }) {
 /**
  * CreateLicenseForm (Modal auxiliar)
  */
-function CreateLicenseForm({ agencies, onCreate, onSuccess }: { 
-  agencies: Agency[]; 
-  onCreate: (p: any) => Promise<void>; 
+function CreateLicenseForm({ agencies, onCreate, onSuccess }: {
+  agencies: Agency[];
+  onCreate: (p: any) => Promise<void>;
   onSuccess: () => void;
 }) {
-  const [agencyId, setAgencyId]       = useState(agencies[0]?.id ?? '');
-  const [recruiter, setRecruiter]     = useState('');
-  const [duration, setDuration]       = useState('30');
-  const [customDays, setCustomDays]   = useState(30);
-  const [loading, setLoading]         = useState(false);
+  const [agencyId, setAgencyId] = useState(agencies[0]?.id ?? '');
+  const [recruiter, setRecruiter] = useState('');
+  const [duration, setDuration] = useState('30');
+  const [customDays, setCustomDays] = useState(30);
+  const [loading, setLoading] = useState(false);
 
   const days = duration === 'custom' ? customDays : parseInt(duration);
 
@@ -81,18 +81,18 @@ function CreateLicenseForm({ agencies, onCreate, onSuccess }: {
       <div>
         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Vigencia Inicial</label>
         <div className="flex gap-4">
-           {['30', '90', 'custom'].map(opt => (
-             <button key={opt} onClick={() => setDuration(opt)} className={clsx("flex-1 px-4 py-3 rounded-2xl border text-sm font-bold transition-all", duration === opt ? "bg-indigo-500 text-white border-indigo-500 shadow-lg shadow-indigo-500/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-indigo-400")}>
-               {opt === 'custom' ? 'Manual' : `${opt} Días`}
-             </button>
-           ))}
+          {['30', '90', 'custom'].map(opt => (
+            <button key={opt} onClick={() => setDuration(opt)} className={clsx("flex-1 px-4 py-3 rounded-2xl border text-sm font-bold transition-all", duration === opt ? "bg-indigo-500 text-white border-indigo-500 shadow-lg shadow-indigo-500/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-indigo-400")}>
+              {opt === 'custom' ? 'Manual' : `${opt} Días`}
+            </button>
+          ))}
         </div>
         {duration === 'custom' && (
-          <input 
-            type="number" 
-            value={isNaN(customDays) ? '' : customDays} 
-            onChange={e => setCustomDays(parseInt(e.target.value) || 0)} 
-            className="mt-4 w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 outline-none dark:text-white" 
+          <input
+            type="number"
+            value={isNaN(customDays) ? '' : customDays}
+            onChange={e => setCustomDays(parseInt(e.target.value) || 0)}
+            className="mt-4 w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 outline-none dark:text-white"
           />
         )}
       </div>
@@ -129,26 +129,26 @@ function AuditLicenseModal({ license, open, onClose }: { license: License | null
           <div className="py-20 text-center text-slate-400 italic">No hay registros para esta licencia.</div>
         ) : (
           <table className="w-full text-xs">
-             <thead>
-               <tr className="border-b border-slate-100 text-slate-500 uppercase font-bold">
-                 <th className="px-4 py-3 text-left">Fecha</th>
-                 <th className="px-4 py-3 text-left">Acción</th>
-                 <th className="px-4 py-3 text-left">Usuario</th>
-                 <th className="px-4 py-3 text-left">IP</th>
-               </tr>
-             </thead>
-             <tbody>
-               {logs.map(log => (
-                 <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-400">{new Date(log.created_at).toLocaleString()}</td>
-                    <td className="px-4 py-3">
-                       <span className="font-black text-indigo-500 uppercase tracking-tighter">{log.action}</span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{log.user_id?.substring(0, 8)}</td>
-                    <td className="px-4 py-3 text-slate-400 font-mono">{log.ip_address}</td>
-                 </tr>
-               ))}
-             </tbody>
+            <thead>
+              <tr className="border-b border-slate-100 text-slate-500 uppercase font-bold">
+                <th className="px-4 py-3 text-left">Fecha</th>
+                <th className="px-4 py-3 text-left">Acción</th>
+                <th className="px-4 py-3 text-left">Usuario</th>
+                <th className="px-4 py-3 text-left">IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map(log => (
+                <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50">
+                  <td className="px-4 py-3 text-slate-400">{new Date(log.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-black text-indigo-500 uppercase tracking-tighter">{log.action}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{log.user_id?.substring(0, 8)}</td>
+                  <td className="px-4 py-3 text-slate-400 font-mono">{log.ip_address}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         )}
       </div>
@@ -191,13 +191,13 @@ function ManualDateModal({ license, open, onClose, onSave }: { license: License 
 
   return (
     <Modal open={open} onClose={onClose} title="Editar Expiración Manual" size="sm">
-       <div className="space-y-6 pt-2 pb-4">
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nueva Fecha de Vencimiento</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 outline-none" />
-          </div>
-          <Button variant="primary" full loading={loading} onClick={handleSave}>Actualizar Fecha</Button>
-       </div>
+      <div className="space-y-6 pt-2 pb-4">
+        <div>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nueva Fecha de Vencimiento</label>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 outline-none" />
+        </div>
+        <Button variant="primary" full loading={loading} onClick={handleSave}>Actualizar Fecha</Button>
+      </div>
     </Modal>
   );
 }
@@ -225,50 +225,50 @@ function DeleteLicenseModal({ license, open, onClose, onDelete }: { license: Lic
 
   return (
     <Modal open={open} onClose={onClose} title="" size="sm" showHeader={false}>
-       <div className="p-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in duration-300">
-          <div className="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 text-3xl shadow-xl shadow-rose-500/5 ring-4 ring-rose-500/5">
-            <i className="fas fa-exclamation-triangle animate-pulse" />
-          </div>
-          
-          <div className="space-y-2">
-            <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter italic">Acción Irreversible</h3>
-            <p className="text-xs font-bold text-slate-400 leading-relaxed max-w-[240px]">
-              Estás a punto de eliminar la licencia <span className="text-rose-500 underline font-black">{license?.key}</span>. Todos los datos se perderán para siempre.
-            </p>
+      <div className="p-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in duration-300">
+        <div className="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 text-3xl shadow-xl shadow-rose-500/5 ring-4 ring-rose-500/5">
+          <i className="fas fa-exclamation-triangle animate-pulse" />
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter italic">Acción Irreversible</h3>
+          <p className="text-xs font-bold text-slate-400 leading-relaxed max-w-[240px]">
+            Estás a punto de eliminar la licencia <span className="text-rose-500 underline font-black">{license?.key}</span>. Todos los datos se perderán para siempre.
+          </p>
+        </div>
+
+        <div className="w-full space-y-4">
+          <div className="relative group">
+            <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-rose-500 transition-colors" />
+            <input
+              type="password"
+              value={pass}
+              onChange={e => setPass(e.target.value)}
+              placeholder="Contraseña"
+              className="w-full pl-11 pr-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-rose-500/50 text-sm font-bold focus:ring-4 focus:ring-rose-500/5 outline-none transition-all shadow-inner"
+            />
           </div>
 
-          <div className="w-full space-y-4">
-            <div className="relative group">
-              <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-rose-500 transition-colors" />
-              <input 
-                type="password" 
-                value={pass} 
-                onChange={e => setPass(e.target.value)} 
-                placeholder="Contraseña Maestra" 
-                className="w-full pl-11 pr-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-rose-500/50 text-sm font-bold focus:ring-4 focus:ring-rose-500/5 outline-none transition-all shadow-inner" 
-              />
-            </div>
-            
-            <div className="flex flex-col gap-3 pt-2">
-              <Button 
-                variant="danger" 
-                full 
-                loading={loading} 
-                onClick={handleDelete} 
-                className="py-4 !rounded-2xl shadow-xl shadow-rose-500/20 text-sm font-black uppercase tracking-widest hover:scale-[1.02] transition-transform"
-              >
-                Confirmar Eliminación
-              </Button>
-              <button 
-                onClick={onClose} 
-                disabled={loading}
-                className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-300 transition-colors py-2"
-              >
-                Mejor no, volver atrás
-              </button>
-            </div>
+          <div className="flex flex-col gap-3 pt-2">
+            <Button
+              variant="danger"
+              full
+              loading={loading}
+              onClick={handleDelete}
+              className="py-4 !rounded-2xl shadow-xl shadow-rose-500/20 text-sm font-black uppercase tracking-widest hover:scale-[1.02] transition-transform"
+            >
+              Confirmar Eliminación
+            </Button>
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-300 transition-colors py-2"
+            >
+              Mejor no, volver atrás
+            </button>
           </div>
-       </div>
+        </div>
+      </div>
     </Modal>
   );
 }
@@ -276,14 +276,14 @@ function DeleteLicenseModal({ license, open, onClose, onDelete }: { license: Lic
 type TabFilter = 'all' | 'active' | 'inactive';
 
 export function LicensesView() {
-  const { 
-    licenses, agencies, loadingDeps, metrics, 
-    extendLicense, toggleLicense, createLicense, deleteLicense, updateLicenseDate 
+  const {
+    licenses, agencies, loadingDeps, metrics,
+    extendLicense, toggleLicense, createLicense, deleteLicense, updateLicenseDate
   } = useAdminData();
 
   const [tab, setTab] = useState<TabFilter>('all');
   const [search, setSearch] = useState('');
-  
+
   // Modales State
   const [createOpen, setCreateOpen] = useState(false);
   const [auditTarget, setAuditTarget] = useState<License | null>(null);
@@ -293,8 +293,8 @@ export function LicensesView() {
   // ── Stats Calculation ──────────────────────────────────────────────────────
   const stats = useMemo(() => {
     const activeArr = licenses.filter(l => licenseStatus(l) === 'active');
-    const today  = licenses.reduce((acc, l) => acc + (l.today_leads || 0), 0);
-    const total  = licenses.reduce((acc, l) => acc + (l.total_leads || 0), 0);
+    const today = licenses.reduce((acc, l) => acc + (l.today_leads || 0), 0);
+    const total = licenses.reduce((acc, l) => acc + (l.total_leads || 0), 0);
     const sessions = Object.values(metrics).filter(m => {
       if (!m.last_ping) return false;
       const ping = new Date(m.last_ping);
@@ -314,13 +314,13 @@ export function LicensesView() {
 
   const filtered = useMemo(() => {
     let result = licenses;
-    if (tab === 'active')   result = result.filter(l => licenseStatus(l) === 'active');
+    if (tab === 'active') result = result.filter(l => licenseStatus(l) === 'active');
     else if (tab === 'inactive') result = result.filter(l => licenseStatus(l) !== 'active');
-    
+
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter(l => 
-        l.key.toLowerCase().includes(q) || 
+      result = result.filter(l =>
+        l.key.toLowerCase().includes(q) ||
         l.recruiter_name.toLowerCase().includes(q)
       );
     }
@@ -482,7 +482,7 @@ export function LicensesView() {
               )}
             </div>
           </div>
-          
+
           <Button variant="primary" full className="!rounded-[2rem] py-6 shadow-2xl shadow-indigo-500/20 text-md" onClick={() => setCreateOpen(true)}>
             <i className="fas fa-plus-circle mr-3" />Generar Licencia
           </Button>
@@ -495,18 +495,18 @@ export function LicensesView() {
       </Modal>
 
       <AuditLicenseModal license={auditTarget} open={!!auditTarget} onClose={() => setAuditTarget(null)} />
-      
-      <ManualDateModal 
-        license={dateTarget} 
-        open={!!dateTarget} 
-        onClose={() => setDateTarget(null)} 
-        onSave={(d) => updateLicenseDate(dateTarget!.id, d)} 
+
+      <ManualDateModal
+        license={dateTarget}
+        open={!!dateTarget}
+        onClose={() => setDateTarget(null)}
+        onSave={(d) => updateLicenseDate(dateTarget!.id, d)}
       />
 
-      <DeleteLicenseModal 
-        license={deleteTarget} 
-        open={!!deleteTarget} 
-        onClose={() => setDeleteTarget(null)} 
+      <DeleteLicenseModal
+        license={deleteTarget}
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
         onDelete={(p) => deleteLicense(deleteTarget!.id, p)}
       />
     </div>

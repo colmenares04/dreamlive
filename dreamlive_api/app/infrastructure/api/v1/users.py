@@ -6,13 +6,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, EmailStr
 
-from app.application.auth.use_cases import CreateUserInput, CreateUserUseCase
 from app.application.users.use_cases import (
-    ListUsersUseCase, UpdateUserUseCase, DeleteUserUseCase, InviteUserUseCase,
     ListTicketsUseCase, CreateTicketUseCase, UpdateTicketStatusUseCase, DeleteTicketUseCase,
     ListAuditLogsUseCase, CreateAuditLogUseCase,
 )
-from app.core.entities.user import User, UserRole, UserStatus
+from app.infrastructure.api.deps import AuthUser
 from app.infrastructure.api.deps import (
     get_current_user,
     require_admin,
@@ -20,11 +18,6 @@ from app.infrastructure.api.deps import (
     require_owner_or_admin,
 )
 from app.infrastructure.api.providers import (
-    get_create_user_use_case,
-    get_list_users_use_case,
-    get_update_user_use_case,
-    get_delete_user_use_case,
-    get_invite_user_use_case,
     get_list_tickets_use_case,
     get_create_ticket_use_case,
     get_update_ticket_status_use_case,
@@ -37,36 +30,7 @@ from app.infrastructure.api.providers import (
 # ─────────────────────────────────────────────────────────────────────────────
 # Schemas
 # ─────────────────────────────────────────────────────────────────────────────
-class UserOut(BaseModel):
-    id: str | None
-    email: str
-    username: str
-    full_name: str
-    role: str
-    status: str
-    agency_id: str | None
 
-
-class CreateUserBody(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-    role: UserRole
-    full_name: Optional[str] = None
-    agency_id: Optional[str] = None
-
-
-class UpdateUserBody(BaseModel):
-    username: Optional[str] = None
-    role: Optional[UserRole] = None
-    status: Optional[UserStatus] = None
-    password: Optional[str] = None
-    agency_id: Optional[str] = None
-
-
-class InviteUserBody(BaseModel):
-    email: EmailStr
-    role: UserRole
 
 
 class TicketOut(BaseModel):
@@ -116,96 +80,7 @@ tickets_router = APIRouter(prefix="/tickets", tags=["Tickets"])
 audit_router = APIRouter(prefix="/audit", tags=["AuditLogs"])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Users
-# ─────────────────────────────────────────────────────────────────────────────
-@users_router.get("/", response_model=List[UserOut], dependencies=[Depends(require_agency_group)])
-async def list_users(
-    agency_id: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
-    use_case: ListUsersUseCase = Depends(get_list_users_use_case)
-):
-    users = await use_case.execute(
-        current_user_role=current_user.role,
-        current_user_agency_id=str(current_user.agency_id) if current_user.agency_id else None,
-        agency_id=agency_id
-    )
-    return [
-        UserOut(
-            id=user.id, email=user.email, username=user.username,
-            full_name=user.username, role=user.role.value,
-            status=user.status.value, agency_id=user.agency_id,
-        ) for user in users
-    ]
 
-
-@users_router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserOut, dependencies=[Depends(require_owner_or_admin)])
-async def create_user(
-    body: CreateUserBody, 
-    current_user: User = Depends(get_current_user), 
-    use_case: CreateUserUseCase = Depends(get_create_user_use_case),
-):
-    effective_agency_id = body.agency_id or (str(current_user.agency_id) if current_user.agency_id else None)
-    
-    result = await use_case.execute(
-        CreateUserInput(
-            email=body.email, username=body.username, password=body.password,
-            role=body.role, full_name=body.full_name, agency_id=effective_agency_id,
-        )
-    )
-    user = result.user
-    return UserOut(
-        id=user.id, email=user.email, username=user.username,
-        full_name=user.username, role=user.role.value,
-        status=user.status.value, agency_id=user.agency_id,
-    )
-
-
-@users_router.patch("/{user_id}", response_model=UserOut, dependencies=[Depends(require_owner_or_admin)])
-async def update_user(
-    user_id: str, 
-    body: UpdateUserBody, 
-    current_user: User = Depends(get_current_user),
-    use_case: UpdateUserUseCase = Depends(get_update_user_use_case),
-):
-    user = await use_case.execute(
-        user_id=user_id, current_user=current_user,
-        username=body.username, role=body.role, status=body.status,
-        password=body.password, agency_id=body.agency_id
-    )
-    return UserOut(
-        id=user.id, email=user.email, username=user.username,
-        full_name=user.username, role=user.role.value,
-        status=user.status.value, agency_id=user.agency_id,
-    )
-
-
-@users_router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_owner_or_admin)])
-async def delete_user(
-    user_id: str, 
-    current_user: User = Depends(get_current_user),
-    use_case: DeleteUserUseCase = Depends(get_delete_user_use_case),
-):
-    await use_case.execute(user_id=user_id, current_user=current_user)
-    return None
-
-
-@users_router.post("/invite", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_owner_or_admin)])
-async def invite_user(
-    body: InviteUserBody,
-    current_user: User = Depends(get_current_user),
-    use_case: InviteUserUseCase = Depends(get_invite_user_use_case),
-):
-    user = await use_case.execute(
-        email=body.email,
-        role=body.role.value,
-        agency_id=str(current_user.agency_id) if current_user.agency_id else None
-    )
-    return UserOut(
-        id=user.id, email=user.email, username=user.username,
-        full_name=user.username, role=user.role.value,
-        status=user.status.value, agency_id=user.agency_id,
-    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -215,7 +90,7 @@ async def invite_user(
 async def list_tickets(
     status_filter: Optional[str] = Query(None, alias="status"),
     assigned_to: Optional[str] = Query(None, alias="assigned_to"),
-    current_user: User = Depends(get_current_user),
+    current_user: AuthUser = Depends(get_current_user),
     use_case: ListTicketsUseCase = Depends(get_list_tickets_use_case),
 ):
     tickets = await use_case.execute(
@@ -237,7 +112,7 @@ async def list_tickets(
 @tickets_router.post("/", status_code=status.HTTP_201_CREATED, response_model=TicketOut, dependencies=[Depends(require_agency_group)])
 async def create_ticket(
     body: CreateTicketBody, 
-    current_user: User = Depends(get_current_user), 
+    current_user: AuthUser = Depends(get_current_user), 
     use_case: CreateTicketUseCase = Depends(get_create_ticket_use_case)
 ):
     ticket = await use_case.execute(
@@ -257,7 +132,7 @@ async def create_ticket(
 async def update_ticket_status(
     ticket_id: str, 
     body: UpdateTicketBody, 
-    current_user: User = Depends(get_current_user), 
+    current_user: AuthUser = Depends(get_current_user), 
     use_case: UpdateTicketStatusUseCase = Depends(get_update_ticket_status_use_case)
 ):
     ticket = await use_case.execute(ticket_id=ticket_id, new_status=body.status, current_user=current_user)

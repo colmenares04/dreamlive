@@ -21,6 +21,8 @@ from app.core.domain.exceptions import (
     EntityNotFound,
     InvalidCredentials,
 )
+from app.core.ports.cache import ICacheService
+from app.core.ports.realtime import IRealTimeGateway
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -131,15 +133,13 @@ class DeleteAgencyUseCase:
     def __init__(
         self,
         uow: IUnitOfWork,
-        password_hasher: IPasswordHasher,
     ):
         self._uow = uow
-        self._password_hasher = password_hasher
 
-    async def execute(self, agency_id: str, admin_user_id: str, password: str) -> None:
-        admin = await self._uow.users.get_by_id(admin_user_id)
-        if not admin or not self._password_hasher.verify(password, admin.password_hash or ""):
-            raise InvalidCredentials("Contraseña de administrador incorrecta.")
+    async def execute(self, agency_id: str, password: str) -> None:
+        agency = await self._uow.agencies.get_by_id(agency_id)
+        if not agency or agency.password != password:
+            raise InvalidCredentials("Contraseña de agencia incorrecta.")
 
         async with self._uow:
             await self._uow.agencies.delete(agency_id)
@@ -301,10 +301,15 @@ class VerifyLicenseUseCase:
 
 
 class RegisterSessionUseCase:
-    """Registra o actualiza una sesión de dispositivo para una licencia."""
+    """
+    Registra una sesión de dispositivo para una licencia.
+    Controla el límite de dispositivos y expulsa la sesión más antigua si es necesario.
+    """
 
-    def __init__(self, uow: IUnitOfWork):
+    def __init__(self, uow: IUnitOfWork, cache: ICacheService, gateway: IRealTimeGateway):
         self._uow = uow
+        self._cache = cache
+        self._gateway = gateway
 
     async def execute(
         self,
@@ -313,22 +318,62 @@ class RegisterSessionUseCase:
         browser_name: Optional[str] = None,
         os_name: Optional[str] = None,
         ip_address: Optional[str] = None,
-    ) -> bool:
+    ) -> str:
+        """
+        Retorna el session_id generado para la nueva conexión.
+        Si se supera el límite, expulsa al dispositivo más antiguo vía WS.
+        """
         async with self._uow:
-            # Validamos que la licencia exista y esté activa antes de registrar sesión
             lic = await self._uow.licenses.get_by_id(license_id)
             if not lic or not lic.is_active:
-                return False
+                raise LicenseNotFound("Licencia inválida o inactiva.")
 
-            success = await self._uow.licenses.upsert_session(
+            # 1. Obtener sesiones actuales de Redis (Almacenadas como Lista o Hash)
+            cache_key = f"license:sessions:{license_id}"
+            active_sessions = await self._cache.get(cache_key) or [] # Formato: [{"id": "...", "ts": ...}]
+            
+            # Generar nuevo ID de sesión (UUID válido para DB)
+            new_session_id = str(uuid.uuid4())
+
+            # 2. Verificar Límite y Evicción
+            if len(active_sessions) >= lic.max_devices:
+                # Identificar la sesión más antigua (primer elemento si mantenemos orden)
+                # Ordenamos por timestamp por seguridad
+                active_sessions.sort(key=lambda x: x.get("ts", 0))
+                
+                oldest_session = active_sessions.pop(0)
+                old_session_id = oldest_session.get("id")
+
+                # Emitir evento de expulsión vía Gateway RealTime
+                if old_session_id:
+                    await self._gateway.emit_to_session(
+                        session_id=old_session_id,
+                        event="FORCE_LOGOUT",
+                        payload={"reason": "device_limit_exceeded"}
+                    )
+            
+            # 3. Registrar nueva sesión en la lista
+            active_sessions.append({
+                "id": new_session_id,
+                "ts": int(datetime.utcnow().timestamp()),
+                "device": device_id
+            })
+
+            # 4. Persistir en Redis y Supabase (Opcional)
+            await self._cache.set(cache_key, active_sessions, ttl_seconds=86400) # Expira en 24h de inactividad
+            
+            # Mantener compatibilidad con el repo de Supabase si es necesario
+            await self._uow.licenses.upsert_session(
                 license_id=license_id,
+                session_id=new_session_id,
                 device_id=device_id,
                 browser_name=browser_name,
                 os_name=os_name,
                 ip_address=ip_address
             )
+            
             await self._uow.commit()
-            return success
+            return new_session_id
 
 
 class UpdateLicenseConfigUseCase:
@@ -427,3 +472,49 @@ class UpdateAgencyPermissionsUseCase:
             await self._uow.agencies.update(agency)
             await self._uow.commit()
             return agency.role_permissions
+
+
+class LinkLicenseUseCase:
+    """Vincula un email/password y nombre a una licencia que no los tiene asignados."""
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
+
+    async def execute(self, license_key: str, email: str, password: str, full_name: str) -> License:
+        async with self._uow:
+            lic = await self._uow.licenses.get_by_key(license_key)
+            if not lic:
+                raise LicenseNotFound()
+            
+            if lic.email:
+                raise InvalidCredentials("Esta licencia ya se encuentra vinculada a un correo.")
+
+            # Buscar si el email ya est en uso
+            existing = await self._uow.licenses.get_by_email(email)
+            if existing:
+                raise InvalidCredentials("Este correo ya esta en uso por otra licencia.")
+
+            lic.email = email
+            lic.admin_password = password
+            lic.full_name = full_name
+            updated = await self._uow.licenses.update(lic)
+            await self._uow.commit()
+            return updated
+
+
+class LoginExtensionUseCase:
+    """Inicia sesion en la extension usando email y password, retornando la licencia."""
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
+
+    async def execute(self, email: str, password: str) -> License:
+        lic = await self._uow.licenses.get_by_email(email)
+        if not lic:
+            raise LicenseNotFound()
+        
+        if lic.admin_password != password:
+            raise InvalidCredentials("Contrasena incorrecta.")
+            
+        if not lic.is_valid():
+            raise InvalidCredentials("Licencia inactiva o expirada.")
+
+        return lic

@@ -1,214 +1,125 @@
-import socketio
 import logging
-from datetime import datetime
-from typing import Any, Dict, List
-from app.adapters.security.handlers import JWTHandler
-from app.adapters.db.session import get_supabase
-from app.adapters.db.repositories.ticket_repository import TicketMessageRepository
-from app.adapters.db.repositories.license_repository import LicenseRepository
-from app.core.entities.ticket import TicketMessage
+import json
+from typing import Dict, List, Set, Optional, Any
+from fastapi import WebSocket, WebSocketDisconnect
 
-from app.config import settings
+from app.core.ports.realtime import IRealTimeGateway
+from .websocket_schemas import WSMessage, WSEventType
 
-logger = logging.getLogger("dreamlive.socket")
+logger = logging.getLogger("dreamlive.websocket")
 
-# Definimos el servidor asíncrono con soporte para CORS sincronizado con la App
-sio = socketio.AsyncServer(
-    async_mode='asgi',
-    cors_allowed_origins=settings.ALLOWED_ORIGINS + [
-        "http://217.216.94.178",
-        "http://127.0.0.1",
-        "http://217.216.94.178:5173", 
-        "http://127.0.0.1:5173",
-        "http://217.216.94.178:8000",
-        "http://127.0.0.1:8000"
-    ],
-    logger=True,
-    engineio_logger=False
-)
-
-# Wrapper base para Socket.io
-socket_app = socketio.ASGIApp(sio)
-
-@sio.event
-async def connect(sid, environ, auth):
+class ConnectionManager(IRealTimeGateway):
     """
-    Validación de conexión mediante objeto auth.
-    Soporta:
-    1. JWT (Web): { "token": "eyJ..." }
-    2. License Key (Ext): { "token": "DL-..." }
+    Gestor de conexiones WebSocket centralizado.
+    Implementa IRealTimeGateway para cumplir con Clean Architecture.
     """
-    logger.info(f"🔍 [Socket.io] Intento de conexión [{sid}] | Auth: {auth}")
-    
-    if not auth or 'token' not in auth:
-        logger.warning(f"❌ [Socket.io] Conexión rechazada [{sid}]: Falta objeto 'auth' o 'token'")
-        return False
-    
-    token = auth['token']
-    db = get_supabase()
-
-    # CASO 1: JWT (Web App)
-    if token.startswith("eyJ"):
-        try:
-            payload = JWTHandler.decode_token(token)
-            await sio.save_session(sid, {
-                "user_id": payload.get("sub"),
-                "role": payload.get("role"),
-                "type": "web"
-            })
-            logger.info(f"✅ [Socket.io] Conexión aceptada (WEB) [{sid}]: User {payload.get('sub')}")
-            return True
-        except Exception as e:
-            logger.error(f"❌ [Socket.io] Error JWT [{sid}]: {str(e)}")
-            return False
-
-    # CASO 2: License Key (Extension)
-    try:
-        license_repo = LicenseRepository(db)
-        license_entry = await license_repo.get_by_key(token)
+    def __init__(self):
+        # Mapeos de ID -> Conjunto de WebSockets activos (un usuario puede tener varios tabs)
+        self.user_connections: Dict[str, Set[WebSocket]] = {}
+        self.license_connections: Dict[str, Set[WebSocket]] = {}
+        self.agency_connections: Dict[str, Set[WebSocket]] = {}
+        self.session_connections: Dict[str, WebSocket] = {} # Mapeo 1:1 para sesiones únicas
         
-        if license_entry and license_entry.is_active:
-            await sio.save_session(sid, {
-                "license_id": license_entry.id,
-                "agency_id": license_entry.agency_id,
-                "type": "ext"
-            })
-            logger.info(f"✅ [Socket.io] Conexión aceptada (EXT) [{sid}]: License {license_entry.id}")
-            return True
-        else:
-            logger.warning(f"❌ [Socket.io] Conexión rechazada (EXT) [{sid}]: Licencia inválida o inactiva")
-            return False
-            
-    except Exception as e:
-        logger.error(f"❌ [Socket.io] Error Licencia [{sid}]: {str(e)}")
-        return False
+        # Mapeo inverso WebSocket -> Metadata para limpieza rápida
+        self.socket_metadata: Dict[WebSocket, Dict[str, str]] = {}
 
-@sio.event
-async def disconnect(sid):
-    logger.info(f"Desconectado: {sid}")
-
-@sio.on("join_agency")
-async def join_agency(sid, agency_id: str):
-    """Permite que un socket se una a la sala de su agencia si está autorizado."""
-    session = await sio.get_session(sid)
-    user_agency_id = session.get("agency_id")
-    
-    # [SECURITY] Solo permitir si pertenece a esa agencia
-    if str(user_agency_id) != str(agency_id):
-        logger.warning(f"Intento de acceso no autorizado a sala de agencia {agency_id} por socket {sid}")
-        return
-
-    await sio.enter_room(sid, f"agency_{agency_id}")
-    logger.info(f"Socket {sid} se unió a la sala de la agencia {agency_id}")
-
-@sio.on("join_ticket")
-async def join_ticket(sid, ticket_id: str):
-    """Permite unirse a la sala de chat de un ticket específico tras validación."""
-    session = await sio.get_session(sid)
-    
-    # [SECURITY] Para WEB, validar que pertenece a la agencia del ticket (simplificado)
-    # En un sistema ideal, haríamos una consulta a repo.get_by_id(ticket_id)
-    # Por ahora aseguramos que el socket TIENE una sesión válida.
-    if not session.get("user_id") and not session.get("license_id"):
-        return
-
-    await sio.enter_room(sid, f"ticket_{ticket_id}")
-    logger.info(f"Socket {sid} se unió al ticket {ticket_id}")
-
-@sio.on("send_message")
-async def handle_send_message(sid, data: Dict[str, Any]):
-    """
-    Recibe un mensaje de chat, lo persiste en BD y lo distribuye a la sala del ticket.
-    Expected data: { "ticket_id": "...", "message": "..." }
-    """
-    ticket_id = data.get("ticket_id")
-    content = data.get("message")
-    
-    if not ticket_id or not content:
-        return
-    
-    session = await sio.get_session(sid)
-    user_id = session.get("user_id")
-    
-    if not user_id:
-        logger.warning(f"Intento de mensaje sin sesión de usuario [{sid}]")
-        return
-
-    try:
-        # Persistencia en Supabase
-        db = get_supabase()
-        repo = TicketMessageRepository(db)
+    async def connect(self, websocket: WebSocket, metadata: Dict[str, str]):
+        """Acepta la conexión y registra el socket en los grupos correspondientes."""
+        await websocket.accept()
         
-        new_msg = TicketMessage(
-            ticket_id=ticket_id,
-            user_id=user_id,
-            message=content
-        )
-        saved = await repo.create(new_msg)
+        user_id = metadata.get("user_id")
+        license_id = metadata.get("license_id")
+        agency_id = metadata.get("agency_id")
+        session_id = metadata.get("session_id")
         
-        # Broadcast a los interesados en el ticket
-        broadcast_payload = {
-            "id": saved.id,
-            "ticket_id": ticket_id,
-            "user_id": user_id,
-            "message": saved.message,
-            "created_at": saved.created_at.isoformat()
-        }
-        await sio.emit("chat_message", broadcast_payload, room=f"ticket_{ticket_id}")
-        logger.info(f"Mensaje procesado en ticket {ticket_id} por {user_id}")
-        
-    except Exception as e:
-        logger.error(f"Error procesando mensaje socket: {str(e)}")
+        self.socket_metadata[websocket] = metadata
 
-class SocketManager:
-    """
-    Controlador centralizado para emitir mensajes a través de Socket.io.
-    Facilita la comunicación desde servicios y use cases.
-    """
-    
-    @staticmethod
-    async def emit_to_agency(agency_id: str, event: str, data: Any):
-        """Notificación global para toda una agencia (ej: nuevo lead capturado)."""
-        await sio.emit(event, data, room=f"agency_{agency_id}")
+        # Registro por sesión única (para expulsión dirigida)
+        if session_id:
+            # Si ya existía una conexión para este session_id, la cerramos (reemplazo)
+            if session_id in self.session_connections:
+                old_socket = self.session_connections[session_id]
+                try:
+                    await old_socket.close(code=1000)
+                except: pass
+            self.session_connections[session_id] = websocket
 
-    @staticmethod
-    async def emit_to_ticket(ticket_id: str, event: str, data: Any):
-        """Mensaje de chat para un ticket específico."""
-        await sio.emit(event, data, room=f"ticket_{ticket_id}")
+        if user_id:
+            if user_id not in self.user_connections:
+                self.user_connections[user_id] = set()
+            self.user_connections[user_id].add(websocket)
 
-    @staticmethod
-    async def broadcast_notification(message: str, type: str = "info", title: str = "Aviso Sistema"):
-        """Envía una notificación a TODOS los usuarios conectados en el sistema."""
-        await sio.emit("new_notification", {
-            "title": title,
-            "message": message,
-            "type": type,
-            "id": int(datetime.utcnow().timestamp() * 1000)
-        })
+        if license_id:
+            if license_id not in self.license_connections:
+                self.license_connections[license_id] = set()
+            self.license_connections[license_id].add(websocket)
 
-    @staticmethod
-    async def notify_sid(sid: str, message: str, type: str = "info", title: str = "Privado"):
-        """Envía una notificación a un socket específico."""
-        await sio.emit("new_notification", {
-            "title": title,
-            "message": message,
-            "type": type,
-            "id": int(datetime.utcnow().timestamp() * 1000)
-        }, to=sid)
+        if agency_id:
+            if agency_id not in self.agency_connections:
+                self.agency_connections[agency_id] = set()
+            self.agency_connections[agency_id].add(websocket)
 
-    @staticmethod
-    async def emit_remote_command(agency_id: str, action: str, params: Dict[str, Any] = None):
-        """Envía un comando de control remoto a los agentes de una agencia."""
-        await sio.emit("remote_command", {
-            "action": action,
-            "params": params or {},
-            "timestamp": int(datetime.utcnow().timestamp() * 1000)
-        }, room=f"agency_{agency_id}")
+        logger.info(f"✅ WS Conectado | Session: {session_id} | Type: {metadata.get('type')}")
 
-    @staticmethod
-    async def send_system_notification(sid: str, message: str, type: str = "info"):
-        """Envía una alerta directa a un cliente específico (Compatibilidad legacy)."""
-        await sio.emit("system_notification", {"message": message, "type": type}, to=sid)
+    def disconnect(self, websocket: WebSocket):
+        """Limpia el socket de todos los registros."""
+        metadata = self.socket_metadata.pop(websocket, {})
+        user_id = metadata.get("user_id")
+        license_id = metadata.get("license_id")
+        agency_id = metadata.get("agency_id")
+        session_id = metadata.get("session_id")
 
-# Exportamos la instancia y la app para FastAPI
-socket_manager = SocketManager()
+        if session_id and self.session_connections.get(session_id) == websocket:
+            del self.session_connections[session_id]
+
+        if user_id and user_id in self.user_connections:
+            self.user_connections[user_id].discard(websocket)
+            if not self.user_connections[user_id]:
+                del self.user_connections[user_id]
+
+        if license_id and license_id in self.license_connections:
+            self.license_connections[license_id].discard(websocket)
+            if not self.license_connections[license_id]:
+                del self.license_connections[license_id]
+
+        if agency_id and agency_id in self.agency_connections:
+            self.agency_connections[agency_id].discard(websocket)
+            if not self.agency_connections[agency_id]:
+                del self.agency_connections[agency_id]
+
+    # ── Implementación de IRealTimeGateway ──────────────────────────────────────
+
+    async def emit_to_session(self, session_id: str, event: str, payload: Dict[str, Any]) -> None:
+        """Envía un mensaje directo a una sesión específica (ej. para FORCE_LOGOUT)."""
+        socket = self.session_connections.get(session_id)
+        if socket:
+            try:
+                # Usamos el esquema estandarizado
+                msg = WSMessage(event=event, payload=payload)
+                await socket.send_json(msg.model_dump(mode='json'))
+            except Exception as e:
+                logger.error(f"Error emitiendo a sesión {session_id}: {e}")
+                self.disconnect(socket)
+
+    async def broadcast_to_license(self, license_id: str, event: str, payload: Dict[str, Any]) -> None:
+        """Notifica a todos los dispositivos de una licencia."""
+        sockets = self.license_connections.get(license_id, set())
+        msg = WSMessage(event=event, payload=payload)
+        for socket in list(sockets):
+            try:
+                await socket.send_json(msg.model_dump(mode='json'))
+            except Exception:
+                self.disconnect(socket)
+
+    async def broadcast_to_agency(self, agency_id: str, event: str, payload: Dict[str, Any]) -> None:
+        """Notifica a toda la agencia."""
+        sockets = self.agency_connections.get(agency_id, set())
+        msg = WSMessage(event=event, payload=payload)
+        for socket in list(sockets):
+            try:
+                await socket.send_json(msg.model_dump(mode='json'))
+            except Exception:
+                self.disconnect(socket)
+
+# Instancia global exportada
+socket_manager = ConnectionManager()

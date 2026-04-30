@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime
 
-from app.core.entities.user import User, UserRole
+
 from app.core.entities.models import (
     Agency, License, LicenseStatus, Lead, LeadStatus, AppVersion,
     Ticket, TicketMessage, AuditLog
