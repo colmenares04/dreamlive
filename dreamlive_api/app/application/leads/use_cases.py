@@ -60,6 +60,48 @@ class PurgeLeadsUseCase:
     async def execute(self, agency_id: Optional[str] = None) -> Dict[str, int]:
         return {"deleted": 0}
 
+class PurgeLeadsByStatusUseCase:
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
+
+    async def execute(self, agency_id: str, status: str, license_id: Optional[str] = None) -> int:
+        st = LeadStatus(status)
+        async with self._uow:
+            target_licenses = []
+            if license_id:
+                target_licenses = [license_id]
+            else:
+                licenses = await self._uow.licenses.list_all(agency_id=agency_id)
+                target_licenses = [str(l.id) for l in licenses]
+            
+            if not target_licenses:
+                return 0
+                
+            deleted = await self._uow.leads.delete_by_status(target_licenses, st)
+            await self._uow.commit()
+            return deleted
+
+class DeleteLeadUseCase:
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
+
+    async def execute(self, agency_id: str, lead_id: str) -> bool:
+        async with self._uow:
+            # We don't verify agency ownership here for simplicity, but we could by getting the lead first
+            # and checking its license_id against the agency. Let's do that to be safe.
+            lead = await self._uow.leads.get_by_id(lead_id)
+            if not lead:
+                return False
+                
+            licenses = await self._uow.licenses.list_all(agency_id=agency_id)
+            license_ids = [str(l.id) for l in licenses]
+            if lead.license_id not in license_ids:
+                return False
+                
+            success = await self._uow.leads.delete(lead_id)
+            await self._uow.commit()
+            return success
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # OVERVIEW / DASHBOARD

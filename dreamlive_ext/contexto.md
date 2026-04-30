@@ -1,32 +1,28 @@
-Actúa como un desarrollador Senior especializado en React, Tailwind CSS y extensiones de navegador usando el framework WXT. 
+Actúa como un Ingeniero Frontend Principal. Tenemos que migrar el "Core Operativo" de nuestra antigua extensión (`old_ext`) a la nueva arquitectura (`dreamlive_ext`).
 
-Tu tarea es generar el código completo para el módulo de Autenticación (`features/auth`) y su respectivo servicio de conexión (`infrastructure/api`) para una extensión de navegador.
+El Core Operativo realiza tres procesos principales en TikTok:
+1. Recopilar leads y almacenarlos (DOM Scraping).
+2. Comprobar disponibilidad de los leads (Vistas Backstage/Live).
+3. Enviar mensajes automáticos.
 
-### 1. Requisitos de Arquitectura y Tecnologías
-* **Framework:** React 19, WXT, Tailwind CSS v4, y Lucide React para iconos.
-* **Infraestructura:** Usa `fetch` nativo del navegador (NO Axios). No se usará Supabase en el cliente.
-* **Estructura de archivos esperada:**
-    * `infrastructure/api/auth.service.ts`: Clases o funciones exportadas para conectar con la API (login por email, login por licencia, registro de usuario, vinculación de licencia). Deja los endpoints como variables/constantes fáciles de cambiar.
-    * `features/auth/components/`: Componentes UI para los distintos pasos del flujo.
-    * `features/auth/hooks/`: Un hook `useAuth` para manejar la lógica de estado y llamadas al servicio.
+Quiero migrar estas funcionalidades respetando la lógica de negocio actual, pero adaptándolas a nuestra nueva arquitectura estricta.
 
-### 2. Flujo Lógico de Autenticación
-El sistema debe manejar dos métodos de entrada iniciales, presentados claramente al usuario (por ejemplo, mediante pestañas o botones de selección):
-* **Opción A (Email/Contraseña):** El usuario ingresa credenciales. 
-    * *Condición:* Si la API devuelve éxito pero indica que el usuario NO tiene una licencia vinculada, la UI debe cambiar obligatoriamente a una pantalla de "Vincular Licencia" antes de dar acceso final.
-* **Opción B (Licencia):** El usuario ingresa una clave de licencia.
-    * *Condición:* Si la API devuelve éxito pero indica que la licencia NO tiene un usuario administrador registrado, la UI debe cambiar obligatoriamente a una pantalla de "Registro de Usuario" (pidiendo nombre, email y contraseña).
+### REGLAS DE MIGRACIÓN (CRÍTICAS):
+1. **Nada de Supabase en el Cliente:** En `old_ext`, los servicios (`src/services/leads.ts`, `messaging.ts`, etc.) usaban el cliente de Supabase. En la nueva extensión, ESTÁ PROHIBIDO usar Supabase. Debes refactorizar estos servicios para que usen nuestro `infrastructure/api/apiClient.ts` haciendo llamadas REST a nuestra API en Python.
+2. **Respetar el DOM Scraping:** La lógica de extracción de datos del DOM (query selectors, manipulación de UI en `content.ts` o componentes como `ActionPanel.tsx`) debe mantenerse tal cual como está en `old_ext`. Si funcionaba, no la rompas, solo adáptala a React 19 y Tailwind v4 si es necesario.
+3. **Comunicación Background/Content:** Mantén el uso de los puertos o mensajería nativa de WXT entre el `background.ts` y el `content.ts`.
 
-### 3. Requisitos de UI/UX (Diseño)
-* **Temática Empresarial:** El diseño debe ser serio, profesional, limpio y fácil de entender (nada artístico ni sobrecargado).
-* **Paleta de Colores:** Basado en tonos Grises, Blancos, Negros y acentos en Verde (ej. `bg-green-600`, `text-green-500` para botones primarios o estados de éxito).
-* **Modo Oscuro:** Debe estar completamente soportado mediante las clases `dark:` de Tailwind, garantizando un alto contraste (ej. fondos grises muy oscuros `#121212` o `slate-900` contra textos blancos).
-* **Animaciones:** Utiliza transiciones nativas de Tailwind CSS (`transition-all`, `duration-300`, `ease-in-out`, `animate-fade-in`) para suavizar el cambio entre los métodos de login y la aparición de los formularios condicionales (registro/vinculación).
+### PLAN DE EJECUCIÓN (Responde ejecutando solo la FASE 1):
 
-### 4. Entregables Esperados
-Genera el código para:
-1.  El servicio API `auth.service.ts` con tipado estricto (TypeScript) simulando las respuestas esperadas para probar las condiciones.
-2.  El hook `useAuth.ts` que orqueste los estados (cargando, error, requiere_licencia, requiere_usuario, autenticado).
-3.  El componente principal `AuthScreen.tsx` (que integra los sub-componentes de formularios y pestañas).
+**FASE 1: Capa de Servicios y API (Sin tocar la UI todavía)**
+* Analiza los archivos `src/services/leads.ts`, `messaging.ts` y `backstage.ts` de la `old_ext`.
+* Crea sus equivalentes en `dreamlive_ext` dentro de la carpeta `features/operations/services/` (ej. `leads.service.ts`).
+* Sustituye todas las llamadas de Supabase por métodos estáticos usando `apiClient.get/post/patch`. (Asume que los endpoints en la API ya existen, ej: `/api/v1/leads`).
 
-Asegúrate de que el código sea modular, limpio y listo para ser importado en el popup de la extensión WXT.
+**FASE 2: Content Scripts y UI Inyectada (Te la pediré después)**
+* Migración de `main.content` y `backstage.content` para inyectar el panel en TikTok.
+
+**FASE 3: Vistas del Dashboard (Popup)**
+* Migrar las tablas y modales de los leads a la pestaña "Operativa" que dejamos preparada en el `Dashboard.tsx`.
+
+Por favor, revisa el código de `old_ext` y entrégame el código correspondiente a la **FASE 1**. Crea las interfaces/tipos necesarios para los Leads y Mensajes basándote en la API.

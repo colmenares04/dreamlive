@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
 
 from app.application.leads.use_cases import (
-    ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase,
+    ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase, DeleteLeadUseCase, PurgeLeadsByStatusUseCase
 )
 from app.infrastructure.api.deps import AuthUser
 from app.infrastructure.api.deps import (
@@ -17,6 +17,8 @@ from app.infrastructure.api.providers import (
     get_purge_leads_use_case,
     get_save_lead_use_case,
     get_update_lead_status_use_case,
+    get_delete_lead_use_case,
+    get_purge_leads_by_status_use_case,
 )
 
 
@@ -109,3 +111,29 @@ async def update_lead_status(
     if not success:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
     return {"status": "ok"}
+
+@leads_router.delete("/{lead_id}", dependencies=[Depends(require_agency_group)])
+async def delete_lead(
+    lead_id: str,
+    current_user: AuthUser = Depends(require_agency_group),
+    use_case: DeleteLeadUseCase = Depends(get_delete_lead_use_case),
+):
+    success = await use_case.execute(agency_id=str(current_user.agency_id), lead_id=lead_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Lead no encontrado o no autorizado")
+    return {"status": "ok"}
+
+
+@leads_router.delete("/status/{status}", dependencies=[Depends(require_agency_group)])
+async def purge_leads_by_status(
+    status: str,
+    license_id: Optional[str] = None,
+    current_user: AuthUser = Depends(require_agency_group),
+    use_case: PurgeLeadsByStatusUseCase = Depends(get_purge_leads_by_status_use_case),
+):
+    deleted = await use_case.execute(
+        agency_id=str(current_user.agency_id),
+        status=status,
+        license_id=license_id
+    )
+    return {"status": "ok", "deleted": deleted}

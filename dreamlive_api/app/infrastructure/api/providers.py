@@ -61,8 +61,10 @@ from app.application.licenses.use_cases import (
 from app.application.leads.use_cases import (
     ListLeadsUseCase,
     PurgeLeadsUseCase,
+    PurgeLeadsByStatusUseCase,
     SaveLeadUseCase,
     UpdateLeadStatusUseCase,
+    DeleteLeadUseCase,
     GetAdminOverviewUseCase,
     GetAgencyDashboardUseCase,
     GetLicensePerformanceUseCase,
@@ -175,6 +177,12 @@ async def get_save_lead_use_case(uow: IUnitOfWork = Depends(get_uow)) -> SaveLea
 
 async def get_update_lead_status_use_case(uow: IUnitOfWork = Depends(get_uow)) -> UpdateLeadStatusUseCase:
     return UpdateLeadStatusUseCase(uow=uow)
+
+async def get_delete_lead_use_case(uow: IUnitOfWork = Depends(get_uow)) -> DeleteLeadUseCase:
+    return DeleteLeadUseCase(uow=uow)
+
+async def get_purge_leads_by_status_use_case(uow: IUnitOfWork = Depends(get_uow)) -> PurgeLeadsByStatusUseCase:
+    return PurgeLeadsByStatusUseCase(uow=uow)
 
 async def get_admin_overview_use_case(
     uow: IUnitOfWork = Depends(get_uow),

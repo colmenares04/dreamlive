@@ -67,6 +67,20 @@ class LeadRepository(ILeadRepository):
         )
         return self._to_domain(resp.data[0])
 
+    async def delete(self, lead_id: str) -> bool:
+        resp = await asyncio.to_thread(
+            lambda: self._db.table(self._TABLE).delete().eq("id", lead_id).execute()
+        )
+        return len(resp.data) > 0
+
+    async def delete_by_status(self, license_ids: List[str], status: LeadStatus) -> int:
+        if not license_ids:
+            return 0
+        resp = await asyncio.to_thread(
+            lambda: self._db.table(self._TABLE).delete().in_("license_id", license_ids).eq("status", status.value).execute()
+        )
+        return len(resp.data)
+
     async def list_paginated(
         self,
         license_ids: List[str],

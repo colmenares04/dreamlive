@@ -24,7 +24,7 @@ export const RequireLicenseForm: React.FC<Props> = ({ user, onSubmit, onCancel, 
       <div className="text-center space-y-2 mb-2">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Vincular Licencia</h3>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Hola <strong>{user.name}</strong>, tu cuenta aún no tiene una licencia activa vinculada. Por favor ingresa una clave válida para continuar.
+          Hola <strong>{user.full_name || user.username}</strong>, tu cuenta aún no tiene una licencia activa vinculada. Por favor ingresa una clave válida para continuar.
         </p>
       </div>
 

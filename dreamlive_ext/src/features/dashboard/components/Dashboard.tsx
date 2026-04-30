@@ -19,6 +19,7 @@ import {
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useTheme } from '../../../shared/contexts/ThemeContext';
 import { Badge, Button } from '../../../shared/components/ui';
+import { OperationsConsole } from '../../operations/components/OperationsConsole';
 
 export const Dashboard: React.FC = () => {
   const { user, license, logout } = useAuth();
@@ -164,19 +165,8 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4 animate-in slide-in-from-right-4 duration-300">
-            <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-[#161b22] border border-gray-100 dark:border-[#30363d] flex items-center justify-center text-gray-300 dark:text-[#30363d]">
-              <LayoutDashboard size={32} />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Consola Operativa</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[200px]">
-                Módulo operativo próximamente disponible para la gestión avanzada.
-              </p>
-            </div>
-            <Button variant="ghost" className="text-[10px] text-blue-500 dark:text-[#58a6ff] hover:bg-blue-50 dark:hover:bg-blue-900/10">
-              Saber más <ChevronRight size={12} className="ml-1" />
-            </Button>
+          <div className="h-full animate-in slide-in-from-right-4 duration-300">
+            <OperationsConsole />
           </div>
         )}
       </main>

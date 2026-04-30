@@ -23,6 +23,12 @@ class ILeadRepository(ABC):
     async def update(self, lead: Lead) -> Lead: ...
 
     @abstractmethod
+    async def delete(self, lead_id: str) -> bool: ...
+
+    @abstractmethod
+    async def delete_by_status(self, license_ids: List[str], status: LeadStatus) -> int: ...
+
+    @abstractmethod
     async def list_paginated(
         self,
         license_ids: List[str],
