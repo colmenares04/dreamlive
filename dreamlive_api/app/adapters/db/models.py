@@ -138,3 +138,4 @@ class AppVersionORM(Base):
     tags = Column(ARRAY(String), default=list)
     is_active = Column(Boolean, default=True, nullable=False)
     release_date = Column(DateTime(timezone=True), server_default=func.now())
+

@@ -204,5 +204,6 @@ class IAppVersionRepository(ABC):
     @abstractmethod
     async def delete(self, version_id: str) -> None: ...
 
+
     @abstractmethod
     async def list_all(self) -> List[AppVersion]: ...

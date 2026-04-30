@@ -109,6 +109,13 @@
   color: var(--apple-text-main) !important;
 }
 
+.dreamlive-header-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
 /* --- Circle Progress --- */
 .dreamlive-circle-main {
   position: relative !important;

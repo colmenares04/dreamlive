@@ -19,7 +19,35 @@ export const InjectedModalOrchestrator = () => {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Tema persistente
+  // --- 1. COMUNICACIÓN CON LA EXTENSIÓN (Mensajería en tiempo real) ---
+  useEffect(() => {
+    const messageListener = (message: any, sender: any, sendResponse: (res?: any) => void) => {
+      console.log('📬 Mensaje recibido desde la extensión:', message);
+
+      switch (message.type) {
+        case 'PING_MODALS':
+          // La extensión pregunta si estamos vivos en esta página
+          sendResponse({ status: 'alive', activeModal });
+          break;
+        
+        case 'FORCE_CLOSE_MODALS':
+          handleCloseModal();
+          sendResponse({ status: 'closed' });
+          break;
+
+        case 'SYNC_THEME':
+          setIsDarkMode(message.theme === 'dark');
+          sendResponse({ status: 'synced' });
+          break;
+      }
+      return true; // Mantiene el canal abierto para respuestas asíncronas
+    };
+
+    browser.runtime.onMessage.addListener(messageListener);
+    return () => browser.runtime.onMessage.removeListener(messageListener);
+  }, [activeModal]);
+
+  // --- 2. SINCRONIZACIÓN DE TEMA (Storage) ---
   useEffect(() => {
     const syncTheme = async () => {
       const res = await browser.storage.local.get('theme');
@@ -36,7 +64,7 @@ export const InjectedModalOrchestrator = () => {
     return () => browser.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
-  // Sync with extension storage for active modals
+  // --- 3. SINCRONIZACIÓN DE MODALES ACTIVOS (Storage) ---
   useEffect(() => {
     browser.storage.local.get('activeOperationsModal').then((res) => {
       if (res.activeOperationsModal) setActiveModal(res.activeOperationsModal as ModalType);

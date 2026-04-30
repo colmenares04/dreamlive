@@ -75,8 +75,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 # CORSMiddleware DEBE ser el primero en recibir la petición para manejar OPTIONS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permitir todos para extensiones (Seguro si no usamos cookies de sesión)
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

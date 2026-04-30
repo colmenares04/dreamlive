@@ -13,6 +13,7 @@ from app.core.ports.license_repository import ILicenseRepository
 from app.core.ports.lead_repository import ILeadRepository
 from app.core.ports.ticket_repository import ITicketRepository, ITicketMessageRepository
 from app.core.ports.audit_log_repository import IAuditLogRepository
+from app.core.ports.audit_log_repository import IAuditLogRepository
 from app.core.ports.app_version_repository import IAppVersionRepository
 
 

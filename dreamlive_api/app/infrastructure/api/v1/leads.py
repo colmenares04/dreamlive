@@ -8,6 +8,9 @@ from pydantic import BaseModel
 from app.application.leads.use_cases import (
     ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase, DeleteLeadUseCase, PurgeLeadsByStatusUseCase
 )
+from app.application.leads.keywords_use_cases import (
+    ListKeywordsUseCase, AddKeywordUseCase, RemoveKeywordUseCase
+)
 from app.infrastructure.api.deps import AuthUser
 from app.infrastructure.api.deps import (
     get_current_user, require_agency_group, require_owner_or_admin,
@@ -19,6 +22,9 @@ from app.infrastructure.api.providers import (
     get_update_lead_status_use_case,
     get_delete_lead_use_case,
     get_purge_leads_by_status_use_case,
+    get_list_keywords_use_case,
+    get_add_keyword_use_case,
+    get_remove_keyword_use_case,
 )
 
 
@@ -137,3 +143,36 @@ async def purge_leads_by_status(
         license_id=license_id
     )
     return {"status": "ok", "deleted": deleted}
+
+
+# ── KEYWORDS ──────────────────────────────────────────────────────────────────
+@leads_router.get("/keywords", dependencies=[Depends(require_agency_group)])
+async def list_keywords(
+    license_id: str,
+    use_case: ListKeywordsUseCase = Depends(get_list_keywords_use_case),
+):
+    keywords = await use_case.execute(license_id=license_id)
+    return {"items": keywords}
+
+class AddKeywordBody(BaseModel):
+    license_id: str
+    term: str
+
+@leads_router.post("/keywords", dependencies=[Depends(require_agency_group)])
+async def add_keyword(
+    body: AddKeywordBody,
+    use_case: AddKeywordUseCase = Depends(get_add_keyword_use_case),
+):
+    term = await use_case.execute(license_id=body.license_id, term=body.term)
+    return {"status": "ok", "term": term}
+
+@leads_router.delete("/keywords/{term}", dependencies=[Depends(require_agency_group)])
+async def remove_keyword(
+    term: str,
+    license_id: str,
+    use_case: RemoveKeywordUseCase = Depends(get_remove_keyword_use_case),
+):
+    success = await use_case.execute(license_id=license_id, term=term)
+    if not success:
+        raise HTTPException(status_code=404, detail="Keyword no encontrada")
+    return {"status": "ok"}

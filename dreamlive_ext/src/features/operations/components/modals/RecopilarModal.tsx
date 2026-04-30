@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Play, Square, Terminal, UserPlus, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Play, Square, Terminal, UserPlus, Hash, Plus, Trash2, ArrowRight } from 'lucide-react';
 import { browser } from 'wxt/browser';
+import { tiktokScraper } from '../../services/tiktok-scraper.service';
+import { KeywordsService } from '../../services/keywords.service';
 
 interface Props {
   onClose: () => void;
@@ -11,23 +13,71 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
-  const [isRunning, setIsRunning] = useState(false);
+  
+  // Estados del Motor
+  const [isRunning, setIsRunning] = useState(tiktokScraper.getIsRunning());
   const [count, setCount] = useState(0);
   const [showConsole, setShowConsole] = useState(false);
-  const [logs, setLogs] = useState<string[]>(['[SISTEMA] Motor de extracción listo...', '[INFO] Esperando señal de TikTok Live...']);
+  const [logs, setLogs] = useState<string[]>([]);
+  
+  // Estados de Keywords (UI Apple)
+  const [showKeywordMenu, setShowKeywordMenu] = useState(false);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [activeKeyword, setActiveKeyword] = useState('cargando...');
+  const [newKeyword, setNewKeyword] = useState('');
+
+  const consoleEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showConsole) consoleEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs, showConsole]);
+
+  const keywordsRef = useRef<string[]>([]);
+  const activeKeywordRef = useRef<string>(activeKeyword);
+
+  useEffect(() => {
+    keywordsRef.current = keywords;
+    activeKeywordRef.current = activeKeyword;
+  }, [keywords, activeKeyword]);
+
+  const loadKeywords = async () => {
+    const k = await KeywordsService.getKeywords();
+    const a = await KeywordsService.getActiveKeyword();
+    setKeywords(k);
+    setActiveKeyword(a);
+  };
 
   useEffect(() => {
     browser.storage.local.get('recopilar_position').then((res) => {
       const pos = res.recopilar_position as { x: number; y: number } | undefined;
-      if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
-        setPosition(pos);
+      if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') setPosition(pos);
+    });
+
+    tiktokScraper.setCallbacks({
+      onLog: (msg: string) => setLogs(prev => [...prev.slice(-49), msg]),
+      onCountChange: (newCount: number) => setCount(newCount),
+      onStatusChange: (active: boolean) => setIsRunning(active),
+      onRotate: () => {
+        const currentKeywords = keywordsRef.current;
+        const currentActive = activeKeywordRef.current;
+        
+        if (currentKeywords.length <= 1) return;
+        
+        const currentIndex = currentKeywords.indexOf(currentActive);
+        const nextIndex = (currentIndex + 1) % currentKeywords.length;
+        const nextK = currentKeywords[nextIndex];
+        
+        tiktokScraper.log(`Nicho agotado. Saltando automáticamente a: "${nextK}"`);
+        handleSelectKeyword(nextK);
       }
     });
+
+    loadKeywords();
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button')) return;
+    if (target.closest('button') || target.closest('input')) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y };
   };
@@ -53,7 +103,29 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
     };
   }, [isDragging, position]);
 
-  const toggleConsole = () => setShowConsole(!showConsole);
+  const handleAddKeyword = async () => {
+    if (!newKeyword.trim()) return;
+    const updated = await KeywordsService.addKeyword(newKeyword);
+    setKeywords(updated);
+    setNewKeyword('');
+  };
+
+  const handleSelectKeyword = async (k: string) => {
+    const { url, inline } = await KeywordsService.setActiveKeyword(k);
+    setActiveKeyword(k);
+    setShowKeywordMenu(false);
+    
+    // Solo navegar si NO pudimos hacerlo de forma inline (sin refrescar)
+    if (!inline) {
+      window.location.href = url;
+    }
+  };
+
+  const handleRemoveKeyword = async (e: React.MouseEvent, k: string) => {
+    e.stopPropagation();
+    const updated = await KeywordsService.removeKeyword(k);
+    setKeywords(updated);
+  };
 
   const handleOpenHistory = async () => {
     await browser.storage.local.set({ activeOperationsModal: 'HISTORY_RECOPILAR' });
@@ -70,99 +142,128 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
       <div className="dreamlive-modal-container">
         <div className="dreamlive-modal-card">
           {/* Header */}
-          <div 
-            onMouseDown={handleMouseDown} 
-            className="dreamlive-modal-header" 
-            style={{ 
-              padding: '16px 18px',
-              cursor: isDragging ? 'grabbing' : 'grab',
-              borderBottom: showConsole ? '1px solid var(--apple-border)' : 'none'
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-0.3px' }}>
-                Extracción
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-blue)', marginTop: '1px' }}>
-                {isRunning ? 'EN EJECUCIÓN' : 'ESPERANDO LIVE...'}
-              </span>
-            </div>
-            <div className="dreamlive-header-actions" style={{ gap: '8px' }}>
+          <div onMouseDown={handleMouseDown} className="dreamlive-modal-header" style={{ padding: '16px 18px', cursor: isDragging ? 'grabbing' : 'grab' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-0.3px' }}>
+                  Recopilar Leads
+                </span>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: isRunning ? 'var(--color-blue)' : 'var(--apple-text-sub)', textTransform: 'uppercase' }}>
+                  {isRunning ? 'En ejecución' : 'Listo para iniciar'}
+                </span>
+              </div>
+              
+              {/* Keyword Selector Pill */}
               <button 
-                onClick={toggleConsole}
-                className="dreamlive-icon-btn" 
-                style={{ background: showConsole ? 'var(--color-blue)' : 'var(--apple-btn-secondary)', color: showConsole ? '#FFF' : 'var(--apple-text-main)' }}
+                onClick={() => setShowKeywordMenu(!showKeywordMenu)}
+                style={{
+                  alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '4px 10px', borderRadius: '20px', background: 'var(--apple-bg-secondary)',
+                  border: '1px solid var(--apple-border)', cursor: 'pointer', transition: 'all 0.2s'
+                }}
               >
-                <Terminal size={14} />
+                <Hash size={10} color="var(--color-blue)" />
+                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--apple-text-main)' }}>{activeKeyword}</span>
+                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: isRunning ? 'var(--color-green)' : 'var(--apple-border)' }} />
               </button>
+            </div>
+            
+            <div className="dreamlive-header-actions" style={{ gap: '8px' }}>
+              <button onClick={() => setShowConsole(!showConsole)} className="dreamlive-icon-btn" style={{ background: showConsole ? 'var(--color-blue)' : 'var(--apple-btn-secondary)', color: showConsole ? '#FFF' : 'var(--apple-text-main)' }}><Terminal size={14} /></button>
               <button onClick={onClose} className="dreamlive-icon-btn"><X size={16} /></button>
             </div>
           </div>
 
-          {/* Body */}
+          {/* Quick Keyword Menu (Apple Style) */}
+          {showKeywordMenu && (
+            <div style={{ padding: '0 18px 12px 18px', borderBottom: '1px solid var(--apple-border)', animation: 'fadeIn 0.2s ease' }}>
+              <div style={{ background: 'var(--apple-bg-secondary)', borderRadius: '14px', border: '1px solid var(--apple-border)', padding: '12px', overflow: 'hidden' }}>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Mis Palabras Clave</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                  {keywords.map(k => (
+                    <div 
+                      key={k} onClick={() => handleSelectKeyword(k)}
+                      style={{ 
+                        padding: '6px 12px', borderRadius: '10px', background: activeKeyword === k ? 'var(--color-blue)' : 'var(--apple-bg)',
+                        border: '1px solid var(--apple-border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                      }}
+                    >
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: activeKeyword === k ? '#FFF' : 'var(--apple-text-main)' }}>{k}</span>
+                      <X size={10} onClick={(e) => handleRemoveKeyword(e, k)} style={{ opacity: 0.5, color: activeKeyword === k ? '#FFF' : 'inherit' }} />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input 
+                    type="text" placeholder="Añadir nicho..." value={newKeyword} onChange={e => setNewKeyword(e.target.value)}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--apple-border)', background: 'var(--apple-bg)', fontSize: '11px', color: 'var(--apple-text-main)', outline: 'none' }}
+                  />
+                  <button onClick={handleAddKeyword} style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-blue)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Body */}
           <div className="dreamlive-modal-body" style={{ padding: '20px 18px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
               <div 
                 style={{ 
-                  width: '80px', height: '80px', borderRadius: '50%', 
-                  border: `4px solid ${isRunning ? 'var(--color-blue)' : 'var(--apple-btn-secondary)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.3s ease',
-                  boxShadow: isRunning ? '0 0 15px rgba(0, 122, 255, 0.2)' : 'none'
+                  width: '80px', height: '80px', borderRadius: '50%', border: `4px solid ${isRunning ? 'var(--color-blue)' : 'var(--apple-btn-secondary)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', boxShadow: isRunning ? '0 0 15px rgba(0, 122, 255, 0.2)' : 'none'
                 }}
               >
                 <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)' }}>{count}</span>
               </div>
             </div>
 
-            <div style={{ background: 'var(--apple-bg-secondary)', padding: '12px', borderRadius: '12px', marginBottom: '18px', border: '1px solid var(--apple-border)' }}>
-              <p style={{ fontSize: '11px', fontWeight: '600', color: 'var(--apple-text-sub)', textAlign: 'center', lineHeight: '1.4' }}>
-                Entra en un Live de TikTok para comenzar a detectar usuarios automáticamente.
-              </p>
-            </div>
-
             <div className="dreamlive-button-group" style={{ gap: '10px' }}>
               <button 
-                onClick={() => setIsRunning(!isRunning)}
-                className="dreamlive-btn"
-                style={{ 
-                  background: isRunning ? '#FF3B30' : 'var(--color-blue)', 
-                  color: '#FFFFFF',
-                  height: '42px'
+                onClick={async () => {
+                  if (isRunning) {
+                    tiktokScraper.stop();
+                  } else {
+                    // Verificar si estamos en la ruta correcta antes de iniciar
+                    const currentUrl = window.location.href;
+                    const expectedPart = `q=${encodeURIComponent(activeKeyword)}`;
+                    
+                    if (!currentUrl.includes(expectedPart) || !currentUrl.includes('/search')) {
+                      tiktokScraper.log(`Navegando a la búsqueda de "${activeKeyword}"...`);
+                      const { url, inline } = await KeywordsService.setActiveKeyword(activeKeyword);
+                      if (!inline) window.location.href = url;
+                      // Esperar un poco a que cargue si fue inline
+                      if (inline) await new Promise(r => setTimeout(r, 2000));
+                    }
+                    
+                    const licenseId = await KeywordsService.getLicenseId();
+                    if (licenseId) tiktokScraper.setLicenseId(licenseId);
+                    
+                    tiktokScraper.start();
+                  }
                 }}
+                className="dreamlive-btn" style={{ background: isRunning ? '#FF3B30' : 'var(--color-blue)', color: '#FFFFFF', height: '42px' }}
               >
                 {isRunning ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
                 <span>{isRunning ? 'Detener Servicio' : 'Iniciar Extracción'}</span>
               </button>
               
-              <button 
-                onClick={handleOpenHistory}
-                className="dreamlive-btn"
-                style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '42px' }}
-              >
+              <button onClick={handleOpenHistory} className="dreamlive-btn" style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '42px' }}>
                 <UserPlus size={16} />
-                <span>Ver Historial de Leads</span>
+                <span>Ver Leads</span>
               </button>
             </div>
           </div>
 
-          {/* Console Area */}
+          {/* Console */}
           {showConsole && (
-            <div style={{ 
-              borderTop: '1px solid var(--apple-border)',
-              background: '#000',
-              padding: '12px',
-              maxHeight: '120px',
-              overflowY: 'auto'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                <Terminal size={10} color="#00FF00" />
-                <span style={{ fontSize: '10px', fontWeight: '800', color: '#00FF00', textTransform: 'uppercase' }}>Consola de Eventos</span>
-              </div>
+            <div style={{ borderTop: '1px solid var(--apple-border)', background: '#000', padding: '12px', maxHeight: '100px', overflowY: 'auto' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {logs.map((log, i) => (
                   <div key={i} style={{ fontSize: '10px', color: '#A1A1A6', fontFamily: 'monospace' }}>{log}</div>
                 ))}
+                <div ref={consoleEndRef} />
               </div>
             </div>
           )}

@@ -69,6 +69,11 @@ from app.application.leads.use_cases import (
     GetAgencyDashboardUseCase,
     GetLicensePerformanceUseCase,
 )
+from app.application.leads.keywords_use_cases import (
+    ListKeywordsUseCase,
+    AddKeywordUseCase,
+    RemoveKeywordUseCase,
+)
 
 # ── User, Ticket & Audit Use Cases ────────────────────────────────────────────
 from app.application.users.use_cases import (
@@ -198,6 +203,15 @@ async def get_agency_dashboard_use_case(
 
 async def get_license_performance_use_case(uow: IUnitOfWork = Depends(get_uow)) -> GetLicensePerformanceUseCase:
     return GetLicensePerformanceUseCase(uow=uow)
+
+async def get_list_keywords_use_case(uow: IUnitOfWork = Depends(get_uow)) -> ListKeywordsUseCase:
+    return ListKeywordsUseCase(uow=uow)
+
+async def get_add_keyword_use_case(uow: IUnitOfWork = Depends(get_uow)) -> AddKeywordUseCase:
+    return AddKeywordUseCase(uow=uow)
+
+async def get_remove_keyword_use_case(uow: IUnitOfWork = Depends(get_uow)) -> RemoveKeywordUseCase:
+    return RemoveKeywordUseCase(uow=uow)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

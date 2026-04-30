@@ -75,8 +75,26 @@ export const OperationsConsole: React.FC = () => {
     
     // Solo navegar para los modales de operación principales
     if (!isClosing && id && id in ROUTES) {
+      let targetUrl = URLS[id as keyof typeof URLS];
+      
+      // Si es RECOPILAR, intentamos ir a la palabra activa o a la primera de la lista
+      if (id === 'RECOPILAR') {
+        const res = await browser.storage.local.get(['keywords', 'activeKeyword']);
+        const keywords = (res.keywords as string[]) || [];
+        const activeKeyword = res.activeKeyword as string | undefined;
+        const firstK = keywords[0] || 'batallas';
+        
+        // Prioridad: 1. Palabra activa, 2. Primera de la lista, 3. 'batallas'
+        const keywordToUse = activeKeyword || firstK;
+        targetUrl = `https://www.tiktok.com/search/live?q=${encodeURIComponent(keywordToUse)}`;
+        
+        // Aseguramos que haya algo marcado como activo
+        if (!res.activeKeyword) {
+          await browser.storage.local.set({ activeKeyword: keywordToUse });
+        }
+      }
+
       const targetRoute = ROUTES[id as keyof typeof ROUTES];
-      const targetUrl = URLS[id as keyof typeof URLS];
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab && !tab.url?.includes(targetRoute)) {
         await browser.tabs.update(tab.id, { url: targetUrl });
@@ -131,7 +149,11 @@ export const OperationsConsole: React.FC = () => {
           
           // Limpiamos la URL actual y la ruta objetivo para una comparación más precisa
           const cleanCurrentUrl = currentUrl.replace('https://', '').replace('http://', '').replace('www.', '');
-          const isOnCorrectRoute = cleanCurrentUrl.includes(targetRoute);
+          // Validación flexible para RECOPILAR (acepta /live y /search/live)
+          let isOnCorrectRoute = cleanCurrentUrl.includes(targetRoute);
+          if (btn.id === 'RECOPILAR' && cleanCurrentUrl.includes('tiktok.com') && cleanCurrentUrl.includes('/live')) {
+            isOnCorrectRoute = true;
+          }
           
           const showWarning = isActive && !isOnCorrectRoute;
           

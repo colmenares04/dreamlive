@@ -9,7 +9,8 @@ export const LeadsService = {
    */
   async saveLead(message: any) {
     try {
-      const payload: Lead = {
+      const payload: any = {
+        license_id: message.license_id,
         username: message.username,
         status: 'recopilado',
         viewer_count: message.viewers || 0,
