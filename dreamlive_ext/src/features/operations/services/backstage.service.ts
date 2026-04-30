@@ -32,7 +32,7 @@ export const BackstageService = {
   },
 
   async fetchBatchLeads(limit = 30): Promise<string[]> {
-    const res = await apiClient.get<Lead[]>(`/leads?status=recopilado&limit=${limit}`);
+    const res = await apiClient.get<Lead[]>(`/leads/?status=recopilado&limit=${limit}`);
     if (res.error || !res.data) return [];
     return res.data.map((l: Lead) => l.username);
   },
@@ -41,7 +41,8 @@ export const BackstageService = {
     const discarded = all.filter((u) => !availables.includes(u));
     
     // Delegamos la lógica compleja de batch update/delete al backend
-    await apiClient.post('/leads/batch-process', {
+    // Usamos / para evitar redirecciones 307
+    await apiClient.post('/leads/batch-process/', {
       availables,
       discarded
     });
@@ -54,8 +55,6 @@ export const BackstageService = {
       isCheckingBackstage = false;
       return;
     }
-
-    // Ya no necesitamos sacar el licenseUUID del storage porque el API client envía el JWT token automáticamente.
 
     // 1. Obtenemos lote
     const batch = await this.fetchBatchLeads(30);

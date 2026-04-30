@@ -1,7 +1,41 @@
 import "./style.css";
 import ReactDOM from "react-dom/client";
-import { ActionPanel } from '../../features/operations/components/ActionPanel';
+import { InjectedModalOrchestrator } from '../../features/operations/components/InjectedModalOrchestrator';
 import { browser } from "wxt/browser";
+
+/**
+ * Tailwind v4 usa @property para sus design tokens.
+ * El Shadow DOM NO los soporta, así que deben ir en el Light DOM.
+ */
+function injectTailwindProperties() {
+  const TAG_ID = "dreamlive-tw-props";
+  if (document.getElementById(TAG_ID)) return;
+  const style = document.createElement("style");
+  style.id = TAG_ID;
+  style.textContent = `
+    @property --tw-bg-opacity    { syntax: "<number>"; inherits: false; initial-value: 1; }
+    @property --tw-text-opacity  { syntax: "<number>"; inherits: false; initial-value: 1; }
+    @property --tw-border-opacity{ syntax: "<number>"; inherits: false; initial-value: 1; }
+    @property --tw-shadow        { syntax: "*"; inherits: false; initial-value: ; }
+    @property --tw-shadow-color  { syntax: "*"; inherits: false; initial-value: ; }
+    @property --tw-ring-shadow   { syntax: "*"; inherits: false; initial-value: ; }
+    @property --tw-inset-shadow  { syntax: "*"; inherits: false; initial-value: ; }
+    @property --tw-blur          { syntax: "*"; inherits: false; initial-value: ; }
+    @property --tw-brightness    { syntax: "*"; inherits: false; initial-value: ; }
+    @property --tw-scale-x       { syntax: "<number>"; inherits: false; initial-value: 1; }
+    @property --tw-scale-y       { syntax: "<number>"; inherits: false; initial-value: 1; }
+    @property --tw-rotate        { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+    @property --tw-translate-x   { syntax: "<length-percentage>"; inherits: false; initial-value: 0; }
+    @property --tw-translate-y   { syntax: "<length-percentage>"; inherits: false; initial-value: 0; }
+    @property --tw-backdrop-blur { syntax: "*"; inherits: false; initial-value: ; }
+    :root {
+      --color-apple-green:  #34C759;
+      --color-apple-blue:   #007AFF;
+      --color-apple-purple: #AF52DE;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 // ==========================================
 // 1. CONFIGURACIÓN Y ESTADO
@@ -396,6 +430,7 @@ const toggleRecopilacion = async (activar: boolean) => {
 
 export default defineContentScript({
   matches: ["*://*.tiktok.com/*"],
+  excludeMatches: ["*://live-backstage.tiktok.com/*"], // 🚫 EVITAR DUPLICADOS EN BACKSTAGE
   cssInjectionMode: "ui",
   runAt: "document_end",
 
@@ -423,15 +458,31 @@ export default defineContentScript({
       setTimeout(() => toggleRecopilacion(true), 2000);
     }
 
-    // 3. UI
+    // 3. UI — @property de Tailwind inyectados ANTES del Shadow Root
+    injectTailwindProperties();
     const ui = await createShadowRootUi(ctx, {
       name: "dreamlive-manager",
       position: "inline",
       anchor: "body",
       append: "first",
       onMount: (container) => {
+        // Mismo blindaje de host que backstage.content
+        const host = (container.getRootNode() as any)?.host;
+        if (host) {
+          Object.assign(host.style, {
+            all: 'initial',
+            position: 'fixed',
+            zIndex: '2147483647',
+            top: '0',
+            left: '0',
+            width: '0',
+            height: '0',
+            pointerEvents: 'none',
+          });
+        }
+        container.style.pointerEvents = "auto";
         const root = ReactDOM.createRoot(container);
-        root.render(<ActionPanel />);
+        root.render(<InjectedModalOrchestrator />);
         return root;
       },
       onRemove: (root) => root?.unmount(),

@@ -1,3 +1,4 @@
+import "./style.css";
 import { browser } from "wxt/browser";
 import { UiModule } from "./module/ui";
 import { BulkModule } from "./module/bulk";

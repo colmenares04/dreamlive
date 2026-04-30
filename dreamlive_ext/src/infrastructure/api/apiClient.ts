@@ -10,13 +10,62 @@ export interface ApiResponse<T> {
  * ApiClient
  * 
  * Clase encargada de gestionar todas las peticiones HTTP al backend.
- * Implementa un patrón Singleton para mantener una única configuración base.
+ * Implementa auto-refresh de tokens y reintento de peticiones.
  */
 class ApiClient {
   private readonly baseUrl: string;
+  private isRefreshing = false;
+  private refreshSubscribers: ((token: string) => void)[] = [];
 
   constructor() {
     this.baseUrl = import.meta.env.WXT_API_BASE_URL || 'http://localhost:8000/api/v1';
+  }
+
+  private onTokenRefreshed(token: string) {
+    this.refreshSubscribers.map(cb => cb(token));
+    this.refreshSubscribers = [];
+  }
+
+  private addRefreshSubscriber(cb: (token: string) => void) {
+    this.refreshSubscribers.push(cb);
+  }
+
+  /**
+   * Intenta refrescar el token de acceso usando el refresh token almacenado.
+   */
+  private async refreshToken(): Promise<string | null> {
+    try {
+      const refreshToken = await storage.getItem<string>('local:refresh_token');
+      if (!refreshToken) return null;
+
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${refreshToken}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Refresh failed');
+
+      const data = await response.json();
+      const newToken = data.access_token;
+      const newRefreshToken = data.refresh_token;
+
+      // Guardar nuevos tokens
+      await storage.setItem('local:token', newToken);
+      if (newRefreshToken) {
+        await storage.setItem('local:refresh_token', newRefreshToken);
+      }
+
+      return newToken;
+    } catch (error) {
+      console.error('[AUTH] Error refrescando token:', error);
+      // Limpiar tokens si el refresh falla definitivamente
+      await storage.removeItem('local:token');
+      await storage.removeItem('local:refresh_token');
+      return null;
+    }
   }
 
   /**
@@ -26,7 +75,8 @@ class ApiClient {
     endpoint: string, 
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT', 
     body?: any,
-    params?: Record<string, string>
+    params?: Record<string, string>,
+    isRetry = false
   ): Promise<ApiResponse<T>> {
     try {
       const token = await storage.getItem<string>('local:token');
@@ -51,12 +101,33 @@ class ApiClient {
       });
 
       const status = response.status;
+
+      // LÓGICA DE AUTO-REFRESH (401 Unauthorized)
+      if (status === 401 && !isRetry && endpoint !== '/auth/refresh') {
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
+          const newToken = await this.refreshToken();
+          this.isRefreshing = false;
+
+          if (newToken) {
+            this.onTokenRefreshed(newToken);
+            // Reintentar la petición original con el nuevo token
+            return this.request<T>(endpoint, method, body, params, true);
+          }
+        } else {
+          // Esperar a que el refresh en curso termine y reintentar
+          return new Promise((resolve) => {
+            this.addRefreshSubscriber((token) => {
+              resolve(this.request<T>(endpoint, method, body, params, true));
+            });
+          });
+        }
+      }
       
       if (status === 204) {
         return { status, data: {} as T };
       }
 
-      // Intentar parsear JSON solo si hay contenido
       const text = await response.text();
       const responseData = text ? JSON.parse(text) : {};
 
@@ -101,5 +172,4 @@ class ApiClient {
   }
 }
 
-// Exportamos una instancia única para toda la aplicación (Singleton)
 export const apiClient = new ApiClient();

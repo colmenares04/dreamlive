@@ -5,7 +5,7 @@ import { Lead } from './types';
 export const LeadsService = {
   /**
    * Guarda un nuevo lead recopilado en el backend.
-   * Reemplaza el upsert directo a Supabase.
+   * Usamos /leads/ con barra final para evitar redirecciones 307.
    */
   async saveLead(message: any) {
     try {
@@ -17,8 +17,7 @@ export const LeadsService = {
         source: message.source || 'unknown',
       };
 
-      // El backend extrae el license_id del JWT
-      const response = await apiClient.post('/leads', payload);
+      const response = await apiClient.post('/leads/', payload);
 
       if (!response.error) {
         browser.runtime
@@ -40,7 +39,7 @@ export const LeadsService = {
   },
 
   async getLeads(status: string, page: number = 1, pageSize: number = 100, search: string = '') {
-    const url = `/leads?status=${status}&page=${page}&page_size=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`;
+    const url = `/leads/?status=${status}&page=${page}&page_size=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`;
     const res = await apiClient.get<any>(url);
     if (res.error) throw new Error((res.error as any).detail || 'Error fetching leads');
     return res.data;

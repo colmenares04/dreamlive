@@ -1,0 +1,170 @@
+/* ============================================================
+   DREAMLIVE — APPLE DESIGN SYSTEM (SOLID UI)
+   Refinado para Máximo Contraste en Modo Oscuro
+   ============================================================ */
+
+:host {
+  all: initial !important;
+  display: block !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+}
+
+/* --- THEME TOKENS --- */
+.dreamlive-scope {
+  --apple-bg: #FFFFFF;
+  --apple-bg-secondary: #F5F5F7;
+  --apple-text-main: #1D1D1F;
+  --apple-text-sub: #636366; /* Gris más oscuro para modo claro */
+  --apple-border: #D1D1D6;
+  --apple-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --apple-btn-secondary: #E8E8ED;
+  --apple-btn-secondary-hover: #D1D1D6;
+  
+  --color-blue: #007AFF;
+  --color-blue-hover: #0062CC;
+  --color-green: #28CD41;
+  --color-purple: #AF52DE;
+  
+  --apple-btn-disabled: #F2F2F7;
+  --apple-text-disabled: #A1A1A6;
+}
+
+.dreamlive-scope[data-theme="dark"] {
+  --apple-bg: #1C1C1E;
+  --apple-bg-secondary: #2C2C2E;
+  --apple-text-main: #FFFFFF;
+  --apple-text-sub: #A1A1A6; /* MUCHO MÁS CLARO para legibilidad */
+  --apple-border: #48484A; /* Más visible */
+  --apple-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  --apple-btn-secondary: #3A3A3C;
+  --apple-btn-secondary-hover: #48484A;
+  --apple-btn-disabled: #2C2C2E;
+  --apple-text-disabled: #636366;
+}
+
+/* --- Base Resets --- */
+.dreamlive-scope *, 
+.dreamlive-scope *::before, 
+.dreamlive-scope *::after {
+  box-sizing: border-box !important;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Theme Toggle Widget --- */
+.dreamlive-theme-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: var(--apple-bg) !important;
+  border: 1px solid var(--apple-border) !important;
+  box-shadow: var(--apple-shadow) !important;
+  color: var(--apple-text-main) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: transform 0.2s, background 0.2s !important;
+}
+
+/* --- Card Modals --- */
+.dreamlive-modal-card {
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--apple-bg) !important;
+  border-radius: 20px !important;
+  border: 1px solid var(--apple-border) !important;
+  box-shadow: var(--apple-shadow) !important;
+  overflow: hidden !important;
+}
+
+.dreamlive-modal-header {
+  padding: 16px 20px 12px 20px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  cursor: grab !important;
+}
+
+.dreamlive-title-main { color: var(--apple-text-main) !important; font-size: 15px !important; font-weight: 700 !important; }
+.dreamlive-title-sub { font-size: 10px !important; font-weight: 700 !important; opacity: 0.8 !important; }
+
+.dreamlive-icon-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: var(--apple-btn-secondary) !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--apple-text-main) !important;
+}
+
+/* --- Circle Progress --- */
+.dreamlive-circle-main {
+  position: relative !important;
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 50% !important;
+  border: 3px solid var(--apple-btn-secondary) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.dreamlive-circle-value {
+  color: var(--apple-text-main) !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+/* --- Body --- */
+.dreamlive-info-text {
+  color: var(--apple-text-sub) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+}
+
+/* --- Buttons --- */
+.dreamlive-btn {
+  width: 100% !important;
+  border-radius: 12px !important;
+  border: none !important;
+  padding: 10px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.dreamlive-btn-primary { background: var(--color-blue) !important; color: #FFFFFF !important; }
+.dreamlive-btn-secondary { background: var(--apple-btn-secondary) !important; color: var(--apple-text-main) !important; }
+
+/* Console */
+.dreamlive-console {
+  background: var(--apple-bg-secondary) !important;
+  border: 1px solid var(--apple-border) !important;
+  border-radius: 10px !important;
+  padding: 10px !important;
+  font-family: ui-monospace, monospace !important;
+  font-size: 10px !important;
+  color: var(--apple-text-main) !important;
+}
+
+/* Utils */
+.text-blue { color: var(--color-blue) !important; }
+.text-red { color: #FF3B30 !important; }
+.bg-blue { background: var(--color-blue) !important; }

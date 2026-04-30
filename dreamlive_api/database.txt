@@ -35,7 +35,6 @@ CREATE TABLE dreamtool.audit_logs (
   ip_address text,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT audit_logs_pkey PRIMARY KEY (id),
-  CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES dreamtool.users(id),
   CONSTRAINT audit_logs_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES dreamtool.agencies(id)
 );
 CREATE TABLE dreamtool.license_sessions (
@@ -68,6 +67,7 @@ CREATE TABLE dreamtool.licenses (
   admin_password text DEFAULT 'admin123'::text,
   invitation_types jsonb DEFAULT '["Normal", "Elite", "Popular"]'::jsonb,
   theme text DEFAULT 'dark'::text,
+  full_name text,
   CONSTRAINT licenses_pkey PRIMARY KEY (id),
   CONSTRAINT licenses_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES dreamtool.agencies(id)
 );
@@ -78,8 +78,7 @@ CREATE TABLE dreamtool.ticket_messages (
   message text NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT ticket_messages_pkey PRIMARY KEY (id),
-  CONSTRAINT ticket_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES dreamtool.tickets(id),
-  CONSTRAINT ticket_messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES dreamtool.users(id)
+  CONSTRAINT ticket_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES dreamtool.tickets(id)
 );
 CREATE TABLE dreamtool.tickets (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -93,8 +92,7 @@ CREATE TABLE dreamtool.tickets (
   updated_at timestamp with time zone DEFAULT now(),
   closed_at timestamp with time zone,
   CONSTRAINT tickets_pkey PRIMARY KEY (id),
-  CONSTRAINT tickets_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES dreamtool.agencies(id),
-  CONSTRAINT tickets_assigned_user_fkey FOREIGN KEY (assigned_to_user_id) REFERENCES dreamtool.users(id)
+  CONSTRAINT tickets_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES dreamtool.agencies(id)
 );
 CREATE TABLE dreamtool.tiktok_leads (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -109,23 +107,6 @@ CREATE TABLE dreamtool.tiktok_leads (
   likes_count bigint DEFAULT 0,
   CONSTRAINT tiktok_leads_pkey PRIMARY KEY (id),
   CONSTRAINT tiktok_leads_license_id_fkey FOREIGN KEY (license_id) REFERENCES dreamtool.licenses(id)
-);
-CREATE TABLE dreamtool.users (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  agency_id uuid,
-  first_name text NOT NULL,
-  last_name text NOT NULL,
-  email text NOT NULL UNIQUE,
-  password_hash text NOT NULL,
-  role USER-DEFINED DEFAULT 'agency_admin'::dreamtool.admin_role,
-  is_active boolean DEFAULT true,
-  last_login timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  license_id uuid,
-  CONSTRAINT users_pkey PRIMARY KEY (id),
-  CONSTRAINT users_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES dreamtool.agencies(id),
-  CONSTRAINT users_license_id_fkey FOREIGN KEY (license_id) REFERENCES dreamtool.licenses(id)
 );
 CREATE TABLE dreamtool.version_downloads (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

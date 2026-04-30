@@ -36,21 +36,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS & Security Headers ──────────────────────────────────────────────────
-_cors_origins = [
-    "http://217.216.94.178", "http://127.0.0.1",
-    "http://217.216.94.178:5173", "http://127.0.0.1:5173",
-    "http://217.216.94.178:3000", "http://127.0.0.1:3000"
-]
-if settings.ALLOWED_ORIGINS:
-    _cors_origins = list(set(_cors_origins + settings.ALLOWED_ORIGINS))
-print(f"CORS activo para orígenes: {_cors_origins}")
-
+# ── Security Headers Middleware ──────────────────────────────────────────────
 class SecurityHeadersMiddleware:
-    """
-    Middleware ASGI puro para inyectar cabeceras de seguridad.
-    Diseñado para ser transparente y no interferir con protocolos de red (como WebSockets).
-    """
     def __init__(self, app: ASGIApp):
         self.app = app
 
@@ -61,37 +48,39 @@ class SecurityHeadersMiddleware:
         async def send_wrapper(message: dict):
             if message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
-                
                 security_headers = [
                     (b"X-Content-Type-Options", b"nosniff"),
                     (b"X-Frame-Options", b"DENY"),
                     (b"X-XSS-Protection", b"1; mode=block"),
                     (b"Strict-Transport-Security", b"max-age=31536000; includeSubDomains"),
                     (b"Referrer-Policy", b"strict-origin-when-cross-origin"),
-                    (b"Content-Security-Policy", b"default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;")
                 ]
-                
                 existing_keys = {h[0].lower() for h in headers}
                 for k, v in security_headers:
                     if k.lower() not in existing_keys:
                         headers.append((k, v))
-                
                 message["headers"] = headers
             await send(message)
 
         await self.app(scope, receive, send_wrapper)
 
+# ── Middleware Stack ─────────────────────────────────────────────────────────
+# Nota: El orden de add_middleware es inverso al de ejecución.
+# El último añadido es el PRIMERO en recibir la petición.
+
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitMiddleware) 
+app.add_middleware(SecurityHeadersMiddleware)
+
+# CORSMiddleware DEBE ser el primero en recibir la petición para manejar OPTIONS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
+    allow_origins=["*"], # Permitir todos para extensiones (Seguro si no usamos cookies de sesión)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitMiddleware) 
-app.add_middleware(RequestLoggingMiddleware)
 register_exception_handlers(app)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
@@ -105,17 +94,11 @@ app.include_router(audit_router,     prefix=PREFIX)
 for router in getattr(v1_routes, "ROUTERS", []):
     app.include_router(router, prefix=PREFIX)
 
-# Native WebSockets are handled directly by the FastAPI app routers.
-# No extra ASGI wrapper needed.
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": settings.APP_VERSION}
 
-# --- Ejecución ---
 if __name__ == "__main__":
-    print(f"SUPABASE URL DETECTADA: {settings.SUPABASE_URL}")
     uvicorn.run(
         "main:app", 
         host=settings.HOST_IP, 

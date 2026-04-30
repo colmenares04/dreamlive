@@ -14,7 +14,8 @@ import {
   Terminal,
   Activity,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useTheme } from '../../../shared/contexts/ThemeContext';
@@ -30,156 +31,139 @@ export const Dashboard: React.FC = () => {
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'AD';
 
   return (
-    <div className="w-full min-h-full flex flex-col bg-white dark:bg-[#0d1117] transition-colors duration-300 animate-in fade-in duration-500">
-      {/* Header */}
-      <header className="px-4 py-3 border-b border-gray-200 dark:border-[#30363d] flex items-center justify-between bg-gray-50 dark:bg-[#161b22]">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-[#175DDC] dark:bg-[#238636] flex items-center justify-center shadow-sm">
-            <Terminal size={18} className="text-white" />
+    <div className="w-full min-h-full flex flex-col bg-[#F5F5F7] dark:bg-[#000000] text-gray-900 dark:text-gray-100 transition-colors duration-300 animate-in fade-in">
+      
+      {/* Compact Apple ID Style Header */}
+      <header className="px-6 py-5 flex items-center justify-between relative bg-white dark:bg-[#1C1C1E] border-b border-black/5 dark:border-white/5 shadow-sm mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[var(--color-apple-green)] to-[#A2F0B3] flex items-center justify-center text-white text-lg font-medium shadow-sm">
+            {initials}
           </div>
-          <div>
-            <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">DreamLive</h1>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-mono uppercase tracking-tighter">Enterprise v1.2.0</p>
+          <div className="flex flex-col">
+            <h1 className="text-[16px] font-semibold tracking-tight text-gray-900 dark:text-white leading-tight">
+              {user?.username || 'Administrador'}
+            </h1>
+            <p className="text-[12px] text-gray-500 dark:text-gray-400">
+              {user?.email || 'Sesión Activa'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={toggleTheme} 
-            className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-[#30363d] text-gray-600 dark:text-gray-400 transition-all"
-            title="Cambiar Tema"
+            className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-gray-500 dark:text-gray-400 relative"
+            title="Notificaciones"
           >
-            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            <Bell size={16} strokeWidth={1.5} />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white dark:border-[#1C1C1E]" />
+          </button>
+          <button 
+            onClick={toggleTheme} 
+            className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-gray-500 dark:text-gray-400"
+            title="Tema"
+          >
+            {theme === 'light' ? <Moon size={16} strokeWidth={1.5} /> : <Sun size={16} strokeWidth={1.5} />}
           </button>
           <button 
             onClick={logout}
-            className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-all"
+            className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all text-gray-500 dark:text-gray-400 hover:text-red-500"
             title="Cerrar Sesión"
           >
-            <LogOut size={16} />
+            <LogOut size={16} strokeWidth={1.5} />
           </button>
         </div>
       </header>
 
-      {/* User Info Bar */}
-      <div className="px-4 py-3 flex items-center gap-3 bg-white dark:bg-[#0d1117] border-b border-gray-100 dark:border-[#30363d]/50">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-[#238636] dark:to-[#2ea043] flex items-center justify-center text-white text-xs font-bold shadow-sm">
-          {initials}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {user?.username || 'Administrador'}
-          </h2>
-          <div className="flex items-center gap-1.5">
-            <Badge variant={user?.role === 'superuser' ? 'indigo' : 'gray'} className="text-[9px] px-1 py-0 uppercase tracking-tighter">
-              {user?.role || 'Agente'}
-            </Badge>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{user?.email || 'Sesión Activa'}</span>
-          </div>
+      {/* Segmented Control Navigation */}
+      <div className="px-4 pb-2">
+        <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-[10px]">
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${
+              activeTab === 'profile' 
+                ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            Suscripción
+          </button>
+          <button 
+            onClick={() => setActiveTab('ops')}
+            className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${
+              activeTab === 'ops' 
+                ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            Operaciones
+          </button>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <nav className="flex px-4 pt-2 gap-4 border-b border-gray-100 dark:border-[#30363d]/50">
-        <button 
-          onClick={() => setActiveTab('profile')}
-          className={`pb-2 text-xs font-medium transition-all relative ${activeTab === 'profile' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-        >
-          Perfil y Licencia
-          {activeTab === 'profile' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#175DDC] dark:bg-[#f78166] rounded-t-full" />}
-        </button>
-        <button 
-          onClick={() => setActiveTab('ops')}
-          className={`pb-2 text-xs font-medium transition-all relative ${activeTab === 'ops' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-        >
-          Consola Operativa
-          {activeTab === 'ops' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#175DDC] dark:bg-[#f78166] rounded-t-full" />}
-        </button>
-      </nav>
-
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <main className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
         {activeTab === 'profile' ? (
-          <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
+          <div className="space-y-4 animate-in fade-in duration-300 pt-2">
+            
             {/* License Card */}
-            <div className="rounded-xl border border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#161b22] overflow-hidden shadow-sm">
-              <div className="px-4 py-3 border-b border-gray-100 dark:border-[#30363d] bg-gray-50/50 dark:bg-[#161b22]/50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-emerald-500 dark:text-[#3fb950]" />
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight">Estado de Suscripción</span>
-                </div>
-                <Badge variant="green" className="text-[10px]">ACTIVA</Badge>
+            <div className="rounded-2xl bg-white dark:bg-[#1C1C1E] overflow-hidden shadow-sm border border-black/5 dark:border-white/5">
+              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <span className="text-[15px] font-semibold tracking-tight">Detalles de Licencia</span>
+                <span className="text-[12px] font-medium text-[var(--color-apple-green)] bg-[var(--color-apple-green)]/10 px-2 py-0.5 rounded-full">Activa</span>
               </div>
               
-              <div className="p-4 space-y-4">
+              <div className="p-5 space-y-5">
                 {/* Key Field */}
                 <div>
-                  <label className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-black tracking-widest mb-1.5 block">Clave Corporativa</label>
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-100 dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d]">
-                    <code className="text-xs font-mono font-bold text-blue-600 dark:text-[#58a6ff]">
+                  <label className="text-[12px] text-gray-500 dark:text-gray-400 mb-1 block">Clave Corporativa</label>
+                  <div className="flex items-center justify-between">
+                    <code className="text-[15px] font-mono text-gray-900 dark:text-white">
                       {showKey ? (license?.key || 'DL-PREMIUM-2026-X') : '••••-••••-••••-••••'}
                     </code>
                     <button 
                       onClick={() => setShowKey(!showKey)} 
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                      className="p-1.5 rounded-full text-[var(--color-apple-green)] bg-[var(--color-apple-green)]/10 hover:bg-[var(--color-apple-green)]/20 transition-colors"
                     >
-                      {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {showKey ? <EyeOff size={14} strokeWidth={1.5} /> : <Eye size={14} strokeWidth={1.5} />}
                     </button>
                   </div>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg border border-gray-100 dark:border-[#30363d]/50 bg-gray-50/30 dark:bg-[#0d1117]/30">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Clock size={12} className="text-gray-400" />
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Vencimiento</span>
-                    </div>
-                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                <div className="h-px bg-gray-100 dark:bg-gray-800" />
+
+                {/* Stats */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-[12px] text-gray-500 dark:text-gray-400 block mb-0.5">Vencimiento</label>
+                    <p className="text-[14px] font-medium text-gray-900 dark:text-white">
                       {license?.expiration_date ? new Date(license.expiration_date).toLocaleDateString() : '31/12/2026'}
                     </p>
                   </div>
-                  <div className="p-3 rounded-lg border border-gray-100 dark:border-[#30363d]/50 bg-gray-50/30 dark:bg-[#0d1117]/30">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Monitor size={12} className="text-gray-400" />
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Sesiones</span>
-                    </div>
-                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                      1 / {license?.max_devices || 5}
+                  <div className="text-right">
+                    <label className="text-[12px] text-gray-500 dark:text-gray-400 block mb-0.5">Sesiones Activas</label>
+                    <p className="text-[14px] font-medium text-gray-900 dark:text-white">
+                      1 de {license?.max_devices || 5}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="text-xs h-10 border-gray-200 dark:border-[#30363d] dark:hover:bg-[#30363d]">
-                <Settings size={14} className="mr-2" />
-                Ajustes
-              </Button>
-              <Button variant="outline" className="text-xs h-10 border-gray-200 dark:border-[#30363d] dark:hover:bg-[#30363d]">
-                <Activity size={14} className="mr-2" />
-                Métricas
-              </Button>
-            </div>
           </div>
         ) : (
-          <div className="h-full animate-in slide-in-from-right-4 duration-300">
+          <div className="h-full animate-in fade-in pt-2">
             <OperationsConsole />
           </div>
         )}
       </main>
 
       {/* Footer Status Bar */}
-      <footer className="px-4 py-2 border-t border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#0d1117] flex items-center justify-between text-[10px]">
-        <div className="flex items-center gap-1.5 font-bold text-gray-500 dark:text-[#8b949e]">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)] animate-pulse" />
-          ONLINE
+      <footer className="px-6 py-3 flex items-center justify-between text-[11px] font-medium text-gray-400 dark:text-gray-500 bg-[#F5F5F7] dark:bg-[#000000]">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-apple-green)]" />
+          DreamLive Enterprise
         </div>
-        <a href="#" className="flex items-center gap-1 text-blue-600 dark:text-[#58a6ff] hover:underline font-bold">
-          Soporte <ExternalLink size={10} />
-        </a>
+        <span>v1.2.0</span>
       </footer>
     </div>
   );
