@@ -8,6 +8,9 @@ import { apiClient } from '../infrastructure/api/apiClient';
 export default defineBackground(() => {
   console.log('🔥 DreamLive Background Controller Initialized.', { id: browser.runtime.id });
 
+  // Cola de usuarios (leads) en memoria para el modelo PULL
+  let leadsQueue: any[] = [];
+
   browser.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
     const msg = message as ExtensionMessage;
 
@@ -37,18 +40,37 @@ export default defineBackground(() => {
         }
         break;
 
+      case 'START_CHECKING_FLOW':
+        if ('leads' in msg && Array.isArray(msg.leads)) {
+          leadsQueue = [...msg.leads];
+          console.log(`[Background] START_CHECKING_FLOW recibido. Cola inicializada con ${leadsQueue.length} leads.`);
+          sendResponse({ success: true, count: leadsQueue.length });
+        } else {
+          console.warn('[Background] Recibido START_CHECKING_FLOW sin array de leads.');
+          sendResponse({ success: false, error: 'Se requiere un array de leads.' });
+        }
+        return true;
+
       case 'GET_BATCH_TO_CHECK':
-        // El scraper solicita un nuevo lote
+        // El scraper solicita un nuevo lote por modelo PULL
         (async () => {
           try {
-            const users = await BackstageService.fetchBatchLeads(undefined, 30);
-            sendResponse({ users });
+            if (leadsQueue.length > 0) {
+              // Extraer un lote de usuarios (ej. 15 leads por defecto)
+              const batchSize = (msg as any).batchSize || 15;
+              const batch = leadsQueue.splice(0, batchSize);
+              console.log(`[Background] GET_BATCH_TO_CHECK extrayendo lote de ${batch.length} leads. Quedan ${leadsQueue.length} en cola.`);
+              sendResponse({ users: batch });
+            } else {
+              console.log('[Background] GET_BATCH_TO_CHECK: Cola de leads vacía.');
+              sendResponse({ users: [] });
+            }
           } catch (error) {
             console.error('[Background] Error fetching batch leads:', error);
             sendResponse({ users: [] });
           }
         })();
-        return true; // Mantener canal abierto
+        return true; // Mantener canal abierto para respuesta asíncrona
 
       case 'SAVE_INVITATION_CONFIG':
         // Guardar la selección múltiple en la base de datos
@@ -116,6 +138,12 @@ export default defineBackground(() => {
         }
         break;
 
+      case 'ABORT_CHECKING_FLOW':
+        leadsQueue = [];
+        console.log('[Background] ABORT_CHECKING_FLOW recibido. Se ha vaciado la cola de leads.');
+        sendResponse({ success: true });
+        return true;
+
       // Eventos puramente de estado/UI que se manejan a nivel de extensión (popup -> content script)
       case 'toggleRecopilacion':
       case 'LEAD_SAVED_CONFIRMATION':
@@ -126,12 +154,9 @@ export default defineBackground(() => {
       case 'CHECK_BATCH_ON_PAGE':
       case 'PROCESS_CONTACT_FLOW':
       case 'ABORT_CONTACT_FLOW':
-      case 'ABORT_CHECKING_FLOW':
       case 'LIMIT_REACHED':
         // Estos mensajes usualmente viajan entre el popup y el content script directamente, 
-        // o son broadcasts a los que la UI se suscribe. El background no necesita procesarlos, 
-        // pero podemos logearlos para debugging.
-        // console.log('[Background] Evento UI/Estado detectado:', msg.type);
+        // o son broadcasts a los que la UI se suscribe.
         break;
 
       default:

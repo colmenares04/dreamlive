@@ -2,9 +2,9 @@ import "./style.css";
 import { browser } from "wxt/browser";
 import { UiModule } from "./module/ui";
 import { BulkModule } from "./module/bulk";
-import { ChatModule } from "./module/chat";
 import { log } from "./utils";
 import { availabilityScraper } from '../../features/operations/services/availability-scraper.service';
+import { ChatAutomationService } from "../../features/operations/services/chat-automation.service";
 
 export default defineContentScript({
   matches: ["*://live-backstage.tiktok.com/*"],
@@ -34,16 +34,22 @@ export default defineContentScript({
 
       // B. Flujo de Contacto (Chat)
       else if (message.type === "PROCESS_CONTACT_FLOW") {
-        ChatModule.processFlow(
+        const chatService = ChatAutomationService.getInstance();
+        chatService.setCallbacks({
+          onLog: (msg, type) => log(msg, type),
+          onProgress: (current, total) => console.log(`[ChatAutomation] Progreso: ${current}/${total}`),
+          onStatusChange: (isRunning) => console.log(`[ChatAutomation] Estado corriendo: ${isRunning}`),
+        });
+        chatService.start(
           message.leads,
           message.templates,
-          message.targetSuccessCount,
+          message.targetSuccessCount
         );
       }
-      if (message.type === "ABORT_CONTACT_FLOW") {
-        ChatModule.abort();
+      else if (message.type === "ABORT_CONTACT_FLOW") {
+        ChatAutomationService.getInstance().abort();
       }
-      if (message.type === "ABORT_CHECKING_FLOW") {
+      else if (message.type === "ABORT_CHECKING_FLOW") {
         BulkModule.abort();
       }
     };

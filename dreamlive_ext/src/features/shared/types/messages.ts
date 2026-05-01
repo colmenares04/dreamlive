@@ -17,6 +17,7 @@ export type MessageType =
   | 'DELETE_LEAD'
   | 'GET_BATCH_TO_CHECK'
   | 'NAVIGATE'
+  | 'START_CHECKING_FLOW'
   | 'SAVE_INVITATION_CONFIG';
 
 export interface BaseMessage {
