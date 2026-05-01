@@ -35,6 +35,7 @@ class ILeadRepository(ABC):
         page: int = 1,
         page_size: int = 50,
         status: Optional[LeadStatus] = None,
+        source: Optional[str] = None,
         search: Optional[str] = None,
         min_viewers: Optional[int] = None,
         min_likes: Optional[int] = None,
@@ -73,3 +74,13 @@ class ILeadRepository(ABC):
     ) -> Dict[str, Dict[str, int]]:
         """Retorna {license_id: {today: count, total: count}}."""
         ...
+
+    @abstractmethod
+    async def update_status_bulk(
+        self, license_id: str, usernames: List[str], new_status: LeadStatus
+    ) -> int: ...
+
+    @abstractmethod
+    async def delete_bulk_by_username(
+        self, license_id: str, usernames: List[str]
+    ) -> int: ...

@@ -4,7 +4,9 @@ import { AvailabilityModal } from "./modals/AvailabilityModal";
 import { ContactModal } from "./modals/ContactModal";
 import { HistoryModal } from "./modals/HistoryModal";
 import { ControlCenterWidget } from "./ControlCenterWidget";
+import { OperationsConsole } from "./OperationsConsole";
 import { browser } from "wxt/browser";
+import { ThemeProvider, useTheme } from "../../../shared/contexts/ThemeContext";
 
 export type ModalType = 
   | 'RECOPILAR' 
@@ -17,7 +19,6 @@ export type ModalType =
 
 export const InjectedModalOrchestrator = () => {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // --- 1. COMUNICACIÓN CON LA EXTENSIÓN (Mensajería en tiempo real) ---
   useEffect(() => {
@@ -26,7 +27,6 @@ export const InjectedModalOrchestrator = () => {
 
       switch (message.type) {
         case 'PING_MODALS':
-          // La extensión pregunta si estamos vivos en esta página
           sendResponse({ status: 'alive', activeModal });
           break;
         
@@ -35,36 +35,20 @@ export const InjectedModalOrchestrator = () => {
           sendResponse({ status: 'closed' });
           break;
 
-        case 'SYNC_THEME':
-          setIsDarkMode(message.theme === 'dark');
-          sendResponse({ status: 'synced' });
+        case 'FORCE_OPEN_MODAL':
+          console.log('[Orchestrator] Forzando apertura de modal:', message.modal);
+          setActiveModal(message.modal);
+          sendResponse({ status: 'opened' });
           break;
       }
-      return true; // Mantiene el canal abierto para respuestas asíncronas
+      return true;
     };
 
     browser.runtime.onMessage.addListener(messageListener);
     return () => browser.runtime.onMessage.removeListener(messageListener);
   }, [activeModal]);
 
-  // --- 2. SINCRONIZACIÓN DE TEMA (Storage) ---
-  useEffect(() => {
-    const syncTheme = async () => {
-      const res = await browser.storage.local.get('theme');
-      setIsDarkMode(res.theme === 'dark');
-    };
-    syncTheme();
-
-    const handleStorageChange = (changes: any, area: string) => {
-      if (area === 'local' && changes.theme) {
-        setIsDarkMode(changes.theme.newValue === 'dark');
-      }
-    };
-    browser.storage.onChanged.addListener(handleStorageChange);
-    return () => browser.storage.onChanged.removeListener(handleStorageChange);
-  }, []);
-
-  // --- 3. SINCRONIZACIÓN DE MODALES ACTIVOS (Storage) ---
+  // --- 2. SINCRONIZACIÓN DE MODALES ACTIVOS (Storage) ---
   useEffect(() => {
     browser.storage.local.get('activeOperationsModal').then((res) => {
       if (res.activeOperationsModal) setActiveModal(res.activeOperationsModal as ModalType);
@@ -72,7 +56,9 @@ export const InjectedModalOrchestrator = () => {
 
     const handleStorageChange = (changes: any, area: string) => {
       if (area === 'local' && changes.activeOperationsModal) {
-        setActiveModal(changes.activeOperationsModal.newValue as ModalType);
+        const newValue = changes.activeOperationsModal.newValue as ModalType;
+        console.log('[Orchestrator] Cambio detectado en activeOperationsModal:', newValue);
+        setActiveModal(newValue);
       }
     };
     browser.storage.onChanged.addListener(handleStorageChange);
@@ -85,28 +71,75 @@ export const InjectedModalOrchestrator = () => {
   };
 
   return (
-    <div className="dreamlive-scope" data-theme={isDarkMode ? "dark" : "light"}>
-      {activeModal !== null && (
-        <ControlCenterWidget isDarkMode={isDarkMode} />
-      )}
+    <ThemeProvider>
+      <InjectedUIWrapper activeModal={activeModal} handleCloseModal={handleCloseModal} />
+    </ThemeProvider>
+  );
+};
 
-      {/* Operaciones Principales */}
-      {activeModal === 'RECOPILAR' && (
-        <RecopilarModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
-      )}
-      {activeModal === 'DISPONIBILIDAD' && (
-        <AvailabilityModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
-      )}
-      {activeModal === 'CONTACTAR' && (
-        <ContactModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
-      )}
+const InjectedUIWrapper = ({ activeModal, handleCloseModal }: { activeModal: ModalType, handleCloseModal: () => void }) => {
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
 
-      {/* Historiales Específicos */}
-      {(activeModal === 'HISTORY_RECOPILAR' || 
-        activeModal === 'HISTORY_DISPONIBILIDAD' || 
-        activeModal === 'HISTORY_CONTACTAR') && (
-        <HistoryModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
-      )}
-    </div>
+  // Cargar estado inicial de la consola
+  useEffect(() => {
+    browser.storage.local.get('isOperationsConsoleOpen').then(res => {
+      setIsConsoleOpen(!!res.isOperationsConsoleOpen);
+    });
+
+    const listener = (changes: any) => {
+      if (changes.isOperationsConsoleOpen) {
+        setIsConsoleOpen(!!changes.isOperationsConsoleOpen.newValue);
+      }
+    };
+    browser.storage.onChanged.addListener(listener);
+    return () => browser.storage.onChanged.addListener(listener);
+  }, []);
+
+  const toggleConsole = async () => {
+    const newState = !isConsoleOpen;
+    setIsConsoleOpen(newState);
+    await browser.storage.local.set({ isOperationsConsoleOpen: newState });
+  };
+
+  return (
+    <div className={`dreamlive-scope ${isDarkMode ? 'dark' : ''}`} data-theme={theme}>
+      {/* Botón de control siempre visible */}
+      <ControlCenterWidget isDarkMode={isDarkMode} onToggleConsole={toggleConsole} />
+
+        {/* Panel de Operaciones Inyectado (Solo si está abierto y no hay modal activo) */}
+        {isConsoleOpen && activeModal === null && (
+          <div style={{
+            position: 'fixed',
+            top: '80px',
+            right: '24px',
+            zIndex: 2147483640,
+            width: '320px',
+            maxHeight: '80vh',
+            pointerEvents: 'auto'
+          }}>
+            <OperationsConsole />
+          </div>
+        )}
+
+        {/* Operaciones Principales */}
+        {activeModal === 'RECOPILAR' && (
+          <RecopilarModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+        )}
+        {activeModal === 'DISPONIBILIDAD' && (
+          <AvailabilityModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+        )}
+        {activeModal === 'CONTACTAR' && (
+          <ContactModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+        )}
+
+        {/* Historiales Específicos */}
+        {(activeModal === 'HISTORY_RECOPILAR' || 
+          activeModal === 'HISTORY_DISPONIBILIDAD' || 
+          activeModal === 'HISTORY_CONTACTAR') && (
+          <HistoryModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+        )}
+      </div>
   );
 };

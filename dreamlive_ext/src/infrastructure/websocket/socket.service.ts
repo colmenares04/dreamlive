@@ -72,7 +72,12 @@ class SocketService {
     };
 
     this.socket.onerror = (err) => {
-      console.error('[WS] Error:', err);
+      console.error('[WS] Error de conexión:', {
+        readyState: this.socket?.readyState,
+        url: this.socket?.url,
+        event: err
+      });
+      this.notifyListeners('CONNECTION_ERROR', { event: err });
     };
   }
 

@@ -18,11 +18,12 @@ class ListLeadsUseCase:
 
     async def execute(
         self,
-        agency_id: str,
+        agency_id: Optional[str] = None,
         license_id: str | None = None,
         page: int = 1,
         page_size: int = 50,
         status: Optional[str] = None,
+        source: Optional[str] = None,
         search: Optional[str] = None,
         min_viewers: Optional[int] = None,
         min_likes: Optional[int] = None
@@ -33,7 +34,7 @@ class ListLeadsUseCase:
         if license_id:
             target_licenses = [license_id]
         else:
-            # Fetch all licenses for agency
+            # Fetch licenses for agency or all if agency_id is None
             licenses = await self._uow.licenses.list_all(agency_id=agency_id)
             target_licenses = [str(l.id) for l in licenses]
             
@@ -45,6 +46,7 @@ class ListLeadsUseCase:
             page=page,
             page_size=page_size,
             status=st,
+            source=source,
             search=search,
             min_viewers=min_viewers,
             min_likes=min_likes
@@ -244,6 +246,38 @@ class UpdateLeadStatusUseCase:
             await self._uow.leads.update(lead)
             await self._uow.commit()
             return True
+
+
+class ProcessBatchLeadsUseCase:
+    def __init__(self, uow: IUnitOfWork):
+        self._uow = uow
+
+    async def execute(
+        self,
+        license_id: str,
+        availables: List[str],
+        discarded: List[str]
+    ) -> Dict[str, int]:
+        async with self._uow:
+            # 1. Update availables to AVAILABLE status
+            updated = 0
+            if availables:
+                updated = await self._uow.leads.update_status_bulk(
+                    license_id=license_id,
+                    usernames=availables,
+                    new_status=LeadStatus.AVAILABLE
+                )
+            
+            # 2. Delete discarded
+            deleted = 0
+            if discarded:
+                deleted = await self._uow.leads.delete_bulk_by_username(
+                    license_id=license_id,
+                    usernames=discarded
+                )
+            
+            await self._uow.commit()
+            return {"updated": updated, "deleted": deleted}
 
 
 class GetLicensePerformanceUseCase:

@@ -94,3 +94,20 @@ class JWTHandler(ITokenService):
         except JWTError as exc:
             from app.core.domain.exceptions import UnauthorizedAccess
             raise UnauthorizedAccess(f"Token inválido: {exc}")
+
+
+_pwd_handler = PasswordHandler()
+_jwt_handler = JWTHandler()
+
+def hash_password(plain_password: str) -> str:
+    return _pwd_handler.hash(plain_password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return _pwd_handler.verify(plain_password, hashed_password)
+
+def create_access_token(subject: Any, role: str, agency_id: Optional[Any] = None, extra: Optional[Dict[str, Any]] = None) -> str:
+    return _jwt_handler.create_access_token(subject, role, agency_id, extra)
+
+def decode_token_func(token: str) -> Dict[str, Any]:
+    return _jwt_handler.decode_token(token)
+

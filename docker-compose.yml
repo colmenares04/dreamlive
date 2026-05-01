@@ -1,4 +1,22 @@
 services:
+  # --- Base de datos PostgreSQL ---
+  db:
+    image: postgres:15-alpine
+    container_name: dreamlive_db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dreamlive
+    networks:
+      - dreamlive-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # --- Base de datos en memoria (Caché) ---
   redis:
     image: redis:alpine
@@ -13,6 +31,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # --- PgAdmin para administrar la Base de Datos ---
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: dreamlive_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@dreamlive.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    networks:
+      - dreamlive-net
+    depends_on:
+      - db
+
   # --- Backend API (FastAPI) ---
   api:
     build:
@@ -20,6 +52,8 @@ services:
       dockerfile: Dockerfile
     container_name: dreamlive_api
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -29,6 +63,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/dreamlive
     networks:
       - dreamlive-net
 

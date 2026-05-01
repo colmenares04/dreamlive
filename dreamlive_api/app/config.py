@@ -3,8 +3,8 @@ DreamLive – Configuración central de la aplicación.
 Carga variables de entorno con validación Pydantic.
 """
 from pydantic_settings import BaseSettings
-from pydantic import field_validator, BeforeValidator
-from typing import List, Union, Annotated, Any
+from pydantic import field_validator
+from typing import List, Union, Any
 import secrets
 
 
@@ -17,9 +17,8 @@ class Settings(BaseSettings):
     HOST_IP: str = "0.0.0.0"
     HOST_PORT: int = 8000
 
-    # ── Supabase ──────────────────────────────────────────────────────────────
-    SUPABASE_URL: str = ""
-    SUPABASE_KEY: str = ""
+    # ── Database ──────────────────────────────────────────────────────────────
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/dreamlive"
 
     # ── Seguridad JWT ─────────────────────────────────────────────────────────
     SECRET_KEY: str = secrets.token_urlsafe(64)
@@ -62,13 +61,6 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     ENABLE_CACHE: bool = True
 
-    @field_validator("SUPABASE_URL", mode="before")
-    @classmethod
-    def validate_supabase_url(cls, v: str) -> str:
-        if not v or not v.startswith("http"):
-            raise ValueError("URL de Supabase inválida.")
-        return v
-
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def validate_allowed_origins(cls, v: Any) -> List[str]:
@@ -79,6 +71,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 
 settings = Settings()

@@ -65,7 +65,7 @@ CREATE TABLE dreamtool.licenses (
   limit_requests integer DEFAULT 60,
   refresh_minutes integer DEFAULT 720,
   admin_password text DEFAULT 'admin123'::text,
-  invitation_types jsonb DEFAULT '["Normal", "Elite", "Popular"]'::jsonb,
+  invitation_types jsonb DEFAULT '["Normal", "Elite", "Popular", "Premium"]'::jsonb,
   theme text DEFAULT 'dark'::text,
   full_name text,
   CONSTRAINT licenses_pkey PRIMARY KEY (id),

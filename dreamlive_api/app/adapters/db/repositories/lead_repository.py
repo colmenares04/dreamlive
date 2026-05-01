@@ -1,217 +1,223 @@
-"""
-Repositorio concreto de Leads (Supabase).
-"""
-import asyncio
 from datetime import datetime, timedelta, time, date
 from typing import Dict, List, Optional, Tuple
-
-from supabase import Client
+from sqlalchemy import select, and_, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.entities.lead import Lead, LeadStatus
 from app.core.ports.lead_repository import ILeadRepository
+from app.adapters.db.models import LeadORM
 
 
 class LeadRepository(ILeadRepository):
-    """Implementación Supabase del repositorio de leads (prospectos TikTok)."""
+    """Implementación SQLAlchemy del repositorio de leads (prospectos TikTok)."""
 
-    _TABLE = "tiktok_leads"
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    def __init__(self, db: Client) -> None:
-        self._db = db
-
-    def _to_domain(self, row: dict) -> Lead:
-        cap_str = row.get("created_at") or row.get("captured_at")
-        try:
-            cap_at = datetime.fromisoformat(cap_str.replace("Z", "+00:00")) if cap_str else datetime.utcnow()
-        except (ValueError, TypeError):
-            cap_at = datetime.utcnow()
+    def _to_domain(self, orm: LeadORM) -> Lead:
         return Lead(
-            id=row.get("id"),
-            license_id=row.get("license_id", ""),
-            username=row.get("username", ""),
-            status=LeadStatus(row.get("status", "recopilado")),
-            viewer_count=row.get("viewer_count", 0),
-            source=row.get("source", "unknown"),
-            likes_count=row.get("likes_count", 0),
-            captured_at=cap_at,
+            id=str(orm.id),
+            license_id=str(orm.license_id),
+            username=orm.username,
+            status=orm.status,
+            captured_at=orm.captured_at,
+            verified_at=orm.verified_at,
+            contacted_at=orm.contacted_at,
+            viewer_count=orm.viewer_count,
+            source=orm.source,
+            likes_count=orm.likes_count,
         )
 
     async def get_by_id(self, lead_id: str) -> Optional[Lead]:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE).select("*").eq("id", lead_id).execute()
-        )
-        return self._to_domain(resp.data[0]) if resp.data else None
+        if not lead_id:
+            return None
+        result = await self._session.execute(select(LeadORM).where(LeadORM.id == lead_id))
+        orm = result.scalar_one_or_none()
+        return self._to_domain(orm) if orm else None
 
     async def create(self, lead: Lead) -> Lead:
-        data = {
-            "license_id": lead.license_id,
-            "username": lead.username,
-            "status": lead.status.value,
-            "viewer_count": lead.viewer_count,
-            "source": lead.source,
-            "likes_count": lead.likes_count,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE).insert(data).execute()
+        orm = LeadORM(
+            license_id=lead.license_id,
+            agency_id=str(lead.license_id),
+            username=lead.username,
+            status=lead.status,
+            viewer_count=lead.viewer_count,
+            source=lead.source,
+            likes_count=lead.likes_count,
+            captured_at=lead.captured_at or datetime.utcnow(),
+            verified_at=lead.verified_at,
+            contacted_at=lead.contacted_at,
         )
-        return self._to_domain(resp.data[0])
+        self._session.add(orm)
+        await self._session.flush()
+        return self._to_domain(orm)
 
     async def update(self, lead: Lead) -> Lead:
-        data = {
-            "status": lead.status.value,
-            "viewer_count": lead.viewer_count,
-            "likes_count": lead.likes_count,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE).update(data).eq("id", lead.id).execute()
+        if not lead.id:
+            raise ValueError("Lead ID required to update.")
+        result = await self._session.execute(select(LeadORM).where(LeadORM.id == lead.id))
+        orm = result.scalar_one_or_none()
+        if not orm:
+            raise ValueError(f"Lead with ID {lead.id} not found.")
+
+        orm.status = lead.status
+        orm.viewer_count = lead.viewer_count
+        orm.likes_count = lead.likes_count
+        orm.source = lead.source
+        orm.verified_at = lead.verified_at
+        orm.contacted_at = lead.contacted_at
+
+        await self._session.flush()
+        return self._to_domain(orm)
+
+    async def get_by_username(self, license_id: str, username: str) -> Optional[Lead]:
+        if not license_id or not username:
+            return None
+        result = await self._session.execute(
+            select(LeadORM).where(and_(LeadORM.license_id == license_id, LeadORM.username == username))
         )
-        return self._to_domain(resp.data[0])
+        orm = result.scalar_one_or_none()
+        return self._to_domain(orm) if orm else None
 
     async def delete(self, lead_id: str) -> bool:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE).delete().eq("id", lead_id).execute()
-        )
-        return len(resp.data) > 0
+        if not lead_id:
+            return False
+        result = await self._session.execute(select(LeadORM).where(LeadORM.id == lead_id))
+        orm = result.scalar_one_or_none()
+        if orm:
+            await self._session.delete(orm)
+            await self._session.flush()
+            return True
+        return False
 
     async def delete_by_status(self, license_ids: List[str], status: LeadStatus) -> int:
         if not license_ids:
             return 0
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE).delete().in_("license_id", license_ids).eq("status", status.value).execute()
+        result = await self._session.execute(
+            select(LeadORM).where(and_(LeadORM.license_id.in_(license_ids), LeadORM.status == status))
         )
-        return len(resp.data)
-
-    async def list_paginated(
-        self,
-        license_ids: List[str],
-        page: int = 1,
-        page_size: int = 50,
-        status: Optional[LeadStatus] = None,
-        search: Optional[str] = None,
-        min_viewers: Optional[int] = None,
-        min_likes: Optional[int] = None,
-    ) -> Tuple[List[Lead], int]:
-        def _query():
-            q = self._db.table(self._TABLE).select("*", count="exact").in_("license_id", license_ids)
-            if status:
-                q = q.eq("status", status.value)
-            if search:
-                q = q.ilike("username", f"%{search}%")
-            if min_viewers is not None:
-                q = q.gte("viewer_count", min_viewers)
-            if min_likes is not None:
-                q = q.gte("likes_count", min_likes)
-            start = (page - 1) * page_size
-            return q.order("captured_at", desc=True).range(start, start + page_size - 1).execute()
-
-        resp = await asyncio.to_thread(_query)
-        return [self._to_domain(r) for r in resp.data], resp.count or 0
-
-    async def count_by_status(self, license_id: str) -> Dict[str, int]:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE).select("status").eq("license_id", license_id).execute()
-        )
-        counts: Dict[str, int] = {}
-        for row in resp.data:
-            s = row.get("status")
-            counts[s] = counts.get(s, 0) + 1
-        return counts
+        orms = result.scalars().all()
+        for orm in orms:
+            await self._session.delete(orm)
+        await self._session.flush()
+        return len(orms)
 
     async def count_by_status_bulk(self, license_ids: List[str]) -> Dict[str, int]:
         if not license_ids:
             return {}
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE).select("status").in_("license_id", license_ids).execute()
-        )
-        counts: Dict[str, int] = {}
-        for row in resp.data:
-            s = row.get("status")
-            counts[s] = counts.get(s, 0) + 1
-        return counts
+        stmt = select(LeadORM.status, func.count(LeadORM.id)).where(
+            LeadORM.license_id.in_(license_ids)
+        ).group_by(LeadORM.status)
+        result = await self._session.execute(stmt)
+        return {str(row[0].value if hasattr(row[0], "value") else row[0]): row[1] for row in result.all()}
 
-    async def get_daily_stats_bulk(self, license_ids: List[str], days: int) -> List[Dict]:
-        stats = []
-        for i in range(days):
-            d: date = (datetime.utcnow() - timedelta(days=i)).date()
-            start = datetime.combine(d, time.min).isoformat()
-            end = datetime.combine(d, time.max).isoformat()
-
-            resp = await asyncio.to_thread(
-                lambda s=start, e=end: self._db.table(self._TABLE)
-                .select("id", count="exact")
-                .in_("license_id", license_ids)
-                .gte("captured_at", s)
-                .lte("captured_at", e)
-                .execute()
-            )
-            stats.append({"date": d.isoformat(), "count": resp.count or 0})
-        return stats[::-1]
-
-    async def count_by_status_grouped_by_license(
-        self, license_ids: List[str]
-    ) -> Dict[str, Dict[str, int]]:
+    async def count_under_date(self, license_ids: List[str], max_date: datetime) -> Dict[str, int]:
         if not license_ids:
             return {}
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE)
-            .select("license_id, status")
-            .in_("license_id", license_ids)
-            .execute()
-        )
-        counts: Dict[str, Dict[str, int]] = {}
-        for row in resp.data:
-            lid = row.get("license_id")
-            s = row.get("status")
-            if lid not in counts:
-                counts[lid] = {}
-            counts[lid][s] = counts[lid].get(s, 0) + 1
-        return counts
+        stmt = select(LeadORM.status, func.count(LeadORM.id)).where(
+            and_(LeadORM.license_id.in_(license_ids), LeadORM.captured_at >= max_date)
+        ).group_by(LeadORM.status)
+        result = await self._session.execute(stmt)
+        return {str(row[0].value if hasattr(row[0], "value") else row[0]): row[1] for row in result.all()}
 
-    async def count_under_date(
-        self, license_ids: List[str], start_date: datetime
-    ) -> Dict[str, int]:
+    async def count_by_status_grouped_by_license(self, license_ids: List[str]) -> Dict[str, Dict[str, int]]:
         if not license_ids:
             return {}
-        resp = await asyncio.to_thread(
-            lambda: self._db.table(self._TABLE)
-            .select("status")
-            .in_("license_id", license_ids)
-            .gte("captured_at", start_date.isoformat())
-            .execute()
+        stmt = select(LeadORM.license_id, LeadORM.status, func.count(LeadORM.id)).where(
+            LeadORM.license_id.in_(license_ids)
+        ).group_by(LeadORM.license_id, LeadORM.status)
+        result = await self._session.execute(stmt)
+        out = {}
+        for row in result.all():
+            lid = str(row[0])
+            stat = str(row[1].value if hasattr(row[1], "value") else row[1])
+            count = row[2]
+            if lid not in out:
+                out[lid] = {}
+            out[lid][stat] = count
+        return out
+
+    async def list_all(
+        self,
+        license_id: Optional[str] = None,
+        status: Optional[LeadStatus] = None,
+        username: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[Lead]:
+        stmt = select(LeadORM)
+        filters = []
+        if license_id:
+            filters.append(LeadORM.license_id == license_id)
+        if status:
+            filters.append(LeadORM.status == status)
+        if username:
+            filters.append(LeadORM.username.ilike(f"%{username}%"))
+        if start_date:
+            filters.append(LeadORM.captured_at >= start_date)
+        if end_date:
+            filters.append(LeadORM.captured_at <= end_date)
+
+        if filters:
+            stmt = stmt.where(and_(*filters))
+        stmt = stmt.order_by(LeadORM.captured_at.desc())
+        result = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in result.scalars().all()]
+
+    async def paginate(
+        self,
+        page: int = 1,
+        limit: int = 20,
+        license_id: Optional[str] = None,
+        status: Optional[LeadStatus] = None,
+        username: Optional[str] = None,
+    ) -> Tuple[List[Lead], int]:
+        stmt = select(LeadORM)
+        filters = []
+        if license_id:
+            filters.append(LeadORM.license_id == license_id)
+        if status:
+            filters.append(LeadORM.status == status)
+        if username:
+            filters.append(LeadORM.username.ilike(f"%{username}%"))
+
+        if filters:
+            stmt = stmt.where(and_(*filters))
+
+        # Count
+        count_stmt = select(func.count(LeadORM.id))
+        if filters:
+            count_stmt = count_stmt.where(and_(*filters))
+        count_res = await self._session.execute(count_stmt)
+        total = count_res.scalar() or 0
+
+        # Paginated results
+        offset = (page - 1) * limit
+        stmt = stmt.order_by(LeadORM.captured_at.desc()).offset(offset).limit(limit)
+        res = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in res.scalars().all()], total
+
+    async def update_status(self, lead_id: str, status: LeadStatus) -> bool:
+        if not lead_id:
+            return False
+        result = await self._session.execute(select(LeadORM).where(LeadORM.id == lead_id))
+        orm = result.scalar_one_or_none()
+        if orm:
+            orm.status = status
+            await self._session.flush()
+            return True
+        return False
+
+    async def delete_old_leads(self, license_id: str, days: int = 30) -> int:
+        if not license_id:
+            return 0
+        limit_date = datetime.utcnow() - timedelta(days=days)
+        stmt = select(LeadORM).where(
+            and_(LeadORM.license_id == license_id, LeadORM.captured_at < limit_date)
         )
-        counts: Dict[str, int] = {}
-        for row in resp.data:
-            s = row.get("status")
-            counts[s] = counts.get(s, 0) + 1
-        return counts
-
-    async def get_license_performance_stats(
-        self, license_ids: List[str]
-    ) -> Dict[str, Dict[str, int]]:
-        if not license_ids:
-            return {}
-        today_start = datetime.combine(datetime.utcnow().date(), time.min).isoformat()
-
-        total_resp, today_resp = await asyncio.gather(
-            asyncio.to_thread(
-                lambda: self._db.table(self._TABLE).select("license_id").in_("license_id", license_ids).execute()
-            ),
-            asyncio.to_thread(
-                lambda: self._db.table(self._TABLE)
-                .select("license_id")
-                .in_("license_id", license_ids)
-                .gte("captured_at", today_start)
-                .execute()
-            ),
-        )
-
-        stats: Dict[str, Dict[str, int]] = {lid: {"today": 0, "total": 0} for lid in license_ids}
-        for r in total_resp.data:
-            lid = r["license_id"]
-            if lid in stats:
-                stats[lid]["total"] += 1
-        for r in today_resp.data:
-            lid = r["license_id"]
-            if lid in stats:
-                stats[lid]["today"] += 1
-        return stats
+        result = await self._session.execute(stmt)
+        orms = result.scalars().all()
+        for orm in orms:
+            await self._session.delete(orm)
+        await self._session.flush()
+        return len(orms)

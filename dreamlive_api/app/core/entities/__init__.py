@@ -11,6 +11,7 @@ from app.core.entities.lead import Lead, LeadStatus
 from app.core.entities.ticket import Ticket, TicketMessage, TicketStatus, TicketPriority
 from app.core.entities.audit_log import AuditLog
 from app.core.entities.app_version import AppVersion, Platform, VersionTag
+from app.core.entities.user import User, UserRole, UserStatus
 
 __all__ = [
     "Agency",
@@ -19,4 +20,5 @@ __all__ = [
     "Ticket", "TicketMessage", "TicketStatus", "TicketPriority",
     "AuditLog",
     "AppVersion", "Platform", "VersionTag",
+    "User", "UserRole", "UserStatus",
 ]

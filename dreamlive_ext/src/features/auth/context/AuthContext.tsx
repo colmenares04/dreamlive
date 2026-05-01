@@ -86,10 +86,37 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     if (state.status === 'authenticated' && state.token) {
-      const unsubscribe = socketService.on('FORCE_LOGOUT', (payload) => {
+      // 1. Manejar cierres forzados desde el servidor
+      const unsubForce = socketService.on('FORCE_LOGOUT', (payload) => {
         handleForceLogout(payload.reason || 'Sesión cerrada por seguridad.');
       });
-      return () => unsubscribe();
+
+      // 2. Manejar errores de conexión (ej: Token expirado en el handshake)
+      const unsubError = socketService.on('CONNECTION_ERROR', async () => {
+        console.warn('[AUTH] Error detectado en WS, verificando integridad de sesión...');
+        
+        // Intentar una petición simple para ver si el token sirve o se puede refrescar
+        const { error } = await AuthService.getMe();
+        
+        if (error) {
+          console.error('[AUTH] Sesión inválida o expirada definitivamente:', error);
+          handleForceLogout('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
+        } else {
+          // Si el token se refrescó exitosamente en la petición anterior,
+          // reintentamos conectar el socket con los nuevos datos
+          const newToken = await storage.getItem<string>('local:token');
+          const sid = await storage.getItem<string>('local:session_id');
+          if (newToken) {
+            console.log('[AUTH] Token renovado, reintentando WebSocket...');
+            socketService.connect(WS_URL, newToken, sid || undefined);
+          }
+        }
+      });
+
+      return () => {
+        unsubForce();
+        unsubError();
+      };
     }
   }, [state.status, state.token, handleForceLogout]);
 

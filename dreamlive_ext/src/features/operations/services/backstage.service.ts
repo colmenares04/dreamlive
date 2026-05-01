@@ -20,26 +20,33 @@ export const BackstageService = {
       if (tabs[0]?.id) {
         browser.tabs
           .sendMessage(tabs[0].id, { type: 'ABORT_CHECKING_FLOW' })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
   },
 
   async init() {
     const res = await browser.storage.local.get('isBackstageRunning');
-    isCheckingBackstage = !!res.isBackstageRunning;
+    isCheckingBackstage = !!(res as any).isBackstageRunning;
     if (isCheckingBackstage) setTimeout(() => this.processLoop(), 2000);
   },
 
-  async fetchBatchLeads(limit = 30): Promise<string[]> {
-    const res = await apiClient.get<Lead[]>(`/leads/?status=recopilado&limit=${limit}`);
-    if (res.error || !res.data) return [];
-    return res.data.map((l: Lead) => l.username);
+  async fetchBatchLeads(tag?: string, limit = 30): Promise<string[]> {
+    const tagQuery = tag ? `&tag=${encodeURIComponent(tag)}` : '';
+    // El backend espera page_size (o limit por el alias que añadimos)
+    const res = await apiClient.get<any>(`/leads/?status=recopilado&page_size=${limit}${tagQuery}`);
+
+    if (res.error || !res.data || !Array.isArray(res.data.items)) {
+      console.warn('[BackstageService] No se pudo obtener el lote de leads o formato inválido:', res);
+      return [];
+    }
+
+    return res.data.items.map((l: any) => l.username);
   },
 
   async updateBatchResults(all: string[], availables: string[]) {
     const discarded = all.filter((u) => !availables.includes(u));
-    
+
     // Delegamos la lógica compleja de batch update/delete al backend
     // Usamos / para evitar redirecciones 307
     await apiClient.post('/leads/batch-process/', {
@@ -51,13 +58,13 @@ export const BackstageService = {
   async processLoop() {
     console.log('🕵️‍♂️ [DEBUG] Backstage Loop iniciado...');
     const state = await browser.storage.local.get('isBackstageRunning');
-    if (!state.isBackstageRunning) {
+    if (!(state as any).isBackstageRunning) {
       isCheckingBackstage = false;
       return;
     }
 
     // 1. Obtenemos lote
-    const batch = await this.fetchBatchLeads(30);
+    const batch = await this.fetchBatchLeads(undefined, 30);
 
     // 2. Buscamos pestaña
     const tabs = await browser.tabs.query({
@@ -71,20 +78,21 @@ export const BackstageService = {
     if (batch.length === 0) {
       console.log('🏁 Backstage: No hay más leads.');
       await this.setRunningState(false);
-      browser.runtime.sendMessage({ type: 'STOP_CHECKING_UI' }).catch(() => {});
+      browser.runtime.sendMessage({ type: 'STOP_CHECKING_UI' }).catch(() => { });
       if (backstageTab?.id) {
         browser.tabs
           .sendMessage(backstageTab.id, { type: 'BACKSTAGE_ALL_DONE' })
-          .catch(() => {});
+          .catch(() => { });
       }
       return;
     }
 
     // --- CASO 2: GESTIÓN DE PESTAÑA ---
-    if (backstageTab?.id) {
+    if (backstageTab?.id && backstageTab.url) {
       console.log(`🔎 [DEBUG] Pestaña encontrada: ${backstageTab.url}`);
 
-      const isCorrectPage = backstageTab.url?.includes(targetPath);
+      const normalize = (u: string) => u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+      const isCorrectPage = normalize(backstageTab.url).includes(normalize(targetPath));
 
       if (isCorrectPage) {
         console.log('✅ [DEBUG] URL Correcta. Intentando enviar mensaje...');

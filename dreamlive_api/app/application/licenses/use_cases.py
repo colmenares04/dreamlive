@@ -359,10 +359,10 @@ class RegisterSessionUseCase:
                 "device": device_id
             })
 
-            # 4. Persistir en Redis y Supabase (Opcional)
+            # 4. Persistir en Redis y DB
             await self._cache.set(cache_key, active_sessions, ttl_seconds=86400) # Expira en 24h de inactividad
             
-            # Mantener compatibilidad con el repo de Supabase si es necesario
+            # Registrar sesión en la DB
             await self._uow.licenses.upsert_session(
                 license_id=license_id,
                 session_id=new_session_id,
@@ -390,6 +390,8 @@ class UpdateLicenseConfigUseCase:
         request_limit: Optional[int] = None,
         refresh_minutes: Optional[int] = None,
         keywords: Optional[str] = None,
+        message_templates: Optional[List[str]] = None,
+        invitation_types: Optional[List[str]] = None,
     ) -> License:
         async with self._uow:
             lic = await self._uow.licenses.get_by_id(license_id)
@@ -401,6 +403,8 @@ class UpdateLicenseConfigUseCase:
             if request_limit is not None: lic.limit_requests = request_limit
             if refresh_minutes is not None: lic.refresh_minutes = refresh_minutes
             if keywords is not None: lic.keywords = keywords
+            if message_templates is not None: lic.message_templates = message_templates
+            if invitation_types is not None: lic.invitation_types = invitation_types
 
             updated = await self._uow.licenses.update(lic)
             await self._uow.commit()

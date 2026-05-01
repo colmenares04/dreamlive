@@ -3,6 +3,8 @@
    Refinado para Máximo Contraste en Modo Oscuro
    ============================================================ */
 
+@import "tailwindcss";
+
 :host {
   all: initial !important;
   display: block !important;

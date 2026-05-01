@@ -1,77 +1,65 @@
-"""
-Repositorio concreto de AuditLog (Supabase).
-"""
-import asyncio
 from datetime import datetime
 from typing import List, Optional
-
-from supabase import Client
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.entities.audit_log import AuditLog
 from app.core.ports.audit_log_repository import IAuditLogRepository
+from app.adapters.db.models import AuditLogORM
 
 
 class AuditLogRepository(IAuditLogRepository):
-    """Implementación Supabase del repositorio de logs de auditoría."""
+    """Implementación SQLAlchemy del repositorio de logs de auditoría."""
 
-    def __init__(self, db: Client) -> None:
-        self._db = db
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    def _to_domain(self, row: dict) -> AuditLog:
-        created_str = row.get("created_at")
+    def _to_domain(self, orm: AuditLogORM) -> AuditLog:
         return AuditLog(
-            id=row.get("id"),
-            user_id=row.get("user_id"),
-            agency_id=row.get("agency_id"),
-            category=row.get("category", ""),
-            action=row.get("action", ""),
-            entity_name=row.get("entity_name"),
-            entity_id=row.get("entity_id"),
-            old_data=row.get("old_data"),
-            new_data=row.get("new_data"),
-            ip_address=row.get("ip_address"),
-            created_at=(
-                datetime.fromisoformat(created_str.replace("Z", "+00:00"))
-                if created_str
-                else datetime.utcnow()
-            ),
+            id=str(orm.id),
+            user_id=str(orm.user_id) if orm.user_id is not None else None,
+            agency_id=str(orm.agency_id) if orm.agency_id is not None else None,
+            category=orm.category,
+            action=orm.action,
+            entity_name=orm.entity_name,
+            entity_id=orm.entity_id,
+            old_data=orm.old_data,
+            new_data=orm.new_data,
+            ip_address=orm.ip_address,
+            created_at=orm.created_at,
         )
 
     async def list_all(self, agency_id: Optional[str] = None) -> List[AuditLog]:
-        def _query():
-            q = self._db.table("audit_logs").select("*")
-            if agency_id:
-                q = q.eq("agency_id", agency_id)
-            return q.order("created_at", desc=True).execute()
-
-        resp = await asyncio.to_thread(_query)
-        return [self._to_domain(r) for r in resp.data]
+        stmt = select(AuditLogORM)
+        if agency_id:
+            stmt = stmt.where(AuditLogORM.agency_id == agency_id)
+        stmt = stmt.order_by(AuditLogORM.created_at.desc())
+        result = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in result.scalars().all()]
 
     async def create(self, log: AuditLog) -> AuditLog:
-        data = {
-            "user_id": log.user_id,
-            "agency_id": log.agency_id,
-            "category": log.category,
-            "action": log.action,
-            "entity_name": log.entity_name,
-            "entity_id": log.entity_id,
-            "old_data": log.old_data,
-            "new_data": log.new_data,
-            "ip_address": log.ip_address,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("audit_logs").insert(data).execute()
+        orm = AuditLogORM(
+            user_id=log.user_id if log.user_id else None,
+            agency_id=log.agency_id if log.agency_id else None,
+            category=log.category,
+            action=log.action,
+            entity_name=log.entity_name,
+            entity_id=log.entity_id,
+            old_data=log.old_data,
+            new_data=log.new_data,
+            ip_address=log.ip_address,
+            created_at=log.created_at or datetime.utcnow(),
         )
-        return self._to_domain(resp.data[0])
+        self._session.add(orm)
+        await self._session.flush()
+        return self._to_domain(orm)
 
     async def get_recent_activity(
         self, limit: int = 10, agency_id: Optional[str] = None
     ) -> List[AuditLog]:
-        def _query():
-            q = self._db.table("audit_logs").select("*")
-            if agency_id:
-                q = q.eq("agency_id", agency_id)
-            return q.order("created_at", desc=True).limit(limit).execute()
-
-        resp = await asyncio.to_thread(_query)
-        return [self._to_domain(r) for r in resp.data]
+        stmt = select(AuditLogORM)
+        if agency_id:
+            stmt = stmt.where(AuditLogORM.agency_id == agency_id)
+        stmt = stmt.order_by(AuditLogORM.created_at.desc()).limit(limit)
+        result = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in result.scalars().all()]

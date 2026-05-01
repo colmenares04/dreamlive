@@ -1,5 +1,5 @@
 """
-Entidades de dominio para Supabase: Licencia, Agencia, Lead (TikTok), Versión de App.
+Entidades de dominio para PostgreSQL puro: Licencia, Agencia, Lead (TikTok), Versión de App.
 """
 from dataclasses import dataclass, field
 from enum import Enum
@@ -60,7 +60,7 @@ class License:
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
     
-    # Custom fields by Supabase schema
+    # Campos personalizados
     keywords: str = "batallas/versus/duelo/pk"
     message_templates: List[str] = field(default_factory=list)
     recruiter_name: str = "Agente DreamLive"

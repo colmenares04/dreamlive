@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ListPlus, Search, Send, Activity, AlertCircle, Eye } from 'lucide-react';
+import { ListPlus, Search, Send, Activity, AlertCircle, Eye, X } from 'lucide-react';
 import { useTheme } from '../../../shared/contexts/ThemeContext';
 import { browser } from 'wxt/browser';
 
@@ -13,15 +13,15 @@ export type ModalType =
   | null;
 
 const ROUTES = {
-  RECOPILAR: 'tiktok.com/live',
-  DISPONIBILIDAD: 'live-backstage.tiktok.com',
-  CONTACTAR: 'live-backstage.tiktok.com/instant-messages',
+  RECOPILAR: 'tiktok.com/search/live',
+  DISPONIBILIDAD: 'live-backstage.tiktok.com/portal/anchor/relation',
+  CONTACTAR: 'live-backstage.tiktok.com/portal/anchor/instant-messages',
 };
 
 const URLS = {
-  RECOPILAR: 'https://www.tiktok.com/live',
-  DISPONIBILIDAD: 'https://live-backstage.tiktok.com/',
-  CONTACTAR: 'https://live-backstage.tiktok.com/instant-messages',
+  RECOPILAR: 'https://www.tiktok.com/search/live?q=live',
+  DISPONIBILIDAD: 'https://live-backstage.tiktok.com/portal/anchor/relation',
+  CONTACTAR: 'https://live-backstage.tiktok.com/portal/anchor/instant-messages',
 };
 
 export const OperationsConsole: React.FC = () => {
@@ -33,12 +33,18 @@ export const OperationsConsole: React.FC = () => {
   // Función para actualizar la URL actual
   const updateCurrentUrl = async () => {
     try {
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      // Si estamos en un content script, browser.tabs no existe
+      if (typeof browser.tabs === 'undefined' || !browser.tabs.query) {
+        setCurrentUrl(window.location.href);
+        return;
+      }
+
+      const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
       if (tab?.url) {
         setCurrentUrl(tab.url);
       }
     } catch (e) {
-      console.warn('Error querying tabs:', e);
+      setCurrentUrl(window.location.href);
     }
   };
 
@@ -71,34 +77,36 @@ export const OperationsConsole: React.FC = () => {
     const isClosing = activeModal === id;
     const newActive = isClosing ? null : id;
     setActiveModal(newActive);
+    // 1. Guardar en storage (como respaldo)
     await browser.storage.local.set({ activeOperationsModal: newActive });
     
-    // Solo navegar para los modales de operación principales
+    // 2. Mensajería Directa (Instantánea)
+    try {
+      const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+      if (tab?.id) {
+        await browser.tabs.sendMessage(tab.id, { 
+          type: 'FORCE_OPEN_MODAL', 
+          modal: newActive 
+        }).catch(() => {}); // Ignorar si la pestaña no tiene el script inyectado
+      }
+    } catch (e) {
+      console.warn('Error sending direct message:', e);
+    }
+
+    // 3. Solo navegar para los modales de operación principales
     if (!isClosing && id && id in ROUTES) {
       let targetUrl = URLS[id as keyof typeof URLS];
       
-      // Si es RECOPILAR, intentamos ir a la palabra activa o a la primera de la lista
       if (id === 'RECOPILAR') {
         const res = await browser.storage.local.get(['keywords', 'activeKeyword']);
         const keywords = (res.keywords as string[]) || [];
         const activeKeyword = res.activeKeyword as string | undefined;
-        const firstK = keywords[0] || 'batallas';
-        
-        // Prioridad: 1. Palabra activa, 2. Primera de la lista, 3. 'batallas'
-        const keywordToUse = activeKeyword || firstK;
+        const keywordToUse = activeKeyword || keywords[0] || 'batallas';
         targetUrl = `https://www.tiktok.com/search/live?q=${encodeURIComponent(keywordToUse)}`;
-        
-        // Aseguramos que haya algo marcado como activo
-        if (!res.activeKeyword) {
-          await browser.storage.local.set({ activeKeyword: keywordToUse });
-        }
       }
 
-      const targetRoute = ROUTES[id as keyof typeof ROUTES];
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tab && !tab.url?.includes(targetRoute)) {
-        await browser.tabs.update(tab.id, { url: targetUrl });
-      }
+      console.log(`[Console] Forzando navegación a ${targetUrl}`);
+      await browser.runtime.sendMessage({ type: 'NAVIGATE', url: targetUrl });
     }
   };
 
@@ -127,13 +135,35 @@ export const OperationsConsole: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#1C1C1E] rounded-xl border border-black/5 dark:border-white/5 overflow-hidden shadow-sm animate-in fade-in relative">
+    <div 
+      className="flex flex-col h-full rounded-xl border overflow-hidden shadow-sm animate-in fade-in relative"
+      style={{ 
+        background: 'var(--apple-bg)', 
+        borderColor: 'var(--apple-border)',
+        minHeight: '400px'
+      }}
+    >
       
       {/* Header Info */}
-      <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-800">
-        <div className="flex items-center gap-2 mb-1">
-          <Activity size={16} strokeWidth={2.5} className="text-[#007AFF]" />
-          <h2 className="text-[14px] font-bold text-gray-900 dark:text-white tracking-tight">Operaciones</h2>
+      <div 
+        className="px-4 py-4 border-b"
+        style={{ borderColor: 'var(--apple-border)' }}
+      >
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2">
+            <Activity size={16} strokeWidth={2.5} className="text-[#007AFF]" />
+            <h2 className="text-[14px] font-bold text-gray-900 dark:text-white tracking-tight">Operaciones</h2>
+          </div>
+          {/* Close Button fallback for better UX */}
+          <button 
+            onClick={async () => {
+              await browser.storage.local.set({ isOperationsConsoleOpen: false });
+              await browser.storage.local.set({ activeOperationsModal: null });
+            }}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-gray-400"
+          >
+            <X size={16} />
+          </button>
         </div>
         <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
           Selecciona una secuencia para iniciar.
@@ -162,8 +192,11 @@ export const OperationsConsole: React.FC = () => {
               key={btn.id!} 
               className={`flex flex-col rounded-[16px] border transition-all duration-300
                 ${isActive || isHistoryActive
-                  ? 'bg-[#F5F5F7] dark:bg-white/5 border-black/5 dark:border-white/10' 
-                  : 'bg-transparent border-transparent hover:bg-[#F5F5F7] dark:hover:bg-white/5'}`}
+                  ? 'border-black/5 dark:border-white/10' 
+                  : 'border-transparent hover:bg-[#F5F5F7] dark:hover:bg-white/5'}`}
+              style={{
+                background: isActive || isHistoryActive ? 'var(--apple-bg-secondary)' : 'transparent'
+              }}
             >
               <button
                 onClick={() => handleToggleModal(btn.id)}

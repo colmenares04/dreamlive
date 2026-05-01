@@ -6,7 +6,7 @@ Reglas:
   - Dependencias inyectadas via constructor (puertos del Core).
   - Excepciones de dominio tipadas (no ValueError).
 """
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from app.core.entities.agency import Agency
 from app.core.ports.unit_of_work import IUnitOfWork
@@ -35,9 +35,6 @@ class LoginOutput:
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.agency = agency
-
-
-
 
 
 class RefreshTokenOutput:
@@ -81,17 +78,21 @@ class LoginUseCase:
         self,
         uow: IUnitOfWork,
         token_service: ITokenService,
+        password_hasher: IPasswordHasher,
     ) -> None:
         self._uow = uow
         self._token_service = token_service
+        self._password_hasher = password_hasher
 
     async def execute(self, data: LoginInput) -> LoginOutput:
         agency = await self._uow.agencies.get_by_email(data.email)
         if not agency:
             raise InvalidCredentials()
 
-        if agency.password != data.password:
-            raise InvalidCredentials()
+        # Validamos password hasheado o texto plano
+        if not self._password_hasher.verify(data.password, agency.password):
+            if agency.password != data.password:
+                raise InvalidCredentials()
 
         access_token = self._token_service.create_access_token(
             subject=str(agency.id),
@@ -111,9 +112,6 @@ class LoginUseCase:
             refresh_token=refresh_token,
             agency=agency,
         )
-
-
-
 
 
 class RefreshTokenUseCase:
@@ -216,7 +214,7 @@ class GetProfileUseCase:
 
             return ProfileOutput(
                 id=agency.id,
-                email=agency.email,
+                email=agency.email if hasattr(agency, "email") else None,
                 username=agency.name,
                 full_name=agency.name,
                 role="agency_admin",

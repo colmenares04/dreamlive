@@ -14,10 +14,18 @@ export type MessageType =
   | 'GET_INVITATION_CONFIG'
   | 'BATCH_PROCESSED'
   | 'MARK_CONTACTED'
-  | 'DELETE_LEAD';
+  | 'DELETE_LEAD'
+  | 'GET_BATCH_TO_CHECK'
+  | 'NAVIGATE'
+  | 'SAVE_INVITATION_CONFIG';
 
 export interface BaseMessage {
   type: MessageType;
+}
+
+export interface NavigateMessage extends BaseMessage {
+  type: 'NAVIGATE';
+  url: string;
 }
 
 export interface SaveLeadMessage extends BaseMessage {
@@ -72,8 +80,19 @@ export interface DeleteLeadMessage extends BaseMessage {
   username: string;
 }
 
+export interface GetBatchToCheckMessage extends BaseMessage {
+  type: 'GET_BATCH_TO_CHECK';
+  tag?: string;
+}
+
+export interface SaveInvitationConfigMessage extends BaseMessage {
+  type: 'SAVE_INVITATION_CONFIG';
+  invitation_types: string[];
+}
+
 export type ExtensionMessage = 
   | BaseMessage 
+  | NavigateMessage
   | SaveLeadMessage 
   | ToggleRecopilacionMessage
   | CheckBatchMessage
@@ -82,4 +101,6 @@ export type ExtensionMessage =
   | GetInvitationConfigMessage
   | BatchProcessedMessage
   | MarkContactedMessage
-  | DeleteLeadMessage;
+  | DeleteLeadMessage
+  | GetBatchToCheckMessage
+  | SaveInvitationConfigMessage;

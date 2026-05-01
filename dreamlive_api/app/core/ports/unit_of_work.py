@@ -37,6 +37,9 @@ class IUnitOfWork(ABC):
     ticket_messages: ITicketMessageRepository
     audit_logs: IAuditLogRepository
     app_versions: IAppVersionRepository
+    from app.core.ports.repositories import IUserRepository
+    users: IUserRepository
+
 
     @abstractmethod
     async def __aenter__(self) -> "IUnitOfWork": ...

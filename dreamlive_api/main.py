@@ -75,8 +75,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 # CORSMiddleware DEBE ser el primero en recibir la petición para manejar OPTIONS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGINS, list) else [settings.ALLOWED_ORIGINS],
+    allow_origin_regex="chrome-extension://.*",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

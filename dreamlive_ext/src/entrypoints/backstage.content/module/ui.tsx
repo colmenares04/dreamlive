@@ -83,7 +83,7 @@ export const UiModule = {
             pointerEvents: 'none',
           });
         }
-        
+
         Object.assign(container.style, {
           all: 'initial',
           display: 'block',

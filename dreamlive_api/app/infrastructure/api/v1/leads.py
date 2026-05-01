@@ -1,12 +1,12 @@
 """
 Rutas relacionadas con Leads — Controladores "tontos".
 """
-from typing import Optional
+from typing import Optional, List, Dict
 from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
 
 from app.application.leads.use_cases import (
-    ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase, DeleteLeadUseCase, PurgeLeadsByStatusUseCase
+    ListLeadsUseCase, PurgeLeadsUseCase, SaveLeadUseCase, UpdateLeadStatusUseCase, DeleteLeadUseCase, PurgeLeadsByStatusUseCase, ProcessBatchLeadsUseCase
 )
 from app.application.leads.keywords_use_cases import (
     ListKeywordsUseCase, AddKeywordUseCase, RemoveKeywordUseCase
@@ -25,6 +25,7 @@ from app.infrastructure.api.providers import (
     get_list_keywords_use_case,
     get_add_keyword_use_case,
     get_remove_keyword_use_case,
+    get_process_batch_leads_use_case,
 )
 
 
@@ -34,8 +35,9 @@ leads_router = APIRouter(prefix="/leads", tags=["Leads"])
 @leads_router.get("/")
 async def list_leads(
     page: int = 1,
-    page_size: int = 50,
+    page_size: int = Query(30),
     status_filter: Optional[str] = Query(None, alias="status"),
+    tag: Optional[str] = Query(None),
     license_id: Optional[str] = None,
     search: Optional[str] = None,
     min_viewers: Optional[int] = None,
@@ -43,10 +45,11 @@ async def list_leads(
     current_user: AuthUser = Depends(require_agency_group),
     use_case: ListLeadsUseCase = Depends(get_list_leads_use_case),
 ):
+    agency_id = None if current_user.role.value == "superuser" else str(current_user.agency_id)
     leads, total = await use_case.execute(
-        agency_id=str(current_user.agency_id),
+        agency_id=agency_id,
         license_id=license_id, page=page, page_size=page_size,
-        status=status_filter, search=search,
+        status=status_filter, source=tag, search=search,
         min_viewers=min_viewers, min_likes=min_likes,
     )
     return {
@@ -128,6 +131,27 @@ async def delete_lead(
     if not success:
         raise HTTPException(status_code=404, detail="Lead no encontrado o no autorizado")
     return {"status": "ok"}
+
+
+@leads_router.post("/batch-process", dependencies=[Depends(require_agency_group)])
+@leads_router.post("/batch-process/", dependencies=[Depends(require_agency_group)])
+async def process_batch_leads(
+    body: Dict[str, List[str]],
+    current_user: AuthUser = Depends(get_current_user),
+    use_case: ProcessBatchLeadsUseCase = Depends(get_process_batch_leads_use_case),
+):
+    license_id = current_user.license_id
+    if not license_id:
+        raise HTTPException(status_code=400, detail="Se requiere una licencia activa para procesar lotes")
+    
+    availables = body.get("availables", [])
+    discarded = body.get("discarded", [])
+    
+    return await use_case.execute(
+        license_id=license_id,
+        availables=availables,
+        discarded=discarded
+    )
 
 
 @leads_router.delete("/status/{status}", dependencies=[Depends(require_agency_group)])

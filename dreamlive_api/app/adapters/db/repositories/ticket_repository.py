@@ -1,155 +1,134 @@
-"""
-Repositorios concretos de Ticket y TicketMessage (Supabase).
-"""
-import asyncio
 from datetime import datetime
 from typing import List, Optional
-
-from supabase import Client
+from sqlalchemy import select, and_, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.entities.ticket import Ticket, TicketMessage
 from app.core.ports.ticket_repository import ITicketRepository, ITicketMessageRepository
+from app.adapters.db.models import TicketORM, TicketMessageORM
 
 
 class TicketRepository(ITicketRepository):
-    """Implementación Supabase del repositorio de tickets."""
+    """Implementación SQLAlchemy del repositorio de tickets."""
 
-    def __init__(self, db: Client) -> None:
-        self._db = db
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    def _parse_dt(self, value: Optional[str]) -> datetime:
-        if not value:
-            return datetime.utcnow()
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-    def _to_domain(self, row: dict) -> Ticket:
+    def _to_domain(self, orm: TicketORM) -> Ticket:
         return Ticket(
-            id=row.get("id"),
-            agency_id=row.get("agency_id", ""),
-            assigned_to_user_id=row.get("assigned_to_user_id"),
-            subject=row.get("subject", ""),
-            description=row.get("description", ""),
-            status=row.get("status", "open"),
-            priority=row.get("priority", "medium"),
-            created_at=self._parse_dt(row.get("created_at")),
-            updated_at=self._parse_dt(row.get("updated_at")),
-            closed_at=self._parse_dt(row["closed_at"]) if row.get("closed_at") else None,
+            id=str(orm.id),
+            agency_id=str(orm.agency_id),
+            assigned_to_user_id=str(orm.assigned_to_user_id) if orm.assigned_to_user_id is not None else None,
+            subject=orm.subject,
+            description=orm.description,
+            status=orm.status,
+            priority=orm.priority,
+            created_at=orm.created_at,
+            updated_at=orm.updated_at,
+            closed_at=orm.closed_at,
         )
 
     async def get_by_id(self, ticket_id: str) -> Optional[Ticket]:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("tickets").select("*").eq("id", ticket_id).execute()
-        )
-        return self._to_domain(resp.data[0]) if resp.data else None
+        if not ticket_id:
+            return None
+        result = await self._session.execute(select(TicketORM).where(TicketORM.id == ticket_id))
+        orm = result.scalar_one_or_none()
+        return self._to_domain(orm) if orm else None
 
     async def list_all(self, agency_id: Optional[str] = None) -> List[Ticket]:
-        def _query():
-            q = self._db.table("tickets").select("*")
-            if agency_id:
-                q = q.eq("agency_id", agency_id)
-            return q.execute()
-
-        resp = await asyncio.to_thread(_query)
-        return [self._to_domain(r) for r in resp.data]
+        stmt = select(TicketORM)
+        if agency_id:
+            stmt = stmt.where(TicketORM.agency_id == agency_id)
+        result = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in result.scalars().all()]
 
     async def create(self, ticket: Ticket) -> Ticket:
-        data = {
-            "agency_id": ticket.agency_id,
-            "assigned_to_user_id": ticket.assigned_to_user_id,
-            "subject": ticket.subject,
-            "description": ticket.description,
-            "status": ticket.status,
-            "priority": ticket.priority,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("tickets").insert(data).execute()
+        orm = TicketORM(
+            agency_id=ticket.agency_id,
+            assigned_to_user_id=ticket.assigned_to_user_id if ticket.assigned_to_user_id else None,
+            subject=ticket.subject,
+            description=ticket.description,
+            status=ticket.status,
+            priority=ticket.priority,
+            created_at=ticket.created_at or datetime.utcnow(),
+            updated_at=ticket.updated_at or datetime.utcnow(),
+            closed_at=ticket.closed_at,
         )
-        if not resp.data:
-            raise RuntimeError("Fallo al crear el ticket en la base de datos.")
-        return self._to_domain(resp.data[0])
+        self._session.add(orm)
+        await self._session.flush()
+        return self._to_domain(orm)
 
     async def update(self, ticket: Ticket) -> Ticket:
-        data = {
-            "assigned_to_user_id": ticket.assigned_to_user_id,
-            "subject": ticket.subject,
-            "description": ticket.description,
-            "status": ticket.status,
-            "priority": ticket.priority,
-            "closed_at": ticket.closed_at.isoformat() if ticket.closed_at else None,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("tickets").update(data).eq("id", ticket.id).execute()
-        )
-        return self._to_domain(resp.data[0])
+        if not ticket.id:
+            raise ValueError("Ticket ID required to update.")
+        result = await self._session.execute(select(TicketORM).where(TicketORM.id == ticket.id))
+        orm = result.scalar_one_or_none()
+        if not orm:
+            raise ValueError(f"Ticket with ID {ticket.id} not found.")
+
+        orm.assigned_to_user_id = ticket.assigned_to_user_id if ticket.assigned_to_user_id else None
+        orm.subject = ticket.subject
+        orm.description = ticket.description
+        orm.status = ticket.status
+        orm.priority = ticket.priority
+        orm.closed_at = ticket.closed_at
+        orm.updated_at = datetime.utcnow()
+
+        await self._session.flush()
+        return self._to_domain(orm)
 
     async def delete(self, ticket_id: str) -> None:
-        await asyncio.to_thread(
-            lambda: self._db.table("tickets").delete().eq("id", ticket_id).execute()
-        )
+        if not ticket_id:
+            return
+        result = await self._session.execute(select(TicketORM).where(TicketORM.id == ticket_id))
+        orm = result.scalar_one_or_none()
+        if orm:
+            await self._session.delete(orm)
+            await self._session.flush()
 
     async def get_avg_resolution_time(self) -> float:
-        def _query():
-            return (
-                self._db.table("tickets")
-                .select("created_at, closed_at")
-                .not_.is_("closed_at", "null")
-                .execute()
-            )
-
-        resp = await asyncio.to_thread(_query)
-        if not resp.data:
+        stmt = select(TicketORM).where(TicketORM.closed_at.isnot(None))
+        result = await self._session.execute(stmt)
+        orms = result.scalars().all()
+        if not orms:
             return 0.0
 
         total_mins = sum(
-            (
-                datetime.fromisoformat(r["closed_at"].replace("Z", "+00:00"))
-                - datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
-            ).total_seconds()
-            / 60
-            for r in resp.data
+            (orm.closed_at.replace(tzinfo=None) - orm.created_at.replace(tzinfo=None)).total_seconds() / 60
+            for orm in orms if orm.closed_at and orm.created_at
         )
-        return total_mins / len(resp.data)
+        return total_mins / len(orms)
 
 
 class TicketMessageRepository(ITicketMessageRepository):
-    """Implementación Supabase del repositorio de mensajes de tickets."""
+    """Implementación SQLAlchemy del repositorio de mensajes de tickets."""
 
-    def __init__(self, db: Client) -> None:
-        self._db = db
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    def _to_domain(self, row: dict) -> TicketMessage:
-        created_str = row.get("created_at")
+    def _to_domain(self, orm: TicketMessageORM) -> TicketMessage:
         return TicketMessage(
-            id=row.get("id"),
-            ticket_id=row.get("ticket_id", ""),
-            user_id=row.get("user_id", ""),
-            message=row.get("message", ""),
-            created_at=(
-                datetime.fromisoformat(created_str.replace("Z", "+00:00"))
-                if created_str
-                else datetime.utcnow()
-            ),
+            id=str(orm.id),
+            ticket_id=str(orm.ticket_id),
+            user_id=str(orm.user_id),
+            message=orm.message,
+            created_at=orm.created_at,
         )
 
     async def list_by_ticket(self, ticket_id: str) -> List[TicketMessage]:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("ticket_messages")
-            .select("*")
-            .eq("ticket_id", ticket_id)
-            .order("created_at", desc=False)
-            .execute()
-        )
-        return [self._to_domain(r) for r in resp.data] if resp.data else []
+        if not ticket_id:
+            return []
+        stmt = select(TicketMessageORM).where(TicketMessageORM.ticket_id == ticket_id).order_by(TicketMessageORM.created_at.asc())
+        result = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in result.scalars().all()]
 
     async def create(self, message: TicketMessage) -> TicketMessage:
-        data = {
-            "ticket_id": message.ticket_id,
-            "user_id": message.user_id,
-            "message": message.message,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("ticket_messages").insert(data).execute()
+        orm = TicketMessageORM(
+            ticket_id=message.ticket_id,
+            user_id=message.user_id,
+            message=message.message,
+            created_at=message.created_at or datetime.utcnow(),
         )
-        if not resp.data:
-            raise RuntimeError("Fallo al guardar el mensaje del ticket.")
-        return self._to_domain(resp.data[0])
+        self._session.add(orm)
+        await self._session.flush()
+        return self._to_domain(orm)

@@ -1,4 +1,5 @@
 import { storage } from '#imports';
+import { browser } from 'wxt/browser';
 
 export interface ApiResponse<T> {
   data?: T;
@@ -35,7 +36,11 @@ class ApiClient {
    */
   private async refreshToken(): Promise<string | null> {
     try {
-      const refreshToken = await storage.getItem<string>('local:refresh_token');
+      let refreshToken = await storage.getItem<string>('local:refresh_token');
+      if (!refreshToken) {
+        const res = await browser.storage.local.get('refresh_token');
+        refreshToken = res.refresh_token as string;
+      }
       if (!refreshToken) return null;
 
       const response = await fetch(`${this.baseUrl}/auth/refresh`, {
@@ -79,7 +84,11 @@ class ApiClient {
     isRetry = false
   ): Promise<ApiResponse<T>> {
     try {
-      const token = await storage.getItem<string>('local:token');
+      let token = await storage.getItem<string>('local:token');
+      if (!token) {
+        const res = await browser.storage.local.get('token');
+        token = res.token as string;
+      }
       
       const url = new URL(`${this.baseUrl}${endpoint}`);
       if (params) {

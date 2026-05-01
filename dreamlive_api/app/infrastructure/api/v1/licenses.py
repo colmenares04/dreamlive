@@ -13,7 +13,7 @@ from app.application.licenses.use_cases import (
     SyncLicensePasswordsUseCase, UpdateLicenseDateUseCase,
     DeleteLicenseUseCase, RegisterSessionUseCase,
 )
-from app.infrastructure.api.deps import AuthUser, UserRole
+from app.infrastructure.api.deps import AuthUser, UserRole, get_db
 from app.infrastructure.api.deps import (
     get_current_user,
     require_admin,
@@ -136,6 +136,8 @@ class ConfigLicenseBody(BaseModel):
     request_limit: Optional[int] = None
     refresh_minutes: Optional[int] = None
     keywords: Optional[str] = None
+    message_templates: Optional[List[str]] = None
+    invitation_types: Optional[List[str]] = None
 
 
 @licenses_router.patch("/{license_id}/config", dependencies=[Depends(require_agency_group)])
@@ -154,7 +156,55 @@ async def config_license(
         request_limit=body.request_limit,
         refresh_minutes=body.refresh_minutes,
         keywords=body.keywords,
+        message_templates=body.message_templates,
+        invitation_types=body.invitation_types,
     )
+    return {"status": "ok"}
+
+
+@licenses_router.get("/templates", dependencies=[Depends(require_agency_group)])
+async def get_license_templates(
+    current_user: AuthUser = Depends(get_current_user),
+    db = Depends(get_db),
+):
+    print(f"🔍 [GET /templates] User ID: {current_user.id}, License ID: {current_user.license_id}")
+    if not current_user.license_id:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Solo las licencias pueden tener plantillas.")
+
+    from app.adapters.db.repositories.license_repository import LicenseRepository
+    repo = LicenseRepository(db)
+    lic_obj = await repo.get_by_id(current_user.id)
+    
+    if not lic_obj:
+        print(f"❌ [GET /templates] Licencia no encontrada para ID: {current_user.id}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Licencia no encontrada.")
+
+    print(f"✅ [GET /templates] Enviando tags: {lic_obj.invitation_types}")
+    return {
+        "message_templates": lic_obj.message_templates,
+        "invitation_types": lic_obj.invitation_types
+    }
+
+
+@licenses_router.post("/templates", dependencies=[Depends(require_agency_group)])
+async def update_license_templates(
+    body: ConfigLicenseBody,
+    current_user: AuthUser = Depends(get_current_user),
+    use_case: UpdateLicenseConfigUseCase = Depends(get_update_license_config_use_case),
+):
+    print(f"📥 [POST /templates] Recibiendo tags: {body.invitation_types} para ID: {current_user.id}")
+    if not current_user.license_id:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Solo las licencias pueden actualizar plantillas.")
+
+    await use_case.execute(
+        license_id=current_user.id,
+        message_templates=body.message_templates,
+        invitation_types=body.invitation_types,
+    )
+    print(f"✅ [POST /templates] Guardado exitoso.")
     return {"status": "ok"}
 
 

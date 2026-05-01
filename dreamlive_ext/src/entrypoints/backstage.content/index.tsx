@@ -4,6 +4,7 @@ import { UiModule } from "./module/ui";
 import { BulkModule } from "./module/bulk";
 import { ChatModule } from "./module/chat";
 import { log } from "./utils";
+import { availabilityScraper } from '../../features/operations/services/availability-scraper.service';
 
 export default defineContentScript({
   matches: ["*://live-backstage.tiktok.com/*"],

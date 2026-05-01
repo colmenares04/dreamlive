@@ -68,6 +68,7 @@ from app.application.leads.use_cases import (
     GetAdminOverviewUseCase,
     GetAgencyDashboardUseCase,
     GetLicensePerformanceUseCase,
+    ProcessBatchLeadsUseCase,
 )
 from app.application.leads.keywords_use_cases import (
     ListKeywordsUseCase,
@@ -94,7 +95,8 @@ from app.application.tickets.use_cases import (
 # AUTH PROVIDERS
 # ═══════════════════════════════════════════════════════════════════════════════
 async def get_login_use_case(uow: IUnitOfWork = Depends(get_uow)) -> LoginUseCase:
-    return LoginUseCase(uow=uow, token_service=_token_service)
+    return LoginUseCase(uow=uow, token_service=_token_service, password_hasher=_password_hasher)
+
 
 async def get_refresh_token_use_case(uow: IUnitOfWork = Depends(get_uow)) -> RefreshTokenUseCase:
     return RefreshTokenUseCase(uow=uow, token_service=_token_service)
@@ -185,6 +187,9 @@ async def get_update_lead_status_use_case(uow: IUnitOfWork = Depends(get_uow)) -
 
 async def get_delete_lead_use_case(uow: IUnitOfWork = Depends(get_uow)) -> DeleteLeadUseCase:
     return DeleteLeadUseCase(uow=uow)
+
+async def get_process_batch_leads_use_case(uow: IUnitOfWork = Depends(get_uow)) -> ProcessBatchLeadsUseCase:
+    return ProcessBatchLeadsUseCase(uow=uow)
 
 async def get_purge_leads_by_status_use_case(uow: IUnitOfWork = Depends(get_uow)) -> PurgeLeadsByStatusUseCase:
     return PurgeLeadsByStatusUseCase(uow=uow)

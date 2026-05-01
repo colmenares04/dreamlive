@@ -1,14 +1,14 @@
 """
-Puertos (interfaces) del dominio adaptados para Supabase (IDs por defecto string/UUID).
+Puertos (interfaces) del dominio adaptados para PostgreSQL puro.
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime
 
 
-from app.core.entities.models import (
+from app.core.entities import (
     Agency, License, LicenseStatus, Lead, LeadStatus, AppVersion,
-    Ticket, TicketMessage, AuditLog
+    Ticket, TicketMessage, AuditLog, User
 )
 
 

@@ -1,176 +1,153 @@
-"""
-Repositorio concreto de Licencias (Supabase).
-
-Adaptador en la capa de Adapters. Implementa ILicenseRepository
-usando el cliente sincrónico de supabase-py ejecutado en thread pool.
-"""
-import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from sqlalchemy import select, and_
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from supabase import Client
-
-from app.core.entities.license import License
+from app.core.entities.license import License, LicenseStatus
 from app.core.ports.license_repository import ILicenseRepository
+from app.adapters.db.models import LicenseORM, LicenseSessionORM
 
 
 class LicenseRepository(ILicenseRepository):
-    """Implementación Supabase del repositorio de licencias."""
+    """Implementación SQLAlchemy del repositorio de licencias."""
 
-    def __init__(self, db: Client) -> None:
-        self._db = db
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    def _to_domain(self, row: dict) -> License:
-        expires_str = row.get("expiration_date")
-        try:
-            expires_at = (
-                datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
-                if expires_str
-                else None
-            )
-        except (ValueError, TypeError):
-            expires_at = None
+    def _to_domain(self, orm: LicenseORM) -> License:
         return License(
-            id=row.get("id"),
-            agency_id=row.get("agency_id", ""),
-            license_key=row.get("license_key", ""),
-            email=row.get("email"),
-            is_active=row.get("is_active", True),
-            max_devices=row.get("max_devices", 1),
-            expiration_date=expires_at,
-            full_name=row.get("full_name"),
-            keywords=row.get("keywords", ""),
-            message_templates=row.get("message_templates") or [],
-            recruiter_name=row.get("recruiter_name", ""),
-            limit_requests=row.get("limit_requests", 60),
-            refresh_minutes=row.get("refresh_minutes", 720),
-            admin_password=row.get("admin_password", "admin123"),
-            invitation_types=row.get("invitation_types") or [],
-            theme=row.get("theme", "dark"),
+            id=str(orm.id),
+            agency_id=str(orm.agency_id),
+            license_key=orm.key,
+            email=orm.email,
+            is_active=orm.is_active,
+            max_devices=orm.max_devices,
+            expiration_date=orm.expires_at,
+            full_name=orm.full_name,
+            keywords=orm.keywords or "batallas/versus/duelo/pk",
+            message_templates=orm.message_templates or [],
+            recruiter_name=orm.recruiter_name,
+            limit_requests=orm.request_limit,
+            refresh_minutes=orm.refresh_minutes,
+            admin_password=orm.admin_password or "admin123",
+            invitation_types=orm.invitation_types or [],
+            theme=orm.theme or "dark",
         )
 
     async def get_by_id(self, license_id: str) -> Optional[License]:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("licenses").select("*").eq("id", license_id).execute()
-        )
-        return self._to_domain(resp.data[0]) if resp.data else None
+        if not license_id:
+            return None
+        result = await self._session.execute(select(LicenseORM).where(LicenseORM.id == license_id))
+        orm = result.scalar_one_or_none()
+        return self._to_domain(orm) if orm else None
 
     async def get_by_key(self, key: str) -> Optional[License]:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("licenses").select("*").eq("license_key", key).execute()
-        )
-        return self._to_domain(resp.data[0]) if resp.data else None
+        if not key:
+            return None
+        result = await self._session.execute(select(LicenseORM).where(LicenseORM.key == key))
+        orm = result.scalar_one_or_none()
+        return self._to_domain(orm) if orm else None
 
     async def get_by_email(self, email: str) -> Optional[License]:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("licenses").select("*").eq("email", email).execute()
-        )
-        return self._to_domain(resp.data[0]) if resp.data else None
+        if not email:
+            return None
+        result = await self._session.execute(select(LicenseORM).where(LicenseORM.email == email))
+        orm = result.scalar_one_or_none()
+        return self._to_domain(orm) if orm else None
 
     async def create(self, license_: License) -> License:
-        data = {
-            "agency_id": license_.agency_id,
-            "license_key": license_.license_key,
-            "email": license_.email,
-            "full_name": license_.full_name,
-            "is_active": license_.is_active,
-            "max_devices": license_.max_devices,
-            "expiration_date": license_.expiration_date.isoformat() if license_.expiration_date else None,
-            "keywords": license_.keywords,
-            "message_templates": license_.message_templates,
-            "recruiter_name": license_.recruiter_name,
-            "limit_requests": license_.limit_requests,
-            "refresh_minutes": license_.refresh_minutes,
-            "admin_password": license_.admin_password,
-            "invitation_types": license_.invitation_types,
-            "theme": license_.theme,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("licenses").insert(data).execute()
+        orm = LicenseORM(
+            key=license_.license_key,
+            agency_id=license_.agency_id,
+            email=license_.email,
+            is_active=license_.is_active,
+            max_devices=license_.max_devices,
+            expires_at=license_.expiration_date,
+            full_name=license_.full_name,
+            keywords=license_.keywords or "batallas/versus/duelo/pk",
+            message_templates=license_.message_templates or [],
+            recruiter_name=license_.recruiter_name,
+            request_limit=license_.limit_requests,
+            refresh_minutes=license_.refresh_minutes,
+            admin_password=license_.admin_password or "admin123",
+            invitation_types=license_.invitation_types or [],
+            theme=license_.theme or "dark",
         )
-        return self._to_domain(resp.data[0])
+        self._session.add(orm)
+        await self._session.flush()
+        return self._to_domain(orm)
 
     async def update(self, license_: License) -> License:
-        data = {
-            "email": license_.email,
-            "full_name": license_.full_name,
-            "is_active": license_.is_active,
-            "max_devices": license_.max_devices,
-            "expiration_date": license_.expiration_date.isoformat() if license_.expiration_date else None,
-            "keywords": license_.keywords,
-            "message_templates": license_.message_templates,
-            "recruiter_name": license_.recruiter_name,
-            "limit_requests": license_.limit_requests,
-            "refresh_minutes": license_.refresh_minutes,
-            "admin_password": license_.admin_password,
-            "invitation_types": license_.invitation_types,
-            "theme": license_.theme,
-        }
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("licenses").update(data).eq("id", license_.id).execute()
-        )
-        return self._to_domain(resp.data[0])
+        if not license_.id:
+            raise ValueError("License ID required to update.")
+        result = await self._session.execute(select(LicenseORM).where(LicenseORM.id == license_.id))
+        orm = result.scalar_one_or_none()
+        if not orm:
+            raise ValueError(f"License with ID {license_.id} not found.")
+
+        orm.key = license_.license_key
+        orm.email = license_.email
+        orm.is_active = license_.is_active
+        orm.max_devices = license_.max_devices
+        orm.expires_at = license_.expiration_date
+        orm.full_name = license_.full_name
+        orm.keywords = license_.keywords
+        orm.message_templates = license_.message_templates
+        orm.recruiter_name = license_.recruiter_name
+        orm.request_limit = license_.limit_requests
+        orm.refresh_minutes = license_.refresh_minutes
+        orm.admin_password = license_.admin_password
+        orm.invitation_types = license_.invitation_types
+        orm.theme = license_.theme
+
+        await self._session.flush()
+        return self._to_domain(orm)
 
     async def delete(self, license_id: str) -> None:
-        await asyncio.to_thread(
-            lambda: self._db.table("licenses").delete().eq("id", license_id).execute()
-        )
-
-    async def update_date(self, license_id: str, new_date: datetime) -> None:
-        await asyncio.to_thread(
-            lambda: self._db.table("licenses")
-            .update({"expiration_date": new_date.isoformat()})
-            .eq("id", license_id)
-            .execute()
-        )
+        if not license_id:
+            return
+        result = await self._session.execute(select(LicenseORM).where(LicenseORM.id == license_id))
+        orm = result.scalar_one_or_none()
+        if orm:
+            await self._session.delete(orm)
+            await self._session.flush()
 
     async def list_all(
         self,
         is_active: Optional[bool] = None,
         agency_id: Optional[str] = None,
     ) -> List[License]:
-        def _query():
-            q = self._db.table("licenses").select("*")
-            if is_active is not None:
-                q = q.eq("is_active", is_active)
-            if agency_id:
-                q = q.eq("agency_id", agency_id)
-            return q.execute()
+        stmt = select(LicenseORM)
+        filters = []
+        if is_active is not None:
+            filters.append(LicenseORM.is_active == is_active)
+        if agency_id:
+            filters.append(LicenseORM.agency_id == agency_id)
 
-        resp = await asyncio.to_thread(_query)
-        return [self._to_domain(r) for r in resp.data]
+        if filters:
+            stmt = stmt.where(and_(*filters))
+        result = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in result.scalars().all()]
 
-    async def bulk_update_password(self, agency_id: str, new_password: str) -> int:
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("licenses")
-            .update({"admin_password": new_password})
-            .eq("agency_id", agency_id)
-            .execute()
-        )
-        return len(resp.data) if resp.data else 0
+    async def bulk_update_password(self, agency_id: str, password: str) -> int:
+        if not agency_id:
+            return 0
+        stmt = select(LicenseORM).where(LicenseORM.agency_id == agency_id)
+        result = await self._session.execute(stmt)
+        orms = result.scalars().all()
+        for orm in orms:
+            orm.admin_password = password
+        await self._session.flush()
+        return len(orms)
 
-    async def count_active_sessions(self, agency_id: Optional[str] = None) -> int:
-        two_mins_ago = (datetime.utcnow() - timedelta(minutes=2)).isoformat()
-
-        def _query():
-            q = self._db.table("license_sessions").select("id", count="exact")
-            q = q.gt("last_ping", two_mins_ago)
-            return q.execute()
-
-        resp = await asyncio.to_thread(_query)
-        return resp.count or 0
-
-    async def get_last_pings(self, license_ids: List[str]) -> Dict[str, str]:
-        if not license_ids:
-            return {}
-
-        resp = await asyncio.to_thread(
-            lambda: self._db.table("license_sessions")
-            .select("license_id, last_ping")
-            .in_("license_id", license_ids)
-            .execute()
-        )
-        return {r["license_id"]: r["last_ping"] for r in resp.data}
+    async def update_date(self, license_id: str, new_date: datetime) -> None:
+        if not license_id:
+            return
+        result = await self._session.execute(select(LicenseORM).where(LicenseORM.id == license_id))
+        orm = result.scalar_one_or_none()
+        if orm:
+            orm.expires_at = new_date
+            await self._session.flush()
 
     async def upsert_session(
         self,
@@ -179,17 +156,27 @@ class LicenseRepository(ILicenseRepository):
         device_id: str,
         browser_name: Optional[str] = None,
         os_name: Optional[str] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
-        data = {
-            "id": session_id,
-            "license_id": license_id,
-            "device_id": device_id,
-            "browser": browser_name,
-            "os": os_name,
-            "ip_address": ip_address,
-            "last_ping": datetime.utcnow().isoformat()
-        }
-        await asyncio.to_thread(
-            lambda: self._db.table("license_sessions").upsert(data, on_conflict="device_id").execute()
+        # Generic UUID session
+        result = await self._session.execute(
+            select(LicenseSessionORM).where(LicenseSessionORM.device_id == device_id)
         )
+        orm = result.scalar_one_or_none()
+        if not orm:
+            orm = LicenseSessionORM(
+                id=session_id,
+                license_id=license_id,
+                device_id=device_id,
+                browser=browser_name,
+                os=os_name,
+                ip_address=ip_address,
+            )
+            self._session.add(orm)
+        else:
+            orm.id = session_id
+            orm.license_id = license_id
+            orm.browser = browser_name
+            orm.os = os_name
+            orm.ip_address = ip_address
+        await self._session.flush()

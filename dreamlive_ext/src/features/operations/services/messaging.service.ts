@@ -59,21 +59,21 @@ export const MessagingService = {
     const restantes = limitsRes.data ? (limitsRes.data.limit - limitsRes.data.count) : 50;
 
     // 2. Fetch available leads
-    const leadsRes = await apiClient.get<Lead[]>('/leads?status=disponible&limit=40');
+    const leadsRes = await apiClient.get<any>('/leads?status=disponible&limit=40');
     
     // 3. Fetch templates
     const templatesRes = await apiClient.get<LicenseTemplates>('/licenses/templates');
 
-    const leads = leadsRes.data;
+    const leadsItems = leadsRes.data?.items || [];
     const licData = templatesRes.data;
 
-    if (!leads?.length || !licData?.message_templates?.length) {
+    if (!leadsItems.length || !licData?.message_templates?.length) {
       console.log('No hay leads o plantillas disponibles.');
       return;
     }
 
     const batch = {
-      leads: leads.map((l: Lead) => l.username),
+      leads: leadsItems.map((l: any) => l.username),
       templates: licData.message_templates,
       targetSuccessCount: restantes,
     };

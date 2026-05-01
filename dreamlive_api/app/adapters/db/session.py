@@ -1,23 +1,33 @@
 """
-Gestión de cliente Supabase de forma sincrónica.
+Gestión de conexión a base de datos PostgreSQL pura con SQLAlchemy.
+Configuración de motor asíncrono y creador de sesiones.
 """
-from supabase import create_client, Client, ClientOptions
-from typing import Any
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+
 from app.config import settings
 
-_supabase_client = None
+# Creación del motor asíncrono utilizando asyncpg
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    future=True,
+    pool_pre_ping=True
+)
 
-def get_supabase() -> Client:
-    """Retorna un cliente sincrónico de Supabase apuntando al schema 'dreamtool'."""
-    global _supabase_client
-    if _supabase_client is None:
-        _supabase_client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_KEY,
-            options=ClientOptions(schema="dreamtool")
-        )
-    return _supabase_client
+# Creador de sesiones asíncronas
+async_session = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False
+)
 
-async def get_db() -> Client:
-    """Dependencia FastAPI que provee el cliente Supabase por request."""
-    return get_supabase()
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Dependencia FastAPI que provee la sesión asíncrona por request."""
+    async with async_session() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

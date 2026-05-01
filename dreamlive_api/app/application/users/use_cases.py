@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from app.core.entities.ticket import Ticket
 from app.core.entities.audit_log import AuditLog
+from app.core.entities.user import User, UserRole
 from app.core.ports.unit_of_work import IUnitOfWork
 from app.core.ports.security import IPasswordHasher
 from app.core.domain.exceptions import UserNotFound, ForbiddenAction, EntityNotFound

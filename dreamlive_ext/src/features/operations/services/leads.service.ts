@@ -9,8 +9,25 @@ export const LeadsService = {
    */
   async saveLead(message: any) {
     try {
+      let licenseId = message.license_id;
+      
+      // Fallback de seguridad: si no viene el ID, lo buscamos en el storage
+      if (!licenseId) {
+        let license = await storage.getItem<any>('local:license');
+        if (!license) {
+          const res = await browser.storage.local.get('license');
+          license = res.license as any;
+        }
+        licenseId = license?.id;
+      }
+
+      if (!licenseId) {
+        console.error('❌ No se puede guardar el lead: Falta license_id');
+        return;
+      }
+
       const payload: any = {
-        license_id: message.license_id,
+        license_id: licenseId,
         username: message.username,
         status: 'recopilado',
         viewer_count: message.viewers || 0,
