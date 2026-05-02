@@ -100,19 +100,41 @@ export default defineBackground(() => {
         })();
         return true;
 
+      case 'SAVE_MESSAGE_TEMPLATES':
+        (async () => {
+          try {
+            const templates = (msg as any).message_templates;
+            await apiClient.post('/licenses/templates', {
+              message_templates: templates
+            });
+            console.log('✅ Plantillas de mensaje guardadas en API:', templates);
+            sendResponse({ success: true });
+          } catch (e) {
+            console.error('Error guardando plantillas de mensaje en API:', e);
+            sendResponse({ success: false });
+          }
+        })();
+        return true;
+
       case 'GET_INVITATION_CONFIG':
-        // El content script de backstage necesita la configuración de invitaciones
+        // El content script de backstage necesita la configuración de invitaciones y plantillas
         (async () => {
           try {
             const res = await apiClient.get<any>('/licenses/templates');
-            if (res.data && res.data.invitation_types) {
-              sendResponse({ invitation_types: res.data.invitation_types });
+            if (res.data) {
+              sendResponse({
+                invitation_types: res.data.invitation_types || ["Normal", "Elite", "Popular", "Premium"],
+                message_templates: res.data.message_templates || []
+              });
               return;
             }
           } catch (e) {
             console.error('Error fetching invitation config:', e);
           }
-          sendResponse({ invitation_types: ["Normal", "Elite", "Popular", "Premium"] });
+          sendResponse({
+            invitation_types: ["Normal", "Elite", "Popular", "Premium"],
+            message_templates: []
+          });
         })();
         return true;
 

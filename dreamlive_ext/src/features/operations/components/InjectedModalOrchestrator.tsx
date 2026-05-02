@@ -20,6 +20,7 @@ export type ModalType =
 export const InjectedModalOrchestrator = () => {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
 
+
   // --- 1. COMUNICACIÓN CON LA EXTENSIÓN (Mensajería en tiempo real) ---
   useEffect(() => {
     const messageListener = (message: any, sender: any, sendResponse: (res?: any) => void) => {
@@ -123,7 +124,7 @@ const InjectedUIWrapper = ({ activeModal, handleCloseModal }: { activeModal: Mod
         {(activeModal === 'HISTORY_RECOPILAR' || 
           activeModal === 'HISTORY_DISPONIBILIDAD' || 
           activeModal === 'HISTORY_CONTACTAR') && (
-          <HistoryModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+          <HistoryModal onClose={handleCloseModal} isDarkMode={isDarkMode} activeModal={activeModal} />
         )}
       </div>
   );

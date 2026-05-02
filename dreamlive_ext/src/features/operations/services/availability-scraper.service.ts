@@ -2,9 +2,12 @@ import { browser } from "wxt/browser";
 import { delay, DomUtils } from "./dom-automation.utils";
 import { 
   SCRAPER_BATCH_SIZE, 
-  SCRAPER_DELAY_BETWEEN_BATCHES, 
-  SCRAPER_DELAY_TABLE_LOAD, 
-  SCRAPER_DEFAULT_TAGS 
+  SCRAPER_DELAYS, 
+  SCRAPER_DEFAULT_TAGS,
+  MESSAGES,
+  DOM_SELECTORS,
+  SCRAPER_STATUS_MARKERS,
+  SCRAPER_CREATOR_TYPES
 } from "../../shared/constants";
 
 export type ScraperLogType = "info" | "success" | "error";
@@ -83,7 +86,7 @@ export class AvailabilityScraperService {
       
       // 1. Pedir lote al background (Modelo PULL)
       const response = await browser.runtime.sendMessage({ 
-        type: "GET_BATCH_TO_CHECK",
+        type: MESSAGES.GET_BATCH_TO_CHECK,
         batchSize: SCRAPER_BATCH_SIZE
       });
 
@@ -112,7 +115,7 @@ export class AvailabilityScraperService {
       // 3. Enviar resultados
       this.log(`✅ Lote procesado. ${disponibles.length} disponibles encontrados que cumplen tus filtros.`, "success");
       await browser.runtime.sendMessage({
-        type: "BATCH_PROCESSED",
+        type: MESSAGES.BATCH_PROCESSED,
         disponibles,
         procesados: users
       });
@@ -123,36 +126,28 @@ export class AvailabilityScraperService {
       }
 
       // Respiro entre lotes
-      this.log(`⏳ Esperando ${SCRAPER_DELAY_BETWEEN_BATCHES / 1000} segundos antes del siguiente lote...`, "info");
-      await delay(SCRAPER_DELAY_BETWEEN_BATCHES); 
+      this.log(`⏳ Esperando ${SCRAPER_DELAYS.BETWEEN_BATCHES / 1000} segundos antes del siguiente lote...`, "info");
+      await delay(SCRAPER_DELAYS.BETWEEN_BATCHES); 
     }
   }
 
   private async processBatchOnPage(users: string[]): Promise<string[]> {
-    // A. Reset Interfaz
+    // A. Reset e interfaz garantizada
     const ready = await this.resetInterface();
     if (!ready || this.abortSignal) return [];
 
     // B. Encontrar textarea
-    const textarea = (await DomUtils.waitFor(
-      'textarea[data-testid="inviteHostTextArea"]',
-      8000
-    )) as HTMLTextAreaElement;
-
+    const textarea = document.querySelector(DOM_SELECTORS.TEXTAREA_SEARCH) as HTMLTextAreaElement;
     if (!textarea) {
-      this.log("❌ Campo de búsqueda no encontrado.", "error");
+      this.log("❌ Campo de búsqueda no disponible.", "error");
       return [];
     }
 
-    // C. Borrar y Pegar usuarios (Respetar DomUtils)
-    this.log(`📝 Borrando contenido previo...`);
-    DomUtils.focusReal(textarea);
-    DomUtils.setNativeValue(textarea, "");
-    await delay(500);
-
+    // C. Pegar usuarios (Respetar DomUtils)
     this.log(`📝 Pegando ${users.length} usuarios en el textarea...`);
+    DomUtils.focusReal(textarea);
     DomUtils.setNativeValue(textarea, users.join("\n"));
-    await delay(1500);
+    await delay(SCRAPER_DELAYS.AFTER_PASTE);
 
     // D. Clic Siguiente
     const buttons = Array.from(document.querySelectorAll("button"));
@@ -163,6 +158,8 @@ export class AvailabilityScraperService {
 
     if (nextBtn) {
       this.log("🖱️ Buscando disponibilidad...");
+      nextBtn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      nextBtn.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
       (nextBtn as HTMLElement).click();
     } else {
       this.log("❌ Botón 'Siguiente' no disponible.", "error");
@@ -171,9 +168,9 @@ export class AvailabilityScraperService {
 
     // E. Esperar resultados de la tabla
     this.log("⏳ Analizando estados...");
-    await delay(SCRAPER_DELAY_TABLE_LOAD);
+    await delay(SCRAPER_DELAYS.TABLE_LOAD);
     try {
-      await DomUtils.waitWithCheck(".semi-table-row", 10000, () => this.abortSignal);
+      await DomUtils.waitWithCheck(DOM_SELECTORS.TABLE_ROW, SCRAPER_DELAYS.TABLE_WAIT_CHECK, () => this.abortSignal);
     } catch (e) {
       this.log("⚠️ Tiempo de espera agotado o tabla vacía.", "info");
     }
@@ -185,50 +182,90 @@ export class AvailabilityScraperService {
   }
 
   private async resetInterface(): Promise<boolean> {
-    // Intentar retroceder usando el selector exacto indicado
-    const backBtn = document.querySelector('button[data-id="invite-host-back"], .bk-button');
+    // 1. Intentar retroceder usando el selector exacto indicado
+    const backBtn = document.querySelector(DOM_SELECTORS.BACK_BUTTON);
     if (backBtn) {
       this.log("🔙 Volviendo a la búsqueda principal...");
+      // Forzar mousedown, mouseup, y click para que sea completamente robusto
+      backBtn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      backBtn.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
       (backBtn as HTMLElement).click();
-      await delay(2500);
+      
+      // Esperar hasta que el textarea de búsqueda vuelva a estar visible y habilitado
+      let attempts = 0;
+      while (attempts < 10) {
+        if (this.abortSignal) return false;
+        const tx = document.querySelector(DOM_SELECTORS.TEXTAREA_SEARCH) as HTMLTextAreaElement;
+        if (tx && !tx.disabled) {
+          break;
+        }
+        await delay(500);
+        attempts++;
+      }
     }
 
-    // Intentar abrir modal si no está abierto
-    const textarea = document.querySelector('textarea[data-testid="inviteHostTextArea"]');
-    if (textarea) return true;
+    // 2. Intentar abrir modal si no está abierto (por si acaso o primer lote)
+    let textarea = document.querySelector(DOM_SELECTORS.TEXTAREA_SEARCH) as HTMLTextAreaElement;
+    if (!textarea) {
+      // Filtrar para no presionar jamás getInvitationCodeBtn
+      const btnInvite = Array.from(document.querySelectorAll(DOM_SELECTORS.INVITE_BUTTON))
+        .find(btn => 
+          !btn.getAttribute('data-id')?.includes('getInvitationCode') && 
+          !btn.getAttribute('data-e2e-tag')?.includes('getInvitationCode')
+        ) as HTMLElement;
 
-    const btnInvite = document.querySelector(
-      'button[data-e2e-tag="host_manageRelationship_addHostBtn"], button[data-id="add-host"]'
-    );
-
-    if (btnInvite) {
-      this.log("🖱️ Abriendo modal de invitación...");
-      (btnInvite as HTMLElement).click();
-      await delay(2500);
-      return !!document.querySelector('textarea[data-testid="inviteHostTextArea"]');
+      if (btnInvite) {
+        this.log("🖱️ Abriendo modal de invitación...");
+        btnInvite.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        btnInvite.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+        (btnInvite as HTMLElement).click();
+        
+        // Esperar hasta 3 segundos (6 intentos de 500ms) para que aparezca el textarea
+        let attempts = 0;
+        while (attempts < 6) {
+          if (this.abortSignal) return false;
+          textarea = document.querySelector(DOM_SELECTORS.TEXTAREA_SEARCH) as HTMLTextAreaElement;
+          if (textarea && !textarea.disabled) {
+            break;
+          }
+          await delay(500);
+          attempts++;
+        }
+      }
     }
 
-    return false;
+    // Si tras intentar abrirlo/volver el textarea no existe, el método retorna false.
+    if (!textarea || textarea.disabled) {
+      this.log("❌ Error: No se pudo abrir o cargar el textarea de búsqueda.", "error");
+      return false;
+    }
+
+    // 3. Limpieza garantizada ANTES de retornar que está listo
+    DomUtils.focusReal(textarea);
+    DomUtils.setNativeValue(textarea, "");
+    await delay(300);
+
+    return true;
   }
 
   private async leerResultadosMasivos(usersOriginales: string[]): Promise<string[]> {
     const disponibles: string[] = [];
     let processedCount = 0;
-    const rows = Array.from(document.querySelectorAll('tr[role="row"], tr.semi-table-row'));
+    const rows = Array.from(document.querySelectorAll(DOM_SELECTORS.ROWS));
     
     for (const row of rows) {
       if (this.abortSignal) break;
 
-      const userCell = row.querySelector('td[aria-colindex="1"], td:first-child');
+      const userCell = row.querySelector(DOM_SELECTORS.USER_CELL);
       const userText = (userCell?.textContent || "").toLowerCase();
       const usernameFound = usersOriginales.find((u) => userText.includes(u.toLowerCase()));
 
       if (!usernameFound) continue;
 
-      const statusCell = row.querySelector('td[aria-colindex="2"], td:nth-child(2)');
+      const statusCell = row.querySelector(DOM_SELECTORS.STATUS_CELL);
       const statusHtml = statusCell?.innerHTML || "";
-      const isOnline = statusHtml.includes("semi-tag-green-light");
-      const isForbidden = statusHtml.includes("semi-tag-red-light");
+      const isOnline = statusHtml.includes(SCRAPER_STATUS_MARKERS.ONLINE);
+      const isForbidden = statusHtml.includes(SCRAPER_STATUS_MARKERS.FORBIDDEN);
 
       if (isForbidden) {
         this.log(`⛔ @${usernameFound} -> NO APTO`, "error");
@@ -236,14 +273,14 @@ export class AvailabilityScraperService {
       }
 
       // Detección de Tipo (Elite, Popular, Premium)
-      const typeCell = row.querySelector('td[aria-colindex="3"], td:nth-child(3)');
-      let creatorType = "Normal";
+      const typeCell = row.querySelector(DOM_SELECTORS.TYPE_CELL);
+      let creatorType = SCRAPER_CREATOR_TYPES.NORMAL.name;
 
       if (typeCell) {
         const html = typeCell.innerHTML;
-        if (html.includes("#FF9506")) creatorType = "Elite";
-        else if (html.includes("#836BFE")) creatorType = "Popular";
-        else if (html.includes("#2CB8C5")) creatorType = "Premium";
+        if (html.includes(SCRAPER_CREATOR_TYPES.ELITE.color)) creatorType = SCRAPER_CREATOR_TYPES.ELITE.name;
+        else if (html.includes(SCRAPER_CREATOR_TYPES.POPULAR.color)) creatorType = SCRAPER_CREATOR_TYPES.POPULAR.name;
+        else if (html.includes(SCRAPER_CREATOR_TYPES.PREMIUM.color)) creatorType = SCRAPER_CREATOR_TYPES.PREMIUM.name;
       }
 
       if (isOnline) {

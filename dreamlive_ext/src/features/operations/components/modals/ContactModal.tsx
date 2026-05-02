@@ -1,29 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Terminal, Settings } from 'lucide-react';
+import { X, Send, Terminal, Settings, Database, Eye } from 'lucide-react';
 import { browser } from 'wxt/browser';
+import { TemplateManager } from './TemplateManager';
 
 interface Props {
   onClose: () => void;
   isDarkMode?: boolean;
 }
 
-export const ContactModal: React.FC<Props> = ({ onClose }) => {
+export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) => {
   const [position, setPosition] = useState({ x: 320, y: 90 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const [isRunning, setIsRunning] = useState(false);
   const [count, setCount] = useState(0);
+  const [total, setTotal] = useState(0);
   const [showConsole, setShowConsole] = useState(false);
   const [logs, setLogs] = useState<string[]>(['[SISTEMA] Motor de mensajería listo...', '[INFO] Esperando apertura de chat de TikTok...']);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templates, setTemplates] = useState<string[]>([]);
   
   const isValidRoute = location.href.includes('/instant-messages');
 
   useEffect(() => {
-    browser.storage.local.get('contact_position').then((res) => {
-      const pos = res.contact_position as { x: number; y: number } | undefined;
+    browser.storage.local.get(['contact_position', 'cachedCounts', 'messageTemplates']).then((res: any) => {
+      const pos = res?.contact_position as { x: number; y: number } | undefined;
       if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
         setPosition(pos);
       }
+      if (res?.cachedCounts && typeof res.cachedCounts.DISPONIBILIDAD === 'number') {
+        setTotal(res.cachedCounts.DISPONIBILIDAD);
+      }
+
+      // First fetch from background/API
+      browser.runtime.sendMessage({ type: 'GET_INVITATION_CONFIG' }).then((configRes: any) => {
+        if (configRes && configRes.message_templates && configRes.message_templates.length > 0) {
+          setTemplates(configRes.message_templates);
+          browser.storage.local.set({ messageTemplates: configRes.message_templates });
+        } else if (res?.messageTemplates) {
+          setTemplates(res.messageTemplates);
+        } else {
+          setTemplates(['¡Hola {username}, me encanta tu contenido!']);
+        }
+      }).catch((e) => {
+        console.error('Error getting message config:', e);
+        if (res?.messageTemplates) {
+          setTemplates(res.messageTemplates);
+        } else {
+          setTemplates(['¡Hola {username}, me encanta tu contenido!']);
+        }
+      });
     });
   }, []);
 
@@ -62,7 +88,8 @@ export const ContactModal: React.FC<Props> = ({ onClose }) => {
       style={{
         position: 'fixed', zIndex: 2147483646,
         top: `${position.y}px`, left: `${position.x}px`,
-        pointerEvents: 'auto', width: '340px'
+        pointerEvents: 'auto', width: showTemplates ? '440px' : '360px',
+        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
       <div className="dreamlive-modal-container">
@@ -98,47 +125,88 @@ export const ContactModal: React.FC<Props> = ({ onClose }) => {
           </div>
 
           {/* Body */}
-          <div className="dreamlive-modal-body" style={{ padding: '20px 18px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div 
-                style={{ 
-                  width: '80px', height: '80px', borderRadius: '50%', 
-                  border: `4px solid ${isRunning ? 'var(--color-purple)' : 'var(--apple-btn-secondary)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.3s ease',
-                  boxShadow: isRunning ? '0 0 15px rgba(175, 82, 222, 0.2)' : 'none'
-                }}
-              >
-                <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)' }}>{count}</span>
-              </div>
-            </div>
+          <div className="dreamlive-modal-body" style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {showTemplates ? (
+              <TemplateManager 
+                templates={templates} 
+                onTemplatesChange={async (newTemplates) => {
+                  setTemplates(newTemplates);
+                  await browser.storage.local.set({ messageTemplates: newTemplates });
+                  await browser.runtime.sendMessage({
+                    type: 'SAVE_MESSAGE_TEMPLATES',
+                    message_templates: newTemplates
+                  });
+                }} 
+                isDarkMode={isDarkMode} 
+              />
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+                  <div 
+                    style={{ 
+                      width: '80px', height: '80px', borderRadius: '50%', 
+                      border: `4px solid ${isRunning ? 'var(--color-purple)' : 'var(--apple-btn-secondary)'}`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.3s ease',
+                      boxShadow: isRunning ? '0 0 15px rgba(175, 82, 222, 0.2)' : 'none'
+                    }}
+                  >
+                    <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)', lineHeight: '1.2' }}>{count}</span>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)' }}>/ {total || '-'}</span>
+                  </div>
+                </div>
 
-            <div style={{ background: 'var(--apple-bg-secondary)', padding: '12px', borderRadius: '12px', marginBottom: '18px', border: '1px solid var(--apple-border)' }}>
-              <p style={{ fontSize: '11px', fontWeight: '600', color: 'var(--apple-text-sub)', textAlign: 'center', lineHeight: '1.4' }}>
-                Inicia el envío automático de mensajes a tus leads capturados desde la sección de chat.
-              </p>
-            </div>
+                <div style={{ background: 'var(--apple-bg-secondary)', padding: '12px', borderRadius: '12px', marginBottom: '4px', border: '1px solid var(--apple-border)' }}>
+                  <p style={{ fontSize: '11px', fontWeight: '600', color: 'var(--apple-text-sub)', textAlign: 'center', lineHeight: '1.4' }}>
+                    Inicia el envío automático de mensajes a tus leads capturados desde la sección de chat.
+                  </p>
+                </div>
+              </>
+            )}
 
             <div className="dreamlive-button-group" style={{ gap: '10px' }}>
+              {!showTemplates && (
+                <button 
+                  disabled={!isValidRoute}
+                  onClick={() => setIsRunning(!isRunning)}
+                  className="dreamlive-btn"
+                  style={{ 
+                    background: !isValidRoute ? 'var(--apple-btn-disabled)' : isRunning ? '#FF3B30' : 'var(--color-purple)', 
+                    color: !isValidRoute ? 'var(--apple-text-disabled)' : '#FFFFFF',
+                    height: '42px',
+                    cursor: !isValidRoute ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <Send size={16} fill="currentColor" />
+                  <span>{isRunning ? 'Detener Envío' : 'Iniciar Envío Masivo'}</span>
+                </button>
+              )}
+              
               <button 
-                disabled={!isValidRoute}
-                onClick={() => setIsRunning(!isRunning)}
-                className="dreamlive-btn"
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="dreamlive-btn" 
                 style={{ 
-                  background: !isValidRoute ? 'var(--apple-btn-disabled)' : isRunning ? '#FF3B30' : 'var(--color-purple)', 
-                  color: !isValidRoute ? 'var(--apple-text-disabled)' : '#FFFFFF',
-                  height: '42px',
-                  cursor: !isValidRoute ? 'not-allowed' : 'pointer'
+                  background: showTemplates ? 'var(--color-purple)' : 'var(--apple-btn-secondary)', 
+                  color: showTemplates ? '#FFFFFF' : 'var(--apple-text-main)', 
+                  height: '42px' 
                 }}
               >
-                <Send size={16} fill="currentColor" />
-                <span>{isRunning ? 'Detener Envío' : 'Iniciar Envío Masivo'}</span>
-              </button>
-              
-              <button className="dreamlive-btn" style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '42px' }}>
                 <Settings size={16} />
-                <span>Configuración de Mensaje</span>
+                <span>{showTemplates ? 'Volver a Envío' : 'Configuración de Mensaje'}</span>
               </button>
+
+              {!showTemplates && (
+                <button
+                  onClick={async () => {
+                    await browser.storage.local.set({ activeOperationsModal: 'HISTORY_CONTACTAR' });
+                  }}
+                  className="dreamlive-btn"
+                  style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '42px', marginTop: '4px' }}
+                >
+                  <Database size={16} />
+                  <span>Historial</span>
+                </button>
+              )}
             </div>
           </div>
 

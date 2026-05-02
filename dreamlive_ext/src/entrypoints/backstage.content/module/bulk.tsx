@@ -368,10 +368,16 @@ export const BulkModule = {
     const disponibles = await this.leerResultadosMasivos(users, allowedTypes);
     log(`🏁 Lote finalizado. ${disponibles.length} aptos.`);
 
-    browser.runtime.sendMessage({
-      type: "BATCH_PROCESSED",
-      disponibles,
-      procesados: users,
-    });
+    try {
+      if (browser.runtime?.id) {
+        browser.runtime.sendMessage({
+          type: "BATCH_PROCESSED",
+          disponibles,
+          procesados: users,
+        }).catch(() => {});
+      }
+    } catch (e) {
+      // Ignorar si el contexto fue invalidado
+    }
   },
 };

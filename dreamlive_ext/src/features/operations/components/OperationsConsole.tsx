@@ -4,13 +4,13 @@ import { useTheme } from '../../../shared/contexts/ThemeContext';
 import { browser } from 'wxt/browser';
 import { apiClient } from '../../../infrastructure/api/apiClient';
 
-export type ModalType = 
-  | 'RECOPILAR' 
-  | 'DISPONIBILIDAD' 
-  | 'CONTACTAR' 
-  | 'HISTORY_RECOPILAR' 
-  | 'HISTORY_DISPONIBILIDAD' 
-  | 'HISTORY_CONTACTAR' 
+export type ModalType =
+  | 'RECOPILAR'
+  | 'DISPONIBILIDAD'
+  | 'CONTACTAR'
+  | 'HISTORY_RECOPILAR'
+  | 'HISTORY_DISPONIBILIDAD'
+  | 'HISTORY_CONTACTAR'
   | null;
 
 const ROUTES = {
@@ -38,31 +38,48 @@ export const OperationsConsole: React.FC = () => {
 
   // Función para actualizar la URL actual con múltiples fallbacks para asegurar máxima precisión
   const updateCurrentUrl = async () => {
+    console.log('[OperationsConsole] updateCurrentUrl invocada.');
     try {
+
       if (typeof browser.tabs === 'undefined' || !browser.tabs.query) {
+        console.log(`[OperationsConsole] browser.tabs.query no está disponible. Usando window.location.href: "${window.location.href}"`);
         setCurrentUrl(window.location.href);
         return;
       }
 
       // 1. Intentar con query general para pestañas activas
       let tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+      console.log(`[OperationsConsole] Query active & lastFocusedWindow tabs:`, tabs?.map(t => t.url));
+      if (!tabs || tabs.length === 0) {
+        tabs = await browser.tabs.query({ active: true });
+        console.log(`[OperationsConsole] Query only active tabs fallback:`, tabs?.map(t => t.url));
+      }
       if (!tabs || tabs.length === 0) {
         tabs = await browser.tabs.query({ active: true, currentWindow: true });
+        console.log(`[OperationsConsole] Query active & currentWindow fallback:`, tabs?.map(t => t.url));
       }
+
       if (tabs && tabs[0]?.url) {
+        console.log(`[OperationsConsole] URL detectada desde tabs activa: "${tabs[0].url}"`);
         setCurrentUrl(tabs[0].url);
         return;
       }
 
       // 2. Si no funciona, buscar pestañas de tiktok o live-backstage
       const allTabs = await browser.tabs.query({});
-      const activeTiktokTab = allTabs.find(t => 
-        t.active && (t.url?.includes('tiktok.com') || t.url?.includes('live-backstage.tiktok.com'))
+      console.log(`[OperationsConsole] Buscando en todas las pestañas (${allTabs?.length}):`, allTabs?.map(t => t.url));
+      const activeTiktokTab = allTabs.find(t =>
+        t.url?.includes('tiktok.com') || t.url?.includes('live-backstage.tiktok.com')
       );
       if (activeTiktokTab?.url) {
+        console.log(`[OperationsConsole] URL de TikTok/Backstage detectada de respaldo: "${activeTiktokTab.url}"`);
         setCurrentUrl(activeTiktokTab.url);
+      } else {
+        console.log(`[OperationsConsole] Ninguna pestaña de TikTok/Backstage encontrada. Usando window.location.href: "${window.location.href}"`);
+        setCurrentUrl(window.location.href);
       }
     } catch (e) {
+      console.warn('[OperationsConsole] Error fetching active tab url:', e);
       setCurrentUrl(window.location.href);
     }
   };
@@ -79,12 +96,12 @@ export const OperationsConsole: React.FC = () => {
         con += data[lid].contacted || 0;
       }
 
-      // El badge de disponibilidad muestra cuántos leads están "recopilados" pendientes de ser comprobados.
-      // El badge de contactar muestra cuántos leads están "disponibles" listos para enviar mensajes.
+      // El badge de disponibilidad muestra cuántos leads están disponibles.
+      // El badge de contactar muestra cuántos leads han sido contactados.
       const newCounts = {
         RECOPILAR: col,
-        DISPONIBILIDAD: col,
-        CONTACTAR: av,
+        DISPONIBILIDAD: av,
+        CONTACTAR: con,
       };
 
       setCounts(newCounts);
@@ -98,6 +115,13 @@ export const OperationsConsole: React.FC = () => {
   const fetchMetrics = async () => {
     try {
       const res = await apiClient.get<any>('/licenses/metrics');
+      if (res && (res.status === 401 || res.status === 403 || res.error)) {
+        // Error o licencia inactiva/cerrada: cerramos todo
+        await browser.storage.local.set({ activeOperationsModal: null });
+        setActiveModal(null);
+        await browser.runtime.sendMessage({ type: 'FORCE_CLOSE_MODALS' }).catch(() => { });
+        return;
+      }
       if (res && res.data) {
         await updateAndSaveCounts(res.data);
       }
@@ -115,17 +139,23 @@ export const OperationsConsole: React.FC = () => {
     });
   }, []);
 
-  // Efecto para monitoreo dinámico (Loop de 6 segundos)
+  // Efecto para monitoreo dinámico (Loop de 1 segundo para la URL y 6 segundos para métricas)
   useEffect(() => {
     updateCurrentUrl(); // Primera carga inmediata
     fetchMetrics(); // Primer fetch inmediato
 
-    const interval = setInterval(() => {
+    const urlInterval = setInterval(() => {
       updateCurrentUrl();
+    }, 1000);
+
+    const metricsInterval = setInterval(() => {
       fetchMetrics();
     }, 6000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(urlInterval);
+      clearInterval(metricsInterval);
+    };
   }, []);
 
   useEffect(() => {
@@ -142,30 +172,73 @@ export const OperationsConsole: React.FC = () => {
     return () => browser.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
+  const isCurrentRouteValid = async (id: ModalType): Promise<boolean> => {
+    if (!id || !(id in ROUTES)) return true;
+    
+    let urlStr = window.location.href.toLowerCase();
+    try {
+      if (typeof browser.tabs !== 'undefined' && browser.tabs.query) {
+        let tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+        if (!tabs || tabs.length === 0) {
+          tabs = await browser.tabs.query({ active: true, currentWindow: true });
+        }
+        if (tabs && tabs[0]?.url) {
+          urlStr = tabs[0].url.toLowerCase();
+        }
+      }
+    } catch (e) {
+      console.warn('Error querying tabs:', e);
+    }
+
+    const cleanUrl = urlStr
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .split('?')[0]
+      .replace(/\/$/, '');
+
+    if (id === 'RECOPILAR') {
+      return cleanUrl.includes('tiktok.com/search') || cleanUrl.includes('tiktok.com/live') || cleanUrl.includes('/search/live') || cleanUrl.includes('search');
+    }
+    if (id === 'DISPONIBILIDAD') {
+      return cleanUrl.includes('relation') || cleanUrl.includes('relation-management') || cleanUrl.includes('portal/anchor/relation');
+    }
+    if (id === 'CONTACTAR') {
+      return cleanUrl.includes('instant-messages') || cleanUrl.includes('messaging') || cleanUrl.includes('messages') || cleanUrl.includes('anchor/instant-messages');
+    }
+
+    return cleanUrl.includes(ROUTES[id as keyof typeof ROUTES]);
+  };
+
   const handleToggleModal = async (id: ModalType) => {
     const isClosing = activeModal === id;
     const newActive = isClosing ? null : id;
     setActiveModal(newActive);
     // 1. Guardar en storage (como respaldo)
     await browser.storage.local.set({ activeOperationsModal: newActive });
-    
+
     // 2. Mensajería Directa (Instantánea)
     try {
       const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
       if (tab?.id) {
-        await browser.tabs.sendMessage(tab.id, { 
-          type: 'FORCE_OPEN_MODAL', 
-          modal: newActive 
-        }).catch(() => {}); // Ignorar si la pestaña no tiene el script inyectado
+        await browser.tabs.sendMessage(tab.id, {
+          type: 'FORCE_OPEN_MODAL',
+          modal: newActive
+        }).catch(() => { }); // Ignorar si la pestaña no tiene el script inyectado
       }
     } catch (e) {
       console.warn('Error sending direct message:', e);
     }
 
-    // 3. Solo navegar para los modales de operación principales
+    // 3. Solo navegar para los modales de operación principales si NO estamos en la ruta correcta
     if (!isClosing && id && id in ROUTES) {
+      const isOnCorrectRoute = await isCurrentRouteValid(id);
+      if (isOnCorrectRoute) {
+        console.log(`[Console] Ya se encuentra en la ruta correcta. No se requiere navegación.`);
+        return;
+      }
+
       let targetUrl = URLS[id as keyof typeof URLS];
-      
+
       if (id === 'RECOPILAR') {
         const res = await browser.storage.local.get(['keywords', 'activeKeyword']);
         const keywords = (res.keywords as string[]) || [];
@@ -176,60 +249,6 @@ export const OperationsConsole: React.FC = () => {
 
       console.log(`[Console] Forzando navegación a ${targetUrl}`);
       await browser.runtime.sendMessage({ type: 'NAVIGATE', url: targetUrl });
-
-      // Verificación inteligente: Loop de 5 intentos cada 2 segundos.
-      // Si tras 5 intentos no se llega a la ruta correcta, se desactiva el modal.
-      let attempts = 0;
-      const maxAttempts = 5;
-
-      const checkInterval = setInterval(async () => {
-        attempts++;
-
-        let currentUrlStr = '';
-        try {
-          let tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
-          if (!tabs || tabs.length === 0) {
-            tabs = await browser.tabs.query({ active: true, currentWindow: true });
-          }
-          if (tabs && tabs[0]?.url) {
-            currentUrlStr = tabs[0].url.toLowerCase();
-          } else {
-            const allTabs = await browser.tabs.query({});
-            const activeTiktokTab = allTabs.find(t => 
-              t.active && (t.url?.includes('tiktok.com') || t.url?.includes('live-backstage.tiktok.com'))
-            );
-            if (activeTiktokTab?.url) {
-              currentUrlStr = activeTiktokTab.url.toLowerCase();
-            }
-          }
-        } catch (err) {
-          console.warn('Error querying tab during navigation check:', err);
-        }
-
-        let isOnCorrectRoute = false;
-        if (id === 'RECOPILAR') {
-          isOnCorrectRoute = currentUrlStr.includes('tiktok.com/search') || currentUrlStr.includes('tiktok.com/live') || currentUrlStr.includes('/search/live');
-        } else if (id === 'DISPONIBILIDAD') {
-          isOnCorrectRoute = currentUrlStr.includes('relation') || currentUrlStr.includes('relation-management') || currentUrlStr.includes('portal/anchor/relation');
-        } else if (id === 'CONTACTAR') {
-          isOnCorrectRoute = currentUrlStr.includes('instant-messages') || currentUrlStr.includes('messaging') || currentUrlStr.includes('messages') || currentUrlStr.includes('anchor/instant-messages');
-        }
-
-        console.log(`[Console Route Retry] Intento ${attempts}: id=${id}, currentUrlStr="${currentUrlStr}", isOnCorrectRoute=${isOnCorrectRoute}`);
-
-        if (isOnCorrectRoute) {
-          console.log(`[Console] ¡Ruta correcta detectada en intento ${attempts}!`);
-          clearInterval(checkInterval);
-          return;
-        }
-
-        if (attempts >= maxAttempts) {
-          console.warn(`[Console] No se detectó la ruta correcta después de ${maxAttempts} intentos. Desactivando modal.`);
-          clearInterval(checkInterval);
-          setActiveModal(null);
-          await browser.storage.local.set({ activeOperationsModal: null });
-        }
-      }, 2000);
     }
   };
 
@@ -258,17 +277,17 @@ export const OperationsConsole: React.FC = () => {
   ];
 
   return (
-    <div 
+    <div
       className="flex flex-col h-full rounded-xl border overflow-hidden shadow-sm animate-in fade-in relative"
-      style={{ 
-        background: 'var(--apple-bg)', 
+      style={{
+        background: 'var(--apple-bg)',
         borderColor: 'var(--apple-border)',
         minHeight: '400px'
       }}
     >
-      
+
       {/* Header Info */}
-      <div 
+      <div
         className="px-4 py-4 border-b"
         style={{ borderColor: 'var(--apple-border)' }}
       >
@@ -278,7 +297,7 @@ export const OperationsConsole: React.FC = () => {
             <h2 className="text-[14px] font-bold text-gray-900 dark:text-white tracking-tight">Operaciones</h2>
           </div>
           {/* Close Button fallback for better UX */}
-          <button 
+          <button
             onClick={async () => {
               await browser.storage.local.set({ isOperationsConsoleOpen: false });
               await browser.storage.local.set({ activeOperationsModal: null });
@@ -298,29 +317,29 @@ export const OperationsConsole: React.FC = () => {
         {buttons.map(btn => {
           const isActive = activeModal === btn.id;
           const isHistoryActive = activeModal === btn.historyId;
-          
-          const urlStr = currentUrl.toLowerCase();
+
+          const urlStr = window.location.href.toLowerCase();
           let isOnCorrectRoute = false;
           if (btn.id === 'RECOPILAR') {
-            isOnCorrectRoute = urlStr.includes('tiktok.com/search') || urlStr.includes('tiktok.com/live') || urlStr.includes('/search/live');
+            isOnCorrectRoute = urlStr.includes('tiktok.com/search') || urlStr.includes('tiktok.com/live') || urlStr.includes('/search/live') || urlStr.includes('search');
           } else if (btn.id === 'DISPONIBILIDAD') {
             isOnCorrectRoute = urlStr.includes('relation') || urlStr.includes('relation-management') || urlStr.includes('portal/anchor/relation');
           } else if (btn.id === 'CONTACTAR') {
             isOnCorrectRoute = urlStr.includes('instant-messages') || urlStr.includes('messaging') || urlStr.includes('messages') || urlStr.includes('anchor/instant-messages');
           }
-          
+
           if (isActive) {
-            console.log(`[Console UI Match] btn.id=${btn.id}, urlStr="${urlStr}", isOnCorrectRoute=${isOnCorrectRoute}`);
+            console.info(`[OperationsConsole DEBUG] Modal Activo: ${btn.id}`);
+            console.info(`[OperationsConsole DEBUG] URL Actual del matching: "${urlStr}"`);
+            console.info(`[OperationsConsole DEBUG] ¿Está en la ruta correcta?: ${isOnCorrectRoute}`);
           }
-          
-          const showWarning = isActive && !isOnCorrectRoute;
-          
+
           return (
-            <div 
-              key={btn.id!} 
+            <div
+              key={btn.id!}
               className={`flex flex-col rounded-[16px] border transition-all duration-300
                 ${isActive || isHistoryActive
-                  ? 'border-black/5 dark:border-white/10' 
+                  ? 'border-black/5 dark:border-white/10'
                   : 'border-transparent hover:bg-[#F5F5F7] dark:hover:bg-white/5'}`}
               style={{
                 background: isActive || isHistoryActive ? 'var(--apple-bg-secondary)' : 'transparent'
@@ -332,12 +351,12 @@ export const OperationsConsole: React.FC = () => {
               >
                 <div className="shrink-0">
                   <div className={`w-2.5 h-2.5 rounded-full transition-all
-                    ${isActive 
-                      ? showWarning ? 'bg-amber-500' : 'bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.4)]' 
-                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`} 
+                    ${isActive
+                      ? 'bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.4)]'
+                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
                   />
                 </div>
-                
+
                 <div className="flex flex-col flex-1 overflow-hidden">
                   <div className="flex items-center justify-between gap-1.5 pr-2">
                     <div className="flex items-center gap-1.5">
@@ -345,7 +364,6 @@ export const OperationsConsole: React.FC = () => {
                         ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                         {btn.title}
                       </span>
-                      {showWarning && <AlertCircle size={12} className="text-amber-500 animate-pulse" />}
                     </div>
                     {/* Contadores cargados desde la API o Local Storage en tiempo real */}
                     <span className="text-[11px] font-bold bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/10 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
@@ -354,13 +372,13 @@ export const OperationsConsole: React.FC = () => {
                   </div>
                   <span className={`text-[11px] font-medium truncate
                     ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {showWarning ? 'Ruta incorrecta' : btn.desc}
+                    {btn.desc}
                   </span>
                 </div>
 
                 <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all
-                  ${isActive 
-                    ? 'bg-[#007AFF] text-white' 
+                  ${isActive
+                    ? 'bg-[#007AFF] text-white'
                     : 'bg-white dark:bg-white/10 text-gray-400 border border-black/5 dark:border-white/5 shadow-sm'}`}>
                   {btn.icon}
                 </div>
@@ -373,8 +391,8 @@ export const OperationsConsole: React.FC = () => {
                     handleToggleModal(btn.historyId);
                   }}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-[10px] text-[10px] font-bold transition-all
-                    ${isHistoryActive 
-                      ? 'bg-[#007AFF] text-white shadow-md' 
+                    ${isHistoryActive
+                      ? 'bg-[#007AFF] text-white shadow-md'
                       : 'bg-white dark:bg-white/10 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/5 hover:bg-gray-50'}`}
                 >
                   <Eye size={12} />

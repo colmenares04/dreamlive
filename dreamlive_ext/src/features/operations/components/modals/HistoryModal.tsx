@@ -15,11 +15,12 @@ interface LeadData {
 interface Props {
   onClose: () => void;
   isDarkMode?: boolean;
+  activeModal?: 'HISTORY_RECOPILAR' | 'HISTORY_DISPONIBILIDAD' | 'HISTORY_CONTACTAR' | null;
 }
 
 type FilterType = 'viewers' | 'likes' | 'all';
 
-export const HistoryModal: React.FC<Props> = ({ onClose }) => {
+export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
   const [position, setPosition] = useState({ x: 320, y: 150 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -29,13 +30,19 @@ export const HistoryModal: React.FC<Props> = ({ onClose }) => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [minQuantity, setMinQuantity] = useState<number | ''>('');
-  const [activeFilter, setActiveFilter] = useState<FilterType>('viewers');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const fetchLeads = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await LeadsService.getLeads('recopilado', 1, 100);
+      let status = 'recopilado';
+      if (activeModal === 'HISTORY_DISPONIBILIDAD') {
+        status = 'disponible';
+      } else if (activeModal === 'HISTORY_CONTACTAR') {
+        status = 'contactado';
+      }
+      const data = await LeadsService.getLeads(status, 1, 100);
       if (data && data.items) {
         setLeads(data.items);
       }
@@ -137,7 +144,7 @@ export const HistoryModal: React.FC<Props> = ({ onClose }) => {
           <div onMouseDown={handleMouseDown} className="dreamlive-modal-header" style={{ padding: '16px 18px', cursor: isDragging ? 'grabbing' : 'grab' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-0.3px' }}>
-                Explorador de Leads
+                {activeModal === 'HISTORY_DISPONIBILIDAD' ? 'Historial Disponibles' : activeModal === 'HISTORY_CONTACTAR' ? 'Historial Contactados' : 'Explorador de Leads'}
               </span>
               <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-blue)', marginTop: '1px' }}>
                 FILTRADO INTELIGENTE

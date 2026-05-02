@@ -19,10 +19,16 @@ export default defineContentScript({
 
     // 2. Avisar al Background que estamos listos
     setTimeout(() => {
-      const isMessages = location.href.includes("/instant-messages");
-      browser.runtime.sendMessage({
-        type: isMessages ? "MESSAGES_PAGE_READY" : "BACKSTAGE_SCRIPT_READY",
-      });
+      try {
+        if (browser.runtime?.id) {
+          const isMessages = location.href.includes("/instant-messages");
+          browser.runtime.sendMessage({
+            type: isMessages ? "MESSAGES_PAGE_READY" : "BACKSTAGE_SCRIPT_READY",
+          }).catch(() => {});
+        }
+      } catch (e) {
+        // Silencioso si el contexto fue invalidado por recarga de la extensión
+      }
     }, 2000);
 
     // 3. Router de Mensajes

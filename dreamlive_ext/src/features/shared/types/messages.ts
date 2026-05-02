@@ -20,7 +20,8 @@ export type MessageType =
   | 'START_CHECKING_FLOW'
   | 'BACKSTAGE_SCRIPT_READY'
   | 'MESSAGES_PAGE_READY'
-  | 'SAVE_INVITATION_CONFIG';
+  | 'SAVE_INVITATION_CONFIG'
+  | 'SAVE_MESSAGE_TEMPLATES';
 
 export interface BaseMessage {
   type: MessageType;
@@ -93,6 +94,11 @@ export interface SaveInvitationConfigMessage extends BaseMessage {
   invitation_types: string[];
 }
 
+export interface SaveMessageTemplatesMessage extends BaseMessage {
+  type: 'SAVE_MESSAGE_TEMPLATES';
+  message_templates: string[];
+}
+
 export type ExtensionMessage = 
   | BaseMessage 
   | NavigateMessage
@@ -106,4 +112,5 @@ export type ExtensionMessage =
   | MarkContactedMessage
   | DeleteLeadMessage
   | GetBatchToCheckMessage
-  | SaveInvitationConfigMessage;
+  | SaveInvitationConfigMessage
+  | SaveMessageTemplatesMessage;

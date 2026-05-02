@@ -26,9 +26,12 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
   const isValidRoute = window.location.href.includes('/portal/anchor/relation');
 
   useEffect(() => {
-    browser.storage.local.get('availability_position').then((res) => {
-      const pos = res.availability_position as { x: number; y: number } | undefined;
+    browser.storage.local.get(['availability_position', 'cachedCounts']).then((res: any) => {
+      const pos = res?.availability_position as { x: number; y: number } | undefined;
       if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') setPosition(pos);
+      if (res?.cachedCounts && typeof res.cachedCounts.DISPONIBILIDAD === 'number') {
+        setProgress(prev => ({ ...prev, total: res.cachedCounts.DISPONIBILIDAD }));
+      }
     });
 
     // Cargar configuración inicial de la base de datos
@@ -243,7 +246,13 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                 <span>{isRunning ? 'Detener Escaneo' : 'Iniciar Escaneo'}</span>
               </button>
 
-              <button className="dreamlive-btn" style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '44px' }}>
+              <button
+                onClick={async () => {
+                  await browser.storage.local.set({ activeOperationsModal: 'HISTORY_DISPONIBILIDAD' });
+                }}
+                className="dreamlive-btn"
+                style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '44px' }}
+              >
                 <Database size={16} />
                 <span>Historial</span>
               </button>
