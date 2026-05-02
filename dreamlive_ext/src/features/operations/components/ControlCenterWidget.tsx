@@ -1,13 +1,13 @@
-import { Sun, Moon, Heart } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { useDraggable } from "../../shared/hooks/useDraggable";
 import { browser } from "wxt/browser";
 
 interface ControlCenterWidgetProps {
   isDarkMode: boolean;
-  onToggleConsole: () => void;
+  activeModal: any;
 }
 
-export const ControlCenterWidget = ({ isDarkMode, onToggleConsole }: ControlCenterWidgetProps) => {
+export const ControlCenterWidget = ({ isDarkMode, activeModal }: ControlCenterWidgetProps) => {
   const { position, handleMouseDown, isDragging } = useDraggable({
     x: 24,
     y: 24,
@@ -17,6 +17,10 @@ export const ControlCenterWidget = ({ isDarkMode, onToggleConsole }: ControlCent
     const newTheme = isDarkMode ? 'light' : 'dark';
     await browser.storage.local.set({ theme: newTheme });
   };
+
+  if (!activeModal) {
+    return null;
+  }
 
   return (
     <div
@@ -34,23 +38,6 @@ export const ControlCenterWidget = ({ isDarkMode, onToggleConsole }: ControlCent
         gap: '8px'
       }}
     >
-      {/* Botón Principal: Abrir/Cerrar Consola */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleConsole();
-        }}
-        className="dreamlive-theme-btn"
-        style={{ 
-          background: isDarkMode ? '#1C1C1E' : '#FFFFFF',
-          color: '#FF2D55', // Color Apple Heart
-          width: '42px',
-          height: '42px'
-        }}
-      >
-        <Heart size={24} fill="#FF2D55" strokeWidth={0} />
-      </button>
-
       {/* Botón Secundario: Cambiar Tema */}
       <button
         onClick={(e) => {

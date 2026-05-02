@@ -289,9 +289,10 @@ class GetLicensePerformanceUseCase:
         license_ids = [str(l.id) for l in licenses]
         if not license_ids: return {}
 
-        stats, pings = await asyncio.gather(
+        stats, pings, grouped_counts = await asyncio.gather(
             self._uow.leads.get_license_performance_stats(license_ids),
-            self._uow.licenses.get_last_pings(license_ids)
+            self._uow.licenses.get_last_pings(license_ids),
+            self._uow.leads.count_by_status_grouped_by_license(license_ids)
         )
 
         return {
@@ -299,5 +300,8 @@ class GetLicensePerformanceUseCase:
                 "today": stats.get(lid, {}).get("today", 0),
                 "total": stats.get(lid, {}).get("total", 0),
                 "last_ping": pings.get(lid),
+                "collected": grouped_counts.get(lid, {}).get("recopilado", 0),
+                "available": grouped_counts.get(lid, {}).get("disponible", 0),
+                "contacted": grouped_counts.get(lid, {}).get("contactado", 0),
             } for lid in license_ids
         }

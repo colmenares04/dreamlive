@@ -94,42 +94,66 @@ class TikTokScraperService {
       if (videoCard.dataset.dreamProcessed) return;
 
       let username = "";
-      const container = videoCard.parentElement as HTMLElement;
-      if (!container) return;
 
-      const userElement = container.querySelector('[data-e2e="search-card-user-unique-id"]');
+      // Strategy A: Direct link inside videoCard
+      const selfLink = videoCard.querySelector<HTMLAnchorElement>('a[href*="/@"]');
+      if (selfLink?.getAttribute("href")) {
+        const href = selfLink.getAttribute("href")!;
+        const match = href.match(/\/@([^/?&]+)/);
+        if (match?.[1]) username = match[1];
+      }
 
-      if (userElement && userElement.textContent) {
-        username = userElement.textContent.trim();
-      } else {
-        const userLink = container.querySelector<HTMLAnchorElement>('a[href^="/@"]');
-        if (userLink?.getAttribute("href")) {
-          username = userLink.getAttribute("href")!.split("/@")[1]?.split("?")[0] || "";
+      // Strategy B: Sibling user card info (e.g. data-e2e="search-card-user-unique-id")
+      if (!username) {
+        const container = videoCard.closest('[id^="grid-item-container"]') || videoCard.parentElement;
+        if (container) {
+          const userElement = container.querySelector('[data-e2e="search-card-user-unique-id"]');
+          if (userElement?.textContent) {
+            username = userElement.textContent.trim();
+          }
         }
       }
 
-      const liveTextWraps = Array.from(videoCard.querySelectorAll(".css-1j09n5k-7937d88b--LiveTextWrap"));
+      // Strategy C: Generic sibling link fallback
+      if (!username) {
+        const container = videoCard.closest('[id^="grid-item-container"]') || videoCard.parentElement;
+        if (container) {
+          const userLink = container.querySelector<HTMLAnchorElement>('a[href*="/@"]');
+          if (userLink?.getAttribute("href")) {
+            const href = userLink.getAttribute("href")!;
+            const match = href.match(/\/@([^/?&]+)/);
+            if (match?.[1]) username = match[1];
+          }
+        }
+      }
+
+      // Parse viewers/likes with full fallback
+      const liveTextWraps = Array.from(videoCard.querySelectorAll('[class*="LiveTextWrap"], [class*="LiveTag"] div'));
 
       let viewers = 0;
       let likes = 0;
       let sourceType = "unknown";
       let rawText = "0";
 
-      if (liveTextWraps.length > 0) {
-        const wrapper = liveTextWraps[0];
+      for (const wrapper of liveTextWraps) {
         const svgPath = wrapper.querySelector("path")?.getAttribute("d");
-        const textDiv = wrapper.querySelector(".css-1tjg35o-7937d88b--LiveText");
+        const textDiv = wrapper.querySelector('[class*="LiveText"]');
 
         if (svgPath && textDiv && textDiv.textContent) {
-          rawText = textDiv.textContent;
+          const content = textDiv.textContent.trim();
+          if (content === "LIVE") continue; // Skip literal string LIVE
+
+          rawText = content;
           const parsedNumber = this.parseViewers(rawText);
 
-          if (svgPath.startsWith("M24 3a10")) {
+          if (svgPath.includes("M24") || svgPath.includes("M24 3a10")) {
             viewers = parsedNumber;
             sourceType = "tiktok_live_viewers";
-          } else if (svgPath.startsWith("M26.56")) {
+            break;
+          } else if (svgPath.includes("M26") || svgPath.includes("M26.56")) {
             likes = parsedNumber;
             sourceType = "tiktok_live_likes";
+            break;
           }
         }
       }
@@ -183,13 +207,13 @@ class TikTokScraperService {
   private autoScroll() {
     if (!this.isCollecting) return;
 
-    // Estrategia 1: Simular tecla "End"
+    // Strategy 1: Simular tecla "End"
     const endEvent = new KeyboardEvent("keydown", {
       key: "End", code: "End", keyCode: 35, which: 35, bubbles: true
     });
     document.body.dispatchEvent(endEvent);
 
-    // Estrategia 2: Scroll Into View del último elemento
+    // Strategy 2: Scroll Into View del último elemento
     const videoCards = document.querySelectorAll('[data-e2e="search_live-item"]');
     if (videoCards.length > 0) {
       const lastCard = videoCards[videoCards.length - 1] as HTMLElement;
@@ -197,6 +221,21 @@ class TikTokScraperService {
     }
 
     this.log("Desplazando lista de espectadores...");
+
+    // Strategy 3: Check NoMoreResultsContainer
+    const noMoreResults = Array.from(document.querySelectorAll('[class*="NoMoreResultsContainer"]'))
+      .some(el => el.textContent?.includes("No hay más resultados"));
+
+    if (noMoreResults) {
+      this.log("Contenedor 'No hay más resultados' detectado. Rotando palabra clave...");
+      if (this.onRotateKeywordCallback) {
+        this.onRotateKeywordCallback();
+      } else {
+        browser.runtime.sendMessage({ type: "ROTATE_KEYWORD" });
+      }
+      this.noResultsCounter = 0;
+      return;
+    }
 
     // Verificar si el nicho se agotó
     if (this.noResultsCounter >= 3) {
@@ -229,8 +268,8 @@ class TikTokScraperService {
     this.scrollInterval = setInterval(() => {
       if (!this.isCollecting) return;
       this.extraerUsuarios();
-      setTimeout(() => this.autoScroll(), 1000);
-    }, 3000);
+      setTimeout(() => this.autoScroll(), 400);
+    }, 2500);
   }
 
   public stop() {

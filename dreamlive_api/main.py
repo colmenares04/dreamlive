@@ -64,6 +64,56 @@ class SecurityHeadersMiddleware:
 
         await self.app(scope, receive, send_wrapper)
 
+class CustomCORSMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        method = scope.get("method", "")
+        headers = dict(scope.get("headers", []))
+        origin = headers.get(b"origin", b"").decode("utf-8")
+
+        if method == "OPTIONS":
+            # Direct response for CORS preflight
+            response_headers = [
+                (b"access-control-allow-origin", origin.encode("utf-8") if origin else b"*"),
+                (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS, PATCH"),
+                (b"access-control-allow-headers", b"Authorization, Content-Type, Accept, Origin, X-Requested-With"),
+                (b"access-control-allow-credentials", b"true"),
+                (b"access-control-max-age", b"86400"),
+            ]
+            await send({
+                "type": "http.response.start",
+                "status": 200,
+                "headers": response_headers
+            })
+            await send({
+                "type": "http.response.body",
+                "body": b"",
+                "more_body": False
+            })
+            return
+
+        # For non-OPTIONS requests, add CORS headers to outgoing response
+        async def send_wrapper(message: dict):
+            if message["type"] == "http.response.start":
+                msg_headers = list(message.get("headers", []))
+                has_origin = any(h[0].lower() == b"access-control-allow-origin" for h in msg_headers)
+                if not has_origin:
+                    msg_headers.extend([
+                        (b"access-control-allow-origin", origin.encode("utf-8") if origin else b"*"),
+                        (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS, PATCH"),
+                        (b"access-control-allow-headers", b"Authorization, Content-Type, Accept, Origin, X-Requested-With"),
+                        (b"access-control-allow-credentials", b"true"),
+                    ])
+                message["headers"] = msg_headers
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
 # ── Middleware Stack ─────────────────────────────────────────────────────────
 # Nota: El orden de add_middleware es inverso al de ejecución.
 # El último añadido es el PRIMERO en recibir la petición.
@@ -71,16 +121,7 @@ class SecurityHeadersMiddleware:
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RateLimitMiddleware) 
 app.add_middleware(SecurityHeadersMiddleware)
-
-# CORSMiddleware DEBE ser el primero en recibir la petición para manejar OPTIONS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGINS, list) else [settings.ALLOWED_ORIGINS],
-    allow_origin_regex="chrome-extension://.*",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CustomCORSMiddleware)
 
 register_exception_handlers(app)
 

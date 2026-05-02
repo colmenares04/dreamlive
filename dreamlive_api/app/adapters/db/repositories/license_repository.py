@@ -180,3 +180,23 @@ class LicenseRepository(ILicenseRepository):
             orm.os = os_name
             orm.ip_address = ip_address
         await self._session.flush()
+
+    async def count_active_sessions(self, agency_id: Optional[str] = None) -> int:
+        stmt = select(LicenseSessionORM)
+        if agency_id:
+            stmt = stmt.join(LicenseORM, LicenseORM.id == LicenseSessionORM.license_id).where(LicenseORM.agency_id == agency_id)
+        result = await self._session.execute(stmt)
+        return len(result.scalars().all())
+
+    async def get_last_pings(self, license_ids: List[str]) -> Dict[str, str]:
+        if not license_ids:
+            return {}
+        stmt = select(LicenseSessionORM).where(LicenseSessionORM.license_id.in_(license_ids))
+        result = await self._session.execute(stmt)
+        sessions = result.scalars().all()
+        
+        pings = {}
+        for s in sessions:
+            if s.license_id and s.last_ping:
+                pings[s.license_id] = s.last_ping.isoformat()
+        return pings

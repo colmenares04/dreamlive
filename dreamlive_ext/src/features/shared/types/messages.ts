@@ -18,6 +18,8 @@ export type MessageType =
   | 'GET_BATCH_TO_CHECK'
   | 'NAVIGATE'
   | 'START_CHECKING_FLOW'
+  | 'BACKSTAGE_SCRIPT_READY'
+  | 'MESSAGES_PAGE_READY'
   | 'SAVE_INVITATION_CONFIG';
 
 export interface BaseMessage {

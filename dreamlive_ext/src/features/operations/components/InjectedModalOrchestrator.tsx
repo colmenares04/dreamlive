@@ -105,23 +105,8 @@ const InjectedUIWrapper = ({ activeModal, handleCloseModal }: { activeModal: Mod
 
   return (
     <div className={`dreamlive-scope ${isDarkMode ? 'dark' : ''}`} data-theme={theme}>
-      {/* Botón de control siempre visible */}
-      <ControlCenterWidget isDarkMode={isDarkMode} onToggleConsole={toggleConsole} />
-
-        {/* Panel de Operaciones Inyectado (Solo si está abierto y no hay modal activo) */}
-        {isConsoleOpen && activeModal === null && (
-          <div style={{
-            position: 'fixed',
-            top: '80px',
-            right: '24px',
-            zIndex: 2147483640,
-            width: '320px',
-            maxHeight: '80vh',
-            pointerEvents: 'auto'
-          }}>
-            <OperationsConsole />
-          </div>
-        )}
+      {/* Botón de control visible solo si hay un modal activo */}
+      <ControlCenterWidget isDarkMode={isDarkMode} activeModal={activeModal} />
 
         {/* Operaciones Principales */}
         {activeModal === 'RECOPILAR' && (

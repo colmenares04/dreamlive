@@ -36,9 +36,15 @@ class LeadRepository(ILeadRepository):
         return self._to_domain(orm) if orm else None
 
     async def create(self, lead: Lead) -> Lead:
+        from app.adapters.db.models import LicenseORM
+        res = await self._session.execute(
+            select(LicenseORM.agency_id).where(LicenseORM.id == lead.license_id)
+        )
+        agency_id = res.scalar_one_or_none() or str(lead.license_id)
+
         orm = LeadORM(
             license_id=lead.license_id,
-            agency_id=str(lead.license_id),
+            agency_id=agency_id,
             username=lead.username,
             status=lead.status,
             viewer_count=lead.viewer_count,
@@ -214,6 +220,120 @@ class LeadRepository(ILeadRepository):
         limit_date = datetime.utcnow() - timedelta(days=days)
         stmt = select(LeadORM).where(
             and_(LeadORM.license_id == license_id, LeadORM.captured_at < limit_date)
+        )
+        result = await self._session.execute(stmt)
+        orms = result.scalars().all()
+        for orm in orms:
+            await self._session.delete(orm)
+        await self._session.flush()
+        return len(orms)
+
+    async def list_paginated(
+        self,
+        license_ids: List[str],
+        page: int = 1,
+        page_size: int = 50,
+        status: Optional[LeadStatus] = None,
+        source: Optional[str] = None,
+        search: Optional[str] = None,
+        min_viewers: Optional[int] = None,
+        min_likes: Optional[int] = None,
+    ) -> Tuple[List[Lead], int]:
+        stmt = select(LeadORM)
+        filters = []
+        if license_ids:
+            filters.append(LeadORM.license_id.in_(license_ids))
+        if status:
+            filters.append(LeadORM.status == status)
+        if source:
+            filters.append(LeadORM.source == source)
+        if search:
+            filters.append(LeadORM.username.ilike(f"%{search}%"))
+        if min_viewers is not None:
+            filters.append(LeadORM.viewer_count >= min_viewers)
+        if min_likes is not None:
+            filters.append(LeadORM.likes_count >= min_likes)
+
+        if filters:
+            stmt = stmt.where(and_(*filters))
+
+        count_stmt = select(func.count(LeadORM.id))
+        if filters:
+            count_stmt = count_stmt.where(and_(*filters))
+        count_res = await self._session.execute(count_stmt)
+        total = count_res.scalar() or 0
+
+        offset = (page - 1) * page_size
+        stmt = stmt.order_by(LeadORM.captured_at.desc()).offset(offset).limit(page_size)
+        res = await self._session.execute(stmt)
+        return [self._to_domain(orm) for orm in res.scalars().all()], total
+
+    async def count_by_status(self, license_id: str) -> Dict[str, int]:
+        if not license_id:
+            return {}
+        stmt = select(LeadORM.status, func.count(LeadORM.id)).where(
+            LeadORM.license_id == license_id
+        ).group_by(LeadORM.status)
+        result = await self._session.execute(stmt)
+        return {str(row[0].value if hasattr(row[0], "value") else row[0]): row[1] for row in result.all()}
+
+    async def get_daily_stats_bulk(self, license_ids: List[str], days: int) -> List[Dict]:
+        if not license_ids:
+            return []
+        start_date = datetime.utcnow() - timedelta(days=days)
+        stmt = select(func.to_char(LeadORM.captured_at, 'YYYY-MM-DD'), func.count(LeadORM.id)).where(
+            and_(LeadORM.license_id.in_(license_ids), LeadORM.captured_at >= start_date)
+        ).group_by(func.to_char(LeadORM.captured_at, 'YYYY-MM-DD')).order_by(func.to_char(LeadORM.captured_at, 'YYYY-MM-DD').desc())
+        
+        result = await self._session.execute(stmt)
+        return [{"date": row[0], "count": row[1]} for row in result.all()]
+
+    async def get_license_performance_stats(
+        self, license_ids: List[str]
+    ) -> Dict[str, Dict[str, int]]:
+        if not license_ids:
+            return {}
+        today_start = datetime.combine(date.today(), time.min)
+        
+        stmt_total = select(LeadORM.license_id, func.count(LeadORM.id)).where(
+            LeadORM.license_id.in_(license_ids)
+        ).group_by(LeadORM.license_id)
+        res_total = await self._session.execute(stmt_total)
+        
+        stmt_today = select(LeadORM.license_id, func.count(LeadORM.id)).where(
+            and_(LeadORM.license_id.in_(license_ids), LeadORM.captured_at >= today_start)
+        ).group_by(LeadORM.license_id)
+        res_today = await self._session.execute(stmt_today)
+        
+        out = {str(lid): {"today": 0, "total": 0} for lid in license_ids}
+        for lid, count in res_total.all():
+            out[str(lid)]["total"] = count
+        for lid, count in res_today.all():
+            out[str(lid)]["today"] = count
+        return out
+
+    async def update_status_bulk(
+        self, license_id: str, usernames: List[str], new_status: LeadStatus
+    ) -> int:
+        if not license_id or not usernames:
+            return 0
+        stmt = select(LeadORM).where(
+            and_(LeadORM.license_id == license_id, LeadORM.username.in_(usernames))
+        )
+        result = await self._session.execute(stmt)
+        orms = result.scalars().all()
+        for orm in orms:
+            orm.status = new_status
+        await self._session.flush()
+        return len(orms)
+
+    async def delete_bulk_by_username(
+        self, license_id: str, usernames: List[str]
+    ) -> int:
+        if not license_id or not usernames:
+            return 0
+        stmt = select(LeadORM).where(
+            and_(LeadORM.license_id == license_id, LeadORM.username.in_(usernames))
         )
         result = await self._session.execute(stmt)
         orms = result.scalars().all()

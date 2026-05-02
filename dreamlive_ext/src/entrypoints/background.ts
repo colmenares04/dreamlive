@@ -55,6 +55,16 @@ export default defineBackground(() => {
         // El scraper solicita un nuevo lote por modelo PULL
         (async () => {
           try {
+            if (leadsQueue.length === 0) {
+              console.log('[Background] Cola de leads vacía. Auto-poblando desde la API...');
+              const res = await apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100');
+              if (res && res.data && res.data.items) {
+                const fetchedLeads = res.data.items.map((item: any) => item.username);
+                leadsQueue = [...fetchedLeads];
+                console.log(`[Background] Auto-población completa con ${leadsQueue.length} leads desde la API.`);
+              }
+            }
+
             if (leadsQueue.length > 0) {
               // Extraer un lote de usuarios (ej. 15 leads por defecto)
               const batchSize = (msg as any).batchSize || 15;
@@ -62,11 +72,11 @@ export default defineBackground(() => {
               console.log(`[Background] GET_BATCH_TO_CHECK extrayendo lote de ${batch.length} leads. Quedan ${leadsQueue.length} en cola.`);
               sendResponse({ users: batch });
             } else {
-              console.log('[Background] GET_BATCH_TO_CHECK: Cola de leads vacía.');
+              console.log('[Background] GET_BATCH_TO_CHECK: Cola de leads sigue vacía.');
               sendResponse({ users: [] });
             }
           } catch (error) {
-            console.error('[Background] Error fetching batch leads:', error);
+            console.error('[Background] Error auto-populating batch leads from API:', error);
             sendResponse({ users: [] });
           }
         })();
@@ -144,7 +154,8 @@ export default defineBackground(() => {
         sendResponse({ success: true });
         return true;
 
-      // Eventos puramente de estado/UI que se manejan a nivel de extensión (popup -> content script)
+      case 'BACKSTAGE_SCRIPT_READY':
+      case 'MESSAGES_PAGE_READY':
       case 'toggleRecopilacion':
       case 'LEAD_SAVED_CONFIRMATION':
       case 'ROTATE_KEYWORD':
