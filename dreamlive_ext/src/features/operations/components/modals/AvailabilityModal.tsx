@@ -2,24 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Terminal, Database, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { availabilityScraper, ScraperLogType } from '../../services/availability-scraper.service';
+import { SCRAPER_DEFAULT_TAGS } from '../../../shared/constants';
 
 interface Props {
   onClose: () => void;
   isDarkMode?: boolean;
 }
 
-const TAGS = ["Normal", "Elite", "Popular", "Premium"];
+const TAGS = SCRAPER_DEFAULT_TAGS;
 
 export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
   const [position, setPosition] = useState({ x: 320, y: 90 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
-  
+
   const [isRunning, setIsRunning] = useState(false);
-  const [activeTags, setActiveTags] = useState<string[]>(["Normal", "Elite", "Popular", "Premium"]);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [activeTags, setActiveTags] = useState<string[]>(SCRAPER_DEFAULT_TAGS);
+  const [progress, setProgress] = useState({ currentTotal: 0, total: 0, currentBatch: 0, totalBatch: 0 });
   const [showConsole, setShowConsole] = useState(false);
-  const [logs, setLogs] = useState<{msg: string, type: ScraperLogType}[]>([]);
+  const [logs, setLogs] = useState<{ msg: string, type: ScraperLogType }[]>([]);
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
   const isValidRoute = window.location.href.includes('/portal/anchor/relation');
@@ -40,7 +41,8 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
     // Configurar el servicio
     availabilityScraper.setCallbacks({
       onLog: (msg, type = "info") => setLogs(prev => [...prev.slice(-49), { msg, type }]),
-      onProgress: (current, total) => setProgress({ current, total }),
+      onProgress: (currentTotal, total, currentBatch, totalBatch) =>
+        setProgress({ currentTotal, total, currentBatch, totalBatch }),
       onStatusChange: (running) => setIsRunning(running)
     });
   }, []);
@@ -48,9 +50,9 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
   // Función para guardar cambios en la DB
   const saveTagsToDb = async (tags: string[]) => {
     try {
-      await browser.runtime.sendMessage({ 
-        type: 'SAVE_INVITATION_CONFIG', 
-        invitation_types: tags 
+      await browser.runtime.sendMessage({
+        type: 'SAVE_INVITATION_CONFIG',
+        invitation_types: tags
       });
     } catch (e) {
       console.error('Error guardando etiquetas:', e);
@@ -62,9 +64,9 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
     const newTags = activeTags.includes(tag)
       ? activeTags.filter(t => t !== tag)
       : [...activeTags, tag];
-    
+
     if (newTags.length === 0) return; // Evitar quedarse sin filtros
-    
+
     setActiveTags(newTags);
     saveTagsToDb(newTags);
   };
@@ -121,9 +123,9 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
       <div className="dreamlive-modal-container">
         <div className="dreamlive-modal-card" style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.15)' }}>
           {/* Header */}
-          <div 
-            onMouseDown={handleMouseDown} 
-            className="dreamlive-modal-header" 
+          <div
+            onMouseDown={handleMouseDown}
+            className="dreamlive-modal-header"
             style={{ cursor: isDragging ? 'grabbing' : 'grab', padding: '16px 20px' }}
           >
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -141,11 +143,11 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                 {isRunning ? 'ESCANEANDO MOTOR...' : 'SISTEMA LISTO'}
               </span>
             </div>
-            
+
             <div className="dreamlive-header-actions">
-              <button 
+              <button
                 onClick={() => setShowConsole(!showConsole)}
-                className="dreamlive-icon-btn" 
+                className="dreamlive-icon-btn"
                 style={{ background: showConsole ? 'var(--color-blue)' : 'var(--apple-btn-secondary)', color: showConsole ? '#FFF' : 'var(--apple-text-main)' }}
               >
                 <Terminal size={14} />
@@ -184,10 +186,11 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
 
           {/* Body */}
           <div className="dreamlive-modal-body" style={{ padding: '0 20px 20px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div 
-                style={{ 
-                  width: '90px', height: '90px', borderRadius: '50%', 
+            {/* Medición Doble de Progreso */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
+              <div
+                style={{
+                  width: '90px', height: '90px', borderRadius: '50%',
                   border: `4px solid ${isRunning ? 'var(--color-blue)' : 'var(--apple-btn-secondary)'}`,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.3s ease',
@@ -195,10 +198,23 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                 }}
               >
                 <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)' }}>
-                  {progress.current}
+                  {progress.currentTotal}
                 </span>
                 <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)' }}>
                   / {progress.total || '-'}
+                </span>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--apple-text-sub)' }}>
+                Progreso Global
+              </span>
+
+              {/* Lote actual */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--apple-btn-secondary)', padding: '6px 12px', borderRadius: '10px', width: '100%', maxWidth: '140px' }}>
+                <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)', textTransform: 'uppercase' }}>
+                  Lote actual
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--apple-text-main)' }}>
+                  {progress.currentBatch} / {progress.totalBatch || '-'}
                 </span>
               </div>
             </div>
@@ -212,12 +228,12 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
             )}
 
             <div className="dreamlive-button-group" style={{ gap: '10px' }}>
-              <button 
+              <button
                 onClick={toggleAction}
                 disabled={!isValidRoute && !isRunning}
                 className="dreamlive-btn"
-                style={{ 
-                  background: isRunning ? '#FF3B30' : isValidRoute ? 'var(--color-blue)' : 'var(--apple-btn-disabled)', 
+                style={{
+                  background: isRunning ? '#FF3B30' : isValidRoute ? 'var(--color-blue)' : 'var(--apple-btn-disabled)',
                   color: '#FFFFFF',
                   height: '44px',
                   boxShadow: isRunning ? '0 4px 12px rgba(255, 59, 48, 0.2)' : '0 4px 12px rgba(0, 122, 255, 0.2)'
@@ -226,7 +242,7 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                 <Search size={16} strokeWidth={2.5} />
                 <span>{isRunning ? 'Detener Escaneo' : 'Iniciar Escaneo'}</span>
               </button>
-              
+
               <button className="dreamlive-btn" style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '44px' }}>
                 <Database size={16} />
                 <span>Historial</span>
@@ -236,7 +252,7 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
 
           {/* Console Area */}
           {showConsole && (
-            <div style={{ 
+            <div style={{
               borderTop: '1px solid var(--apple-border)',
               background: '#1C1C1E',
               padding: '12px',
@@ -251,9 +267,9 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {logs.map((log, i) => (
-                  <div key={i} style={{ 
-                    fontSize: '10px', 
-                    color: log.type === 'success' ? '#28CD41' : log.type === 'error' ? '#FF3B30' : '#FFF', 
+                  <div key={i} style={{
+                    fontSize: '10px',
+                    color: log.type === 'success' ? '#28CD41' : log.type === 'error' ? '#FF3B30' : '#FFF',
                     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                     lineHeight: '1.4',
                     borderLeft: `2px solid ${log.type === 'success' ? '#28CD41' : log.type === 'error' ? '#FF3B30' : '#48484A'}`,

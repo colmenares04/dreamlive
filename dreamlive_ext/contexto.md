@@ -1,89 +1,57 @@
-Actua como un Ingeniero Informático con experiencia en TypeScript, React y desarrollo de extensiones de navegador (Manifest V3), especializado en la arquitectura MV3 y el uso de Web Workers para tareas pesadas.
+Contexto General: > Estamos trabajando en dreamlive_ext, la nueva extensión construida con WXT y React que reemplaza a una versión antigua. Esta extensión se comunica con un backend en FastAPI (dreamlive_api) y convive con una plataforma web (dreamlive_web).
 
+Reglas de Oro del Proyecto (CERO EXCEPCIONES):
 
-# PROHIBIDO EL HARDCODEO DE VALORES QUE NO SON ESTRICTAMENTE NECESARIOS 
-# PARA LA FUNCIONALIDAD, POR EJEMPLO, EN EL ENPOINT, NO ES NECESARIO HARDCODEAR EL VALOR DEL DOMINIO DE LA API. EN SU LUGAR 
-# SE DEBE UTILIZAR UNA VARIABLE DE ENTORNO. (POR EJEMPLO API_URL)
+Respetar los Hacks del DOM: TikTok usa React ofuscado. Si hay métodos usando DomUtils.focusReal, setNativeValue, o fallbacks con Object.getOwnPropertyDescriptor, MANTENLOS INTACTOS. Las IAs tienden a borrarlos para "simplificar" el código usando .value = "", lo cual rompe la aplicación. ¡NO LO HAGAS!
 
-# BUENAS PRÁCTICA Y DOCUMENTACIÓN. 
+Separación de Responsabilidades: La UI (Modales, React) no hace el trabajo pesado. Toda la lógica de manipulación del DOM y scrapers vive en clases de servicios dentro de src/features/operations/services/ (ej. AvailabilityScraperService).
 
-# CADA VEZ QUE HAGAS UN SERVICIOS O ALGO QUE CONSULTAR CON LA API, VERIFICA QUE EL ENDPOINT RECIBA EL FORMATO CORRECTO QUE ESTÁS ENVIANDO.
+Comunicación: Se usa browser.runtime.sendMessage de WXT para comunicarse entre el background y los content scripts.
 
-Te presento un problema que tengo con mi extensión de navegador.
+[TAREA ACTUAL: MEJORA DEL COMPROBADOR DE DISPONIBILIDAD]
 
-Error 1: 
-INFO:     172.19.0.1:55274 - "OPTIONS /api/v1/leads/keywords HTTP/1.1" 400 Bad Request
-INFO:     172.19.0.1:55274 - "OPTIONS /api/v1/leads/keywords?license_id=5563b693-7e6a-4a33-82fa-4abf85d48d7f HTTP/1.1" 400 Bad Request
+Objetivo: > Necesito actualizar el sistema de comprobación de disponibilidad (AvailabilityModal.tsx y availability-scraper.service.ts). Quiero que el flujo sea continuo, procesando lotes de 30 en 30 (antes era de 15), retrocediendo en la interfaz de TikTok entre lotes, y mostrando dos mediciones en el modal.
 
-Error 2: 
+Requisitos para la UI (AvailabilityModal.tsx o similar):
+El modal ahora debe mostrar visualmente DOS mediciones de progreso:
 
-Lo de ruta incorrecta, creo que sucede por que no está comprobando cada cierto tiempo si ya estamos en la ruta correcta, así que se queda con el dato antes de viajar ahí.
+Progreso Total (Global): Muestra cuántos leads se han analizado del total de la lista recopilada (ej. Analizados: 60 / 150).
 
+Progreso del Lote (En proceso): Muestra el estado del sub-lote actual que se pegó en el textarea (ej. Lote actual: 0 / 30).
+Ajusta la interfaz ScraperCallbacks para que soporte enviar ambos progresos desde el servicio a React.
 
-Error 3:
+Requisitos para el Servicio (availability-scraper.service.ts):
+Modifica la lógica del motor para que funcione exactamente con este ciclo:
 
-El botón de verificar disponibilidad no está funcionando, no aparece la cantidad de recopilados pendientes y parece que no está consultando nada a la API.
+Tamaño del Lote: Ajusta el corte del lote para que tome 30 usuarios a la vez.
 
-2026-05-02 17:06:59 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (24.9ms)
+El Ciclo de Procesamiento:
 
-2026-05-02 17:07:03 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (17.6ms)
+Pega los 30 usuarios en el <textarea data-testid="inviteHostTextArea">.
 
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
+Hace clic en "Siguiente" (Next) y espera a que carguen los resultados.
 
-2026-05-02 17:07:07 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (17.6ms)
+Lee la tabla, extrae los disponibles y actualiza la medición total y parcial.
 
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
+El Botón de Retroceso (CRÍTICO):
 
-2026-05-02 17:07:11 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (18.5ms)
+Si aún quedan leads por comprobar en la cola global, el bot DEBE hacer clic en el botón de "Atrás" de TikTok para regresar a la pantalla de búsqueda.
 
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
+Selector exacto a usar: <button data-id="invite-host-back" class="semi-button semi-button-primary semi-button-light button_wrap-EJEp5p bk-button" type="button" aria-disabled="false"><span class="semi-button-content" x-semi-prop="children">Back</span></button>
 
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
+Limpieza y Repetición:
 
-2026-05-02 17:07:15 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (16.5ms)
+Una vez retrocede, debe buscar el textarea nuevamente.
 
-2026-05-02 17:07:19 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (18.2ms)
+DEBE BORRAR el contenido anterior del textarea completamente.
 
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
+Pega el siguiente lote de 30 y repite el ciclo hasta terminar toda la lista.
 
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
+Entregable:
+Muéstrame el código actualizado de:
 
-2026-05-02 17:07:23 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (15.8ms)
+La interfaz o tipos actualizados para los callbacks de progreso.
 
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
+El AvailabilityModal.tsx con el diseño de doble barra de progreso/contador.
 
-2026-05-02 17:07:27 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (16.1ms)
-
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
-
-2026-05-02 17:07:31 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (24.3ms)
-
-2026-05-02 17:07:35 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (22.4ms)
-
-INFO:     172.19.0.1:44102 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
-
-2026-05-02 17:08:08 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (35.2ms)
-
-INFO:     172.19.0.1:45482 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
-
-2026-05-02 17:08:10 [INFO] dreamlive – GET /api/v1/licenses/metrics → 200 (20.4ms)
-
-INFO:     172.19.0.1:45482 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
-
-2026-05-02 17:08:11 [INFO] dreamlive.chat – WS Desconectado para 5563b693-7e6a-4a33-82fa-4abf85d48d7f
-
-INFO:     connection closed
-
-2026-05-02 17:08:14 [INFO] dreamlive – POST /api/v1/licenses/templates → 200 (28.2ms)
-
-📥 [POST /templates] Recibiendo tags: ['Normal'] para ID: 5563b693-7e6a-4a33-82fa-4abf85d48d7f
-
-✅ [POST /templates] Guardado exitoso.
-
-INFO:     172.19.0.1:45482 - "POST /api/v1/licenses/templates HTTP/1.1" 200 OK
-
-
-ERROR 4: 
-
-INFO:     172.19.0.1:45482 - "GET /api/v1/licenses/metrics HTTP/1.1" 200 OK
-Guarda métricas en localstorage, que solo cambie cuando se actualice, así evitamos el constante gasto de recursos consultando a la API.
+El availability-scraper.service.ts aplicando la lógica del botón Back, el cambio a 30 leads y la doble medición, respetando absolutamente las esperas (delays) y los retries para que TikTok no bloquee el bot.

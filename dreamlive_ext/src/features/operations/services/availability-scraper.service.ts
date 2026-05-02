@@ -1,11 +1,17 @@
 import { browser } from "wxt/browser";
 import { delay, DomUtils } from "./dom-automation.utils";
+import { 
+  SCRAPER_BATCH_SIZE, 
+  SCRAPER_DELAY_BETWEEN_BATCHES, 
+  SCRAPER_DELAY_TABLE_LOAD, 
+  SCRAPER_DEFAULT_TAGS 
+} from "../../shared/constants";
 
 export type ScraperLogType = "info" | "success" | "error";
 
 export interface ScraperCallbacks {
   onLog: (msg: string, type?: ScraperLogType) => void;
-  onProgress: (current: number, total: number) => void;
+  onProgress: (currentTotal: number, total: number, currentBatch: number, totalBatch: number) => void;
   onStatusChange: (isRunning: boolean) => void;
 }
 
@@ -13,7 +19,9 @@ export class AvailabilityScraperService {
   private isRunning = false;
   private abortSignal = false;
   private callbacks: ScraperCallbacks | null = null;
-  private activeTags: string[] = ["Normal", "Elite", "Popular", "Premium"];
+  private activeTags: string[] = SCRAPER_DEFAULT_TAGS;
+  private currentTotalAnalyzed = 0;
+  private totalExpected = 0;
 
   constructor() {}
 
@@ -31,9 +39,9 @@ export class AvailabilityScraperService {
     }
   }
 
-  private updateProgress(current: number, total: number) {
+  private updateProgress(currentTotal: number, total: number, currentBatch: number, totalBatch: number) {
     if (this.callbacks) {
-      this.callbacks.onProgress(current, total);
+      this.callbacks.onProgress(currentTotal, total, currentBatch, totalBatch);
     }
   }
 
@@ -49,6 +57,8 @@ export class AvailabilityScraperService {
 
     this.isRunning = true;
     this.abortSignal = false;
+    this.currentTotalAnalyzed = 0;
+    this.totalExpected = 0;
     if (this.callbacks) this.callbacks.onStatusChange(true);
 
     try {
@@ -72,9 +82,9 @@ export class AvailabilityScraperService {
       this.log(`🔍 Solicitando lote de leads recopilados...`);
       
       // 1. Pedir lote al background (Modelo PULL)
-      // Ahora pedimos genérico 'recopilado' ya que los tags se detectan en vivo
       const response = await browser.runtime.sendMessage({ 
-        type: "GET_BATCH_TO_CHECK"
+        type: "GET_BATCH_TO_CHECK",
+        batchSize: SCRAPER_BATCH_SIZE
       });
 
       if (!response || !response.users || response.users.length === 0) {
@@ -83,13 +93,21 @@ export class AvailabilityScraperService {
       }
 
       const users = response.users as string[];
+      if (this.totalExpected === 0) {
+        this.totalExpected = users.length + (response.totalRemaining || 0);
+      }
+
       this.log(`🚀 Procesando lote de ${users.length} usuarios...`, "info");
-      this.updateProgress(0, users.length);
+      this.updateProgress(this.currentTotalAnalyzed, this.totalExpected, 0, users.length);
 
       // 2. Procesar en TikTok UI
       const disponibles = await this.processBatchOnPage(users);
 
       if (this.abortSignal) break;
+
+      // Actualizar progreso total con el número de usuarios procesados
+      this.currentTotalAnalyzed += users.length;
+      this.updateProgress(this.currentTotalAnalyzed, this.totalExpected, users.length, users.length);
 
       // 3. Enviar resultados
       this.log(`✅ Lote procesado. ${disponibles.length} disponibles encontrados que cumplen tus filtros.`, "success");
@@ -99,7 +117,14 @@ export class AvailabilityScraperService {
         procesados: users
       });
 
-      await delay(2000); // Respiro entre lotes
+      if (response.totalRemaining === 0) {
+        this.log("🏁 Todos los leads procesados con éxito.", "success");
+        break;
+      }
+
+      // Respiro entre lotes
+      this.log(`⏳ Esperando ${SCRAPER_DELAY_BETWEEN_BATCHES / 1000} segundos antes del siguiente lote...`, "info");
+      await delay(SCRAPER_DELAY_BETWEEN_BATCHES); 
     }
   }
 
@@ -119,11 +144,15 @@ export class AvailabilityScraperService {
       return [];
     }
 
-    // C. Pegar usuarios
-    this.log(`📝 Tipeando ${users.length} usuarios...`);
+    // C. Borrar y Pegar usuarios (Respetar DomUtils)
+    this.log(`📝 Borrando contenido previo...`);
     DomUtils.focusReal(textarea);
+    DomUtils.setNativeValue(textarea, "");
+    await delay(500);
+
+    this.log(`📝 Pegando ${users.length} usuarios en el textarea...`);
     DomUtils.setNativeValue(textarea, users.join("\n"));
-    await delay(1000);
+    await delay(1500);
 
     // D. Clic Siguiente
     const buttons = Array.from(document.querySelectorAll("button"));
@@ -142,7 +171,7 @@ export class AvailabilityScraperService {
 
     // E. Esperar resultados de la tabla
     this.log("⏳ Analizando estados...");
-    await delay(3500);
+    await delay(SCRAPER_DELAY_TABLE_LOAD);
     try {
       await DomUtils.waitWithCheck(".semi-table-row", 10000, () => this.abortSignal);
     } catch (e) {
@@ -156,11 +185,12 @@ export class AvailabilityScraperService {
   }
 
   private async resetInterface(): Promise<boolean> {
-    const backBtn = document.querySelector('button[data-id="invite-host-back"]');
+    // Intentar retroceder usando el selector exacto indicado
+    const backBtn = document.querySelector('button[data-id="invite-host-back"], .bk-button');
     if (backBtn) {
       this.log("🔙 Volviendo a la búsqueda principal...");
       (backBtn as HTMLElement).click();
-      await delay(1500);
+      await delay(2500);
     }
 
     // Intentar abrir modal si no está abierto
@@ -174,7 +204,7 @@ export class AvailabilityScraperService {
     if (btnInvite) {
       this.log("🖱️ Abriendo modal de invitación...");
       (btnInvite as HTMLElement).click();
-      await delay(1500);
+      await delay(2500);
       return !!document.querySelector('textarea[data-testid="inviteHostTextArea"]');
     }
 
@@ -228,7 +258,7 @@ export class AvailabilityScraperService {
       }
       
       processedCount++;
-      this.updateProgress(processedCount, usersOriginales.length);
+      this.updateProgress(this.currentTotalAnalyzed + processedCount, this.totalExpected, processedCount, usersOriginales.length);
     }
 
     return disponibles;

@@ -4,6 +4,7 @@ import { MessagingService } from '../features/operations/services/messaging.serv
 import { BackstageService } from '../features/operations/services/backstage.service';
 import { ExtensionMessage } from '../features/shared/types/messages';
 import { apiClient } from '../infrastructure/api/apiClient';
+import { SCRAPER_BATCH_SIZE } from '../features/shared/constants';
 
 export default defineBackground(() => {
   console.log('🔥 DreamLive Background Controller Initialized.', { id: browser.runtime.id });
@@ -66,18 +67,18 @@ export default defineBackground(() => {
             }
 
             if (leadsQueue.length > 0) {
-              // Extraer un lote de usuarios (ej. 15 leads por defecto)
-              const batchSize = (msg as any).batchSize || 15;
+              // Extraer un lote de usuarios (leads por defecto según constante)
+              const batchSize = (msg as any).batchSize || SCRAPER_BATCH_SIZE;
               const batch = leadsQueue.splice(0, batchSize);
               console.log(`[Background] GET_BATCH_TO_CHECK extrayendo lote de ${batch.length} leads. Quedan ${leadsQueue.length} en cola.`);
-              sendResponse({ users: batch });
+              sendResponse({ users: batch, totalRemaining: leadsQueue.length });
             } else {
               console.log('[Background] GET_BATCH_TO_CHECK: Cola de leads sigue vacía.');
-              sendResponse({ users: [] });
+              sendResponse({ users: [], totalRemaining: 0 });
             }
           } catch (error) {
             console.error('[Background] Error auto-populating batch leads from API:', error);
-            sendResponse({ users: [] });
+            sendResponse({ users: [], totalRemaining: 0 });
           }
         })();
         return true; // Mantener canal abierto para respuesta asíncrona
@@ -121,20 +122,37 @@ export default defineBackground(() => {
           BackstageService.updateBatchResults(message.procesados, message.disponibles)
             .then(() => {
               console.log('✅ Batch actualizado en API.');
+              sendResponse({ success: true });
             })
-            .catch(console.error);
+            .catch(err => {
+              console.error(err);
+              sendResponse({ success: false });
+            });
+          return true;
         }
         break;
 
       case 'MARK_CONTACTED':
         if ('username' in message) {
-          MessagingService.markAsContacted(message.username).catch(console.error);
+          MessagingService.markAsContacted(message.username)
+            .then(() => sendResponse({ success: true }))
+            .catch(err => {
+              console.error(err);
+              sendResponse({ success: false });
+            });
+          return true;
         }
         break;
 
       case 'DELETE_LEAD':
         if ('username' in message) {
-          MessagingService.deleteLead(message.username).catch(console.error);
+          MessagingService.deleteLead(message.username)
+            .then(() => sendResponse({ success: true }))
+            .catch(err => {
+              console.error(err);
+              sendResponse({ success: false });
+            });
+          return true;
         }
         break;
 
@@ -143,8 +161,15 @@ export default defineBackground(() => {
           browser.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
             if (tab && tab.id) {
               browser.tabs.update(tab.id, { url: msg.url });
+              sendResponse({ success: true });
+            } else {
+              sendResponse({ success: false });
             }
+          }).catch(err => {
+            console.error(err);
+            sendResponse({ success: false });
           });
+          return true;
         }
         break;
 
@@ -168,13 +193,15 @@ export default defineBackground(() => {
       case 'LIMIT_REACHED':
         // Estos mensajes usualmente viajan entre el popup y el content script directamente, 
         // o son broadcasts a los que la UI se suscribe.
+        sendResponse({ success: true });
         break;
 
       default:
         console.warn('Unknown message type received in background:', message);
+        sendResponse({ success: false });
     }
 
-    // Indica que sendResponse se llamará de forma asíncrona si es necesario
-    return true;
+    // Por defecto retornar false para cerrar el canal síncronamente
+    return false;
   });
 });
