@@ -32,6 +32,8 @@ class LicenseRepository(ILicenseRepository):
             admin_password=orm.admin_password or "admin123",
             invitation_types=orm.invitation_types or [],
             theme=orm.theme or "dark",
+            daily_contact_count=getattr(orm, "daily_contact_count", 0) or 0,
+            last_contact_date=getattr(orm, "last_contact_date", None),
         )
 
     async def get_by_id(self, license_id: str) -> Optional[License]:
@@ -99,6 +101,8 @@ class LicenseRepository(ILicenseRepository):
         orm.admin_password = license_.admin_password
         orm.invitation_types = license_.invitation_types
         orm.theme = license_.theme
+        orm.daily_contact_count = getattr(license_, "daily_contact_count", 0) or 0
+        orm.last_contact_date = getattr(license_, "last_contact_date", None)
 
         await self._session.flush()
         return self._to_domain(orm)

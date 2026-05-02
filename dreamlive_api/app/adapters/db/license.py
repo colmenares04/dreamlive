@@ -29,6 +29,8 @@ class LicenseORM(Base):
     admin_password = Column(String(255), default="admin123", nullable=True)
     invitation_types = Column(JSON, default=list, nullable=True)
     theme = Column(String(50), default="dark", nullable=True)
+    daily_contact_count = Column(Integer, default=0, nullable=False)
+    last_contact_date = Column(DateTime(timezone=True), nullable=True)
 
     # Relaciones
     agency = relationship("AgencyORM", back_populates="licenses")

@@ -83,6 +83,12 @@ class DeviceLimitExceeded(DomainException):
     default_message = "Se ha alcanzado el límite de dispositivos para esta licencia."
 
 
+class RateLimitExceeded(DomainException):
+    """Se ha alcanzado el límite de uso diario de la licencia."""
+    status_code = 429
+    default_message = "Se ha alcanzado el límite de mensajes permitidos por día para esta licencia."
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXCEPCIONES DE USUARIO / AGENCIA
 # ═══════════════════════════════════════════════════════════════════════════════

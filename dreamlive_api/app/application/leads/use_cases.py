@@ -89,9 +89,19 @@ class DeleteLeadUseCase:
 
     async def execute(self, agency_id: str, lead_id: str) -> bool:
         async with self._uow:
-            # We don't verify agency ownership here for simplicity, but we could by getting the lead first
-            # and checking its license_id against the agency. Let's do that to be safe.
-            lead = await self._uow.leads.get_by_id(lead_id)
+            import uuid
+            lead = None
+            try:
+                uuid.UUID(lead_id)
+                lead = await self._uow.leads.get_by_id(lead_id)
+            except ValueError:
+                licenses = await self._uow.licenses.list_all(agency_id=agency_id)
+                license_ids = [str(l.id) for l in licenses]
+                for lid in license_ids:
+                    lead = await self._uow.leads.get_by_username(lid, lead_id)
+                    if lead:
+                        break
+
             if not lead:
                 return False
                 
@@ -100,7 +110,7 @@ class DeleteLeadUseCase:
             if lead.license_id not in license_ids:
                 return False
                 
-            success = await self._uow.leads.delete(lead_id)
+            success = await self._uow.leads.delete(str(lead.id))
             await self._uow.commit()
             return success
 
@@ -237,11 +247,38 @@ class UpdateLeadStatusUseCase:
         username: str,
         new_status: str
     ) -> bool:
+        from app.core.domain.exceptions import RateLimitExceeded
+        from datetime import datetime, date
+
         async with self._uow:
             lead = await self._uow.leads.get_by_username(license_id, username)
             if not lead:
                 return False
-            
+
+            if new_status == "contactado":
+                # Validar la cuota diaria de la licencia
+                lic = await self._uow.licenses.get_by_id(license_id)
+                if lic:
+                    now_dt = datetime.utcnow()
+                    today_date = now_dt.date()
+
+                    last_dt = getattr(lic, "last_contact_date", None)
+                    last_date = last_dt.date() if last_dt else None
+
+                    # Reseteo diario
+                    if last_date != today_date:
+                        lic.daily_contact_count = 0
+
+                    if lic.daily_contact_count >= getattr(lic, "limit_requests", 60):
+                        raise RateLimitExceeded(
+                            f"Se ha alcanzado el límite diario de la licencia ({getattr(lic, 'limit_requests', 60)} mensajes hoy)."
+                        )
+
+                    # Incrementar contador y guardar fecha de último contacto
+                    lic.daily_contact_count += 1
+                    lic.last_contact_date = now_dt
+                    await self._uow.licenses.update(lic)
+
             lead.status = LeadStatus(new_status)
             await self._uow.leads.update(lead)
             await self._uow.commit()

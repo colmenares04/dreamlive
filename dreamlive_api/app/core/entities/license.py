@@ -42,6 +42,8 @@ class License:
     admin_password: str = "admin123"
     invitation_types: List[str] = field(default_factory=list)
     theme: str = "dark"
+    daily_contact_count: int = 0
+    last_contact_date: Optional[datetime] = None
 
     def is_valid(self) -> bool:
         """Regla de negocio: una licencia es válida si está activa y no ha expirado."""

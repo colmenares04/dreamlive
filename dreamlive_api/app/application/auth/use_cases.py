@@ -56,7 +56,11 @@ class ProfileOutput:
         role: str,
         status: str,
         agency_id: str | None,
+        license_id: str | None = None,
         logo_url: str | None = None,
+        limite_diario: int = 60,
+        usados_hoy: int = 0,
+        tiempo_para_reinicio: int = 0,
     ):
         self.id = id
         self.email = email
@@ -65,7 +69,11 @@ class ProfileOutput:
         self.role = role
         self.status = status
         self.agency_id = agency_id
+        self.license_id = license_id
         self.logo_url = logo_url
+        self.limite_diario = limite_diario
+        self.usados_hoy = usados_hoy
+        self.tiempo_para_reinicio = tiempo_para_reinicio
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -227,6 +235,17 @@ class GetProfileUseCase:
         if not lic:
             raise UnauthorizedAccess("Licencia no encontrada.")
 
+        import datetime
+        now = datetime.datetime.utcnow()
+        midnight = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
+        tiempo_para_reinicio = int((midnight - now).total_seconds())
+
+        last_dt = getattr(lic, "last_contact_date", None)
+        last_date = last_dt.date() if last_dt else None
+        used_today = getattr(lic, "daily_contact_count", 0) or 0
+        if last_date != now.date():
+            used_today = 0
+
         return ProfileOutput(
             id=lic.id,
             email=lic.email,
@@ -235,4 +254,8 @@ class GetProfileUseCase:
             role="agent",
             status="active" if lic.is_active else "inactive",
             agency_id=lic.agency_id,
+            license_id=str(lic.id),
+            limite_diario=getattr(lic, "limit_requests", 60) or 60,
+            usados_hoy=used_today,
+            tiempo_para_reinicio=tiempo_para_reinicio,
         )

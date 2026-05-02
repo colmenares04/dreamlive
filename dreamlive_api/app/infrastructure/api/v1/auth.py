@@ -89,6 +89,9 @@ class UserOut(BaseModel):
     agency_id: str | None
     license_id: str | None = None
     logo_url: str | None = None
+    limite_diario: int = 60
+    usados_hoy: int = 0
+    tiempo_para_reinicio: int = 0
 
     class Config:
         from_attributes = True
@@ -298,4 +301,7 @@ async def get_me(
         agency_id=str(profile.agency_id) if profile.agency_id else None,
         license_id=getattr(profile, "license_id", None),
         logo_url=getattr(profile, "logo_url", None),
+        limite_diario=getattr(profile, "limite_diario", 60),
+        usados_hoy=getattr(profile, "usados_hoy", 0),
+        tiempo_para_reinicio=getattr(profile, "tiempo_para_reinicio", 0),
     )

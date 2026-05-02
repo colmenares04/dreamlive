@@ -163,20 +163,25 @@ export default defineBackground(() => {
               const meRes = await AuthService.getMe();
               const license_id = meRes.data?.license_id;
               if (license_id) {
-                await apiClient.patch('/leads/status', {
+                const res = await apiClient.patch('/leads/status', {
                   license_id,
                   username: message.username,
                   status: 'contactado'
                 });
-                console.log(`✅ Lead ${message.username} actualizado a 'contactado' en backend.`);
-                sendResponse({ success: true });
+                if (res && res.error) {
+                  console.error('Error in patch:', res.error);
+                  sendResponse({ success: false, error: res.error, status: res.status });
+                } else {
+                  console.log(`✅ Lead ${message.username} actualizado a 'contactado' en backend.`);
+                  sendResponse({ success: true });
+                }
               } else {
                 console.warn('No active license_id found for current user.');
                 sendResponse({ success: false, error: 'No active license' });
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error('Error in LEAD_CONTACTED_SUCCESS handler:', err);
-              sendResponse({ success: false });
+              sendResponse({ success: false, error: err.message || 'Error desconocido' });
             }
           })();
           return true;

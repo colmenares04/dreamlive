@@ -458,10 +458,17 @@ export class ChatAutomationService {
                   .trim();
 
             if (await this.escribirYEnviar(mensajeFinal)) {
-              browser.runtime.sendMessage({
+              const res = await browser.runtime.sendMessage({
                 type: "LEAD_CONTACTED_SUCCESS",
                 username,
               });
+              if (res && (!res.success || res.error || res.status === 429)) {
+                if (res.status === 429 || (res.error && (res.error.includes("límite") || res.error.includes("429")))) {
+                  this.log("🛑 Límite de licencia alcanzado. Pausando envíos.", "error");
+                  limiteAlcanzado = true;
+                  break;
+                }
+              }
               enviados++;
               if (enviados >= MAX_ENVIOS) {
                 this.log(`✅ Meta alcanzada.`, "success");

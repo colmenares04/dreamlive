@@ -10,6 +10,9 @@ export interface User {
   license_id: string | null;
   status: string;
   logo_url?: string;
+  limite_diario?: number;
+  usados_hoy?: number;
+  tiempo_para_reinicio?: number;
 }
 
 export interface License {

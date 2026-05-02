@@ -1,10 +1,23 @@
 /* Reset default styles to avoid white gaps in popup */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 400px;
   min-height: 550px;
-  @apply bg-[#f8f9fa] dark:bg-[#020617] transition-colors duration-300;
+  background-color: white;
+  transition: background-color 300ms;
+}
+
+.dark body {
+  background-color: #0d1117;
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body {
+    background-color: #0d1117;
+  }
 }
 
 #root {

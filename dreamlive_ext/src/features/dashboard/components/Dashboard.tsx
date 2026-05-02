@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LogOut, 
   LayoutDashboard, 
@@ -21,12 +21,43 @@ import { useAuth } from '../../auth/hooks/useAuth';
 import { useTheme } from '../../../shared/contexts/ThemeContext';
 import { Badge, Button } from '../../../shared/components/ui';
 import { OperationsConsole } from '../../operations/components/OperationsConsole';
+import { AuthService } from '../../../infrastructure/api/auth.service';
 
 export const Dashboard: React.FC = () => {
   const { user, license, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'profile' | 'ops'>('profile');
   const [showKey, setShowKey] = useState(false);
+  const [dailyUsage, setDailyUsage] = useState<{ limite_diario: number; usados_hoy: number; tiempo_para_reinicio: number } | null>(null);
+
+  const fetchMe = async () => {
+    try {
+      const res = await AuthService.getMe();
+      if (res && res.data) {
+        setDailyUsage({
+          limite_diario: res.data.limite_diario || 60,
+          usados_hoy: res.data.usados_hoy || 0,
+          tiempo_para_reinicio: res.data.tiempo_para_reinicio || 0,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      fetchMe();
+      const interval = setInterval(fetchMe, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab]);
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return `${hrs} horas y ${mins} minutos`;
+  };
 
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'AD';
 
@@ -50,6 +81,13 @@ export const Dashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => window.open('http://localhost', '_blank')}
+            className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-gray-500 dark:text-gray-400"
+            title="Ir a la web"
+          >
+            <ExternalLink size={16} strokeWidth={1.5} />
+          </button>
           <button 
             className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-gray-500 dark:text-gray-400 relative"
             title="Notificaciones"
@@ -146,6 +184,30 @@ export const Dashboard: React.FC = () => {
                     </p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Daily Usage Progress Bar */}
+            <div className="rounded-2xl bg-white dark:bg-[#1C1C1E] overflow-hidden shadow-sm border border-black/5 dark:border-white/5 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-semibold tracking-tight">Límite de Uso Diario</span>
+                <span className="text-[12px] font-medium text-gray-500">
+                  {dailyUsage ? `${dailyUsage.usados_hoy} / ${dailyUsage.limite_diario}` : '0 / 60'}
+                </span>
+              </div>
+
+              <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-[var(--color-apple-green)] to-[#A2F0B3] h-full transition-all duration-500 rounded-full"
+                  style={{ width: `${Math.min(100, (dailyUsage?.usados_hoy || 0) / (dailyUsage?.limite_diario || 60) * 100)}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                <span>{dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? '🛑 Límite diario alcanzado' : 'Disponible para envíos'}</span>
+                {dailyUsage && dailyUsage.tiempo_para_reinicio > 0 && (
+                  <span>Se reinicia en {formatTime(dailyUsage.tiempo_para_reinicio)}</span>
+                )}
               </div>
             </div>
 

@@ -82,7 +82,7 @@ class LeadRepository(ILeadRepository):
         result = await self._session.execute(
             select(LeadORM).where(and_(LeadORM.license_id == license_id, LeadORM.username == username))
         )
-        orm = result.scalar_one_or_none()
+        orm = result.scalars().first()
         return self._to_domain(orm) if orm else None
 
     async def delete(self, lead_id: str) -> bool:

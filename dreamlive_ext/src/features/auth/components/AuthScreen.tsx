@@ -73,7 +73,11 @@ export const AuthScreen: React.FC = () => {
         <button onClick={toggleTheme} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Cambiar tema">
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
-        <ExternalLink size={20} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors" />
+        <ExternalLink 
+          onClick={() => window.open('http://localhost', '_blank')}
+          size={20} 
+          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors" 
+        />
       </div>
     </div>
   );
@@ -85,7 +89,7 @@ export const AuthScreen: React.FC = () => {
   }
 
   return (
-    <Card className="pb-8">
+    <Card className="pb-8 border-none bg-transparent shadow-none dark:bg-transparent px-4">
       {header}
 
       {status === 'needs_license' ? (
