@@ -300,8 +300,17 @@ class GetLicensePerformanceUseCase:
                 "today": stats.get(lid, {}).get("today", 0),
                 "total": stats.get(lid, {}).get("total", 0),
                 "last_ping": pings.get(lid),
-                "collected": grouped_counts.get(lid, {}).get("recopilado", 0),
-                "available": grouped_counts.get(lid, {}).get("disponible", 0),
-                "contacted": grouped_counts.get(lid, {}).get("contactado", 0),
+                "collected": (
+                    grouped_counts.get(lid, {}).get("recopilado", 0) +
+                    grouped_counts.get(lid, {}).get("collected", 0)
+                ),
+                "available": (
+                    grouped_counts.get(lid, {}).get("disponible", 0) +
+                    grouped_counts.get(lid, {}).get("available", 0)
+                ),
+                "contacted": (
+                    grouped_counts.get(lid, {}).get("contactado", 0) +
+                    grouped_counts.get(lid, {}).get("contacted", 0)
+                ),
             } for lid in license_ids
         }

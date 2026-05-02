@@ -154,14 +154,31 @@ export default defineBackground(() => {
         }
         break;
 
+      case 'LEAD_CONTACTED_SUCCESS':
       case 'MARK_CONTACTED':
         if ('username' in message) {
-          MessagingService.markAsContacted(message.username)
-            .then(() => sendResponse({ success: true }))
-            .catch(err => {
-              console.error(err);
+          (async () => {
+            try {
+              const { AuthService } = await import('../infrastructure/api/auth.service');
+              const meRes = await AuthService.getMe();
+              const license_id = meRes.data?.license_id;
+              if (license_id) {
+                await apiClient.patch('/leads/status', {
+                  license_id,
+                  username: message.username,
+                  status: 'contactado'
+                });
+                console.log(`✅ Lead ${message.username} actualizado a 'contactado' en backend.`);
+                sendResponse({ success: true });
+              } else {
+                console.warn('No active license_id found for current user.');
+                sendResponse({ success: false, error: 'No active license' });
+              }
+            } catch (err) {
+              console.error('Error in LEAD_CONTACTED_SUCCESS handler:', err);
               sendResponse({ success: false });
-            });
+            }
+          })();
           return true;
         }
         break;
@@ -195,10 +212,50 @@ export default defineBackground(() => {
         }
         break;
 
+      case 'START_CONTACTING':
+        MessagingService.startContacting()
+          .then(() => sendResponse({ success: true }))
+          .catch(err => {
+            console.error(err);
+            sendResponse({ success: false });
+          });
+        return true;
+
+      case 'STOP_CONTACTING':
+        MessagingService.stopContacting()
+          .then(() => sendResponse({ success: true }))
+          .catch(err => {
+            console.error(err);
+            sendResponse({ success: false });
+          });
+        return true;
+
       case 'ABORT_CHECKING_FLOW':
         leadsQueue = [];
         console.log('[Background] ABORT_CHECKING_FLOW recibido. Se ha vaciado la cola de leads.');
         sendResponse({ success: true });
+        return true;
+
+      case 'GET_LEADS_FOR_CONTACTING':
+        (async () => {
+          try {
+            const limitsRes = await apiClient.get<any>('/operations/limits');
+            const restantes = limitsRes.data ? (limitsRes.data.limit - limitsRes.data.count) : 50;
+
+            const leadsRes = await apiClient.get<any>('/leads?status=disponible&limit=40');
+            const templatesRes = await apiClient.get<any>('/licenses/templates');
+
+            sendResponse({
+              success: true,
+              leads: (leadsRes.data?.items || []).map((l: any) => l.username),
+              templates: templatesRes.data?.message_templates || [],
+              targetSuccessCount: restantes
+            });
+          } catch (e) {
+            console.error(e);
+            sendResponse({ success: false, error: String(e) });
+          }
+        })();
         return true;
 
       case 'BACKSTAGE_SCRIPT_READY':

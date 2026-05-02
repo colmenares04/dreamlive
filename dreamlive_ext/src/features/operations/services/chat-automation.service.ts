@@ -140,12 +140,18 @@ export class ChatAutomationService {
   }
 
   public async buscarUsuarioChat(username: string): Promise<boolean> {
-    const inputs = Array.from(document.querySelectorAll("input"));
-    let searchInput = inputs.find(
-      (i) =>
-        /search|buscar|creator username/i.test(i.placeholder || "") ||
-        i.className.includes("search")
+    let searchInput = document.querySelector(
+      'input[placeholder*="Creator" i], input[placeholder*="username" i], .searchWrapper--sKAWx input, .semi-input-default[enterkeyhint="search"]'
     ) as HTMLInputElement;
+
+    if (!searchInput) {
+      const inputs = Array.from(document.querySelectorAll("input"));
+      searchInput = inputs.find(
+        (i) =>
+          /search|buscar|creator username/i.test(i.placeholder || "") ||
+          i.className.includes("search")
+      ) as HTMLInputElement;
+    }
 
     if (!searchInput)
       searchInput = document.querySelector(".semi-input-default") as HTMLInputElement;
@@ -414,7 +420,8 @@ export class ChatAutomationService {
           if (!(await this.verificarHistorialVacio())) {
             this.log(`⏭️ Conversación previa. Omitiendo...`, "info");
             saltados++;
-            browser.runtime.sendMessage({ type: "DELETE_LEAD", username });
+            await browser.runtime.sendMessage({ type: "DELETE_LEAD", username });
+            continue;
           } else {
             let nombreFinal = "";
 

@@ -3,6 +3,8 @@ import { X, Send, Terminal, Settings, Database, Eye } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { TemplateManager } from './TemplateManager';
 
+import { ChatAutomationService } from '../../services/chat-automation.service';
+
 interface Props {
   onClose: () => void;
   isDarkMode?: boolean;
@@ -50,6 +52,16 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
           setTemplates(['¡Hola {username}, me encanta tu contenido!']);
         }
       });
+    });
+
+    const chatService = ChatAutomationService.getInstance();
+    chatService.setCallbacks({
+      onLog: (msg, type = "info") => setLogs(prev => [...prev.slice(-49), `[${type.toUpperCase()}] ${msg}`]),
+      onProgress: (current, totalCount) => {
+        setCount(current);
+        if (totalCount > 0) setTotal(totalCount);
+      },
+      onStatusChange: (running) => setIsRunning(running)
     });
   }, []);
 
@@ -168,7 +180,23 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
               {!showTemplates && (
                 <button 
                   disabled={!isValidRoute}
-                  onClick={() => setIsRunning(!isRunning)}
+                  onClick={async () => {
+                    const chatService = ChatAutomationService.getInstance();
+                    if (isRunning) {
+                      chatService.abort();
+                    } else {
+                      try {
+                        const res = await browser.runtime.sendMessage({ type: 'GET_LEADS_FOR_CONTACTING' });
+                        if (res && res.success && res.leads && res.leads.length > 0) {
+                          chatService.start(res.leads, res.templates, res.targetSuccessCount);
+                        } else {
+                          setLogs(prev => [...prev, '[INFO] No hay leads disponibles para contactar.']);
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    }
+                  }}
                   className="dreamlive-btn"
                   style={{ 
                     background: !isValidRoute ? 'var(--apple-btn-disabled)' : isRunning ? '#FF3B30' : 'var(--color-purple)', 

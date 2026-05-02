@@ -174,7 +174,7 @@ export const OperationsConsole: React.FC = () => {
 
   const isCurrentRouteValid = async (id: ModalType): Promise<boolean> => {
     if (!id || !(id in ROUTES)) return true;
-    
+
     let urlStr = window.location.href.toLowerCase();
     try {
       if (typeof browser.tabs !== 'undefined' && browser.tabs.query) {
@@ -278,10 +278,9 @@ export const OperationsConsole: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col h-full rounded-xl border overflow-hidden shadow-sm animate-in fade-in relative"
+      className="flex flex-col h-full rounded-[20px] border overflow-hidden shadow-sm animate-in fade-in relative"
       style={{
         background: 'var(--apple-bg)',
-        borderColor: 'var(--apple-border)',
         minHeight: '400px'
       }}
     >

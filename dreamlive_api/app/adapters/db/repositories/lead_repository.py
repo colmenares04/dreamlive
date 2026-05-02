@@ -136,11 +136,13 @@ class LeadRepository(ILeadRepository):
         out = {}
         for row in result.all():
             lid = str(row[0])
-            stat = str(row[1].value if hasattr(row[1], "value") else row[1])
+            stat_val = str(row[1].value if hasattr(row[1], "value") else row[1]).lower()
             count = row[2]
             if lid not in out:
                 out[lid] = {}
-            out[lid][stat] = count
+            out[lid][stat_val] = count
+            if hasattr(row[1], "name"):
+                out[lid][row[1].name.lower()] = count
         return out
 
     async def list_all(
