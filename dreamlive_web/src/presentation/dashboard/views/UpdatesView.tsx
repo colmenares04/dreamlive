@@ -27,8 +27,8 @@ function TagChip({ tag, selected, onToggle }: { tag: VersionTag; selected: boole
     <button
       onClick={onToggle}
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${selected
-          ? `${cls} border-current scale-105 shadow-sm`
-          : 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+        ? `${cls} border-current scale-105 shadow-sm`
+        : 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:border-slate-300'
         }`}>
       <i className={`fas ${icon} text-[10px]`} />
       {label}
@@ -59,8 +59,8 @@ function UploadBox({ platform, file, onFile }: UploadBoxProps) {
     <div
       onClick={() => ref.current?.click()}
       className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${file
-          ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-500/5'
-          : 'border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:border-slate-400 hover:bg-white dark:hover:bg-slate-800'
+        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-500/5'
+        : 'border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:border-slate-400 hover:bg-white dark:hover:bg-slate-800'
         }`}>
       <input
         ref={ref}

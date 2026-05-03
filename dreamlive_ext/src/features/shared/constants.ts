@@ -1,7 +1,7 @@
 /**
  * Constantes globales de configuración para la extensión
  */
-export const SCRAPER_BATCH_SIZE = 5;
+export const SCRAPER_BATCH_SIZE = 30;
 export const SCRAPER_DEFAULT_TAGS = ["Normal", "Elite", "Popular", "Premium"];
 
 // Eventos y Tipos de Mensajes

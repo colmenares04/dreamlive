@@ -103,14 +103,14 @@ export function NotificationsView() {
               <div
                 key={n.id}
                 className={`group relative bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-8 shadow-sm border transition-all hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-none hover:-translate-y-1 ${!n.is_read
-                    ? 'border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/10 dark:bg-indigo-500/5'
-                    : 'border-slate-100 dark:border-white/5'
+                  ? 'border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/10 dark:bg-indigo-500/5'
+                  : 'border-slate-100 dark:border-white/5'
                   }`}
               >
                 <div className="flex gap-6">
                   <div className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${n.is_read
-                      ? 'bg-slate-100 dark:bg-white/5 text-slate-400'
-                      : 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
+                    ? 'bg-slate-100 dark:bg-white/5 text-slate-400'
+                    : 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                     }`}>
                     <i className={`fas ${n.is_read ? 'fa-bell' : 'fa-bell animate-bounce-slow text-xl'}`} />
                   </div>

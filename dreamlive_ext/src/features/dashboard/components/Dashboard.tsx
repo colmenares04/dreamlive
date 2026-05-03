@@ -242,8 +242,8 @@ export const Dashboard: React.FC = () => {
           <button
             onClick={() => setActiveTab('profile')}
             className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${activeTab === 'profile'
-                ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
           >
             Suscripción
@@ -251,8 +251,8 @@ export const Dashboard: React.FC = () => {
           <button
             onClick={() => setActiveTab('ops')}
             className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${activeTab === 'ops'
-                ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
           >
             Operaciones
