@@ -278,7 +278,7 @@ export const OperationsConsole: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col h-full rounded-[20px] border overflow-hidden shadow-sm animate-in fade-in relative"
+      className="flex flex-col h-full rounded-[20px] border border-black/5 dark:border-white/10 overflow-hidden shadow-sm animate-in fade-in relative"
       style={{
         background: 'var(--apple-bg)',
         minHeight: '400px'
@@ -287,8 +287,7 @@ export const OperationsConsole: React.FC = () => {
 
       {/* Header Info */}
       <div
-        className="px-4 py-4 border-b"
-        style={{ borderColor: 'var(--apple-border)' }}
+        className="px-4 py-4 border-b border-black/5 dark:border-white/10"
       >
         <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">

@@ -15,9 +15,13 @@ export class LeadAdapter {
     return data;
   }
 
-  static async purge(): Promise<{ deleted: number }> {
-    const { data } = await http.post('/leads/purge');
+  static async purge(params?: { status?: string; license_id?: string }): Promise<{ deleted: number }> {
+    const { data } = await http.post('/leads/purge', null, { params });
     return data;
+  }
+
+  static async delete(leadId: string): Promise<void> {
+    await http.delete(`/leads/${leadId}`);
   }
 
   static async exportRaw(): Promise<Record<string, string>[]> {

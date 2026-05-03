@@ -19,7 +19,7 @@ class ApiClient {
   private refreshSubscribers: ((token: string) => void)[] = [];
 
   constructor() {
-    this.baseUrl = import.meta.env.WXT_API_BASE_URL || 'http://localhost:8000/api/v1';
+    this.baseUrl = import.meta.env.WXT_API_BASE_URL || 'http://217.216.94.178:8000/api/v1';
   }
 
   private onTokenRefreshed(token: string) {
@@ -77,8 +77,8 @@ class ApiClient {
    * Método core para realizar peticiones. Centraliza headers, auth y manejo de errores.
    */
   private async request<T>(
-    endpoint: string, 
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT', 
+    endpoint: string,
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT',
     body?: any,
     params?: Record<string, string>,
     isRetry = false
@@ -89,7 +89,7 @@ class ApiClient {
         const res = await browser.storage.local.get('token');
         token = res.token as string;
       }
-      
+
       const url = new URL(`${this.baseUrl}${endpoint}`);
       if (params) {
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
@@ -132,7 +132,7 @@ class ApiClient {
           });
         }
       }
-      
+
       if (status === 204) {
         return { status, data: {} as T };
       }

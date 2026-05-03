@@ -237,20 +237,26 @@ class GetProfileUseCase:
 
         import datetime
         now = datetime.datetime.utcnow()
-        midnight = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
-        tiempo_para_reinicio = int((midnight - now).total_seconds())
-
         last_dt = getattr(lic, "last_contact_date", None)
-        last_date = last_dt.date() if last_dt else None
+        if last_dt and last_dt.tzinfo is not None:
+            last_dt = last_dt.replace(tzinfo=None)
+
         used_today = getattr(lic, "daily_contact_count", 0) or 0
-        if last_date != now.date():
-            used_today = 0
+        refresh_seconds = (getattr(lic, "refresh_minutes", 1440) or 1440) * 60
+        tiempo_para_reinicio = 0
+
+        if last_dt:
+            elapsed = (now - last_dt).total_seconds()
+            if elapsed >= refresh_seconds:
+                used_today = 0
+            else:
+                tiempo_para_reinicio = int(refresh_seconds - elapsed)
 
         return ProfileOutput(
             id=lic.id,
             email=lic.email,
-            username=lic.full_name or lic.recruiter_name,
-            full_name=lic.full_name or lic.recruiter_name,
+            username=lic.recruiter_name or lic.full_name or "Administrador",
+            full_name=lic.recruiter_name or lic.full_name or "Administrador",
             role="agent",
             status="active" if lic.is_active else "inactive",
             agency_id=lic.agency_id,

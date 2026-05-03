@@ -209,7 +209,7 @@ export function TicketView() {
                 </div>
                 <span className="text-[10px] text-slate-400 font-medium">
                   <i className="fas fa-history mr-1" />
-                  {new Date(t.created_at).toLocaleDateString('es', { day: '2-digit', month: 'short' })}
+                  {t.created_at ? new Date(t.created_at).toLocaleDateString('es', { day: '2-digit', month: 'short' }) : 'Reciente'}
                 </span>
               </div>
             </div>

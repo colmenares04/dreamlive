@@ -263,11 +263,14 @@ class UpdateLeadStatusUseCase:
                     today_date = now_dt.date()
 
                     last_dt = getattr(lic, "last_contact_date", None)
-                    last_date = last_dt.date() if last_dt else None
+                    if last_dt and last_dt.tzinfo is not None:
+                        last_dt = last_dt.replace(tzinfo=None)
 
-                    # Reseteo diario
-                    if last_date != today_date:
-                        lic.daily_contact_count = 0
+                    refresh_seconds = (getattr(lic, "refresh_minutes", 1440) or 1440) * 60
+                    if last_dt:
+                        elapsed = (now_dt - last_dt).total_seconds()
+                        if elapsed >= refresh_seconds:
+                            lic.daily_contact_count = 0
 
                     if lic.daily_contact_count >= getattr(lic, "limit_requests", 60):
                         raise RateLimitExceeded(

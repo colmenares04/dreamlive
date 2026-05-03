@@ -36,7 +36,8 @@ export function AgencyLicensesView() {
     licenses, loadingDeps, metrics, agencies, 
     loadDeps, loadMetrics 
   } = useAdminData();
-  const { role } = useAuth();
+  const { role: rawRole } = useAuth();
+  const role = rawRole?.toLowerCase();
   const { success } = useNotifications();
 
   const [tab, setTab] = useState<TabFilter>('all');

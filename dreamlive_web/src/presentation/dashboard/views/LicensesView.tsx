@@ -283,6 +283,7 @@ export function LicensesView() {
 
   const [tab, setTab] = useState<TabFilter>('all');
   const [search, setSearch] = useState('');
+  const [selectedAgencyId, setSelectedAgencyId] = useState('');
 
   // Modales State
   const [createOpen, setCreateOpen] = useState(false);
@@ -317,6 +318,10 @@ export function LicensesView() {
     if (tab === 'active') result = result.filter(l => licenseStatus(l) === 'active');
     else if (tab === 'inactive') result = result.filter(l => licenseStatus(l) !== 'active');
 
+    if (selectedAgencyId) {
+      result = result.filter(l => l.agency_id === selectedAgencyId);
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(l =>
@@ -325,7 +330,7 @@ export function LicensesView() {
       );
     }
     return result;
-  }, [licenses, tab, search]);
+  }, [licenses, tab, search, selectedAgencyId]);
 
   const columns = [
     {
@@ -446,9 +451,20 @@ export function LicensesView() {
                   </button>
                 ))}
               </div>
-              <div className="relative group">
-                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
-                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrar por ID o Nombre..." className="pl-11 pr-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all w-full sm:w-64" />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <select 
+                  value={selectedAgencyId} 
+                  onChange={e => setSelectedAgencyId(e.target.value)}
+                  className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all w-full sm:w-48 font-bold"
+                >
+                  <option value="">Todas las Agencias</option>
+                  {agencies.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+
+                <div className="relative group w-full sm:w-64">
+                  <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                  <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrar por ID o Nombre..." className="pl-11 pr-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all w-full" />
+                </div>
               </div>
             </div>
             <div className="p-2">

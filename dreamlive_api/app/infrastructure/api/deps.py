@@ -134,7 +134,7 @@ async def get_current_user(
             email=lic.email or "",
             username=lic.full_name or lic.recruiter_name,
             role=user_role,
-            agency_id=str(lic.agency_id),
+            agency_id=str(lic.agency_id) if lic.agency_id else None,
             license_id=str(lic.id),
         )
 

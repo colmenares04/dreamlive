@@ -12,6 +12,7 @@ from app.core.entities.ticket import Ticket, TicketMessage, TicketStatus, Ticket
 from app.core.entities.audit_log import AuditLog
 from app.core.entities.app_version import AppVersion, Platform, VersionTag
 from app.core.entities.user import User, UserRole, UserStatus
+from app.core.entities.notification import Notification
 
 __all__ = [
     "Agency",
@@ -21,4 +22,5 @@ __all__ = [
     "AuditLog",
     "AppVersion", "Platform", "VersionTag",
     "User", "UserRole", "UserStatus",
+    "Notification",
 ]

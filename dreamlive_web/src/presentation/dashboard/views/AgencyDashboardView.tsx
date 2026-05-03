@@ -81,7 +81,8 @@ export function AgencyDashboardView() {
     dashboard, loadingDash, teamLicenses, loadingTeam, 
     loadDashboard, loadTeam, days, setDays 
   } = useAgencyData();
-  const { role } = useAuth();
+  const { role: rawRole } = useAuth();
+  const role = rawRole?.toLowerCase();
   const navigate = useNavigate();
 
   const canManageAgents = role === 'superuser' || role === 'agency_admin';
@@ -185,62 +186,64 @@ export function AgencyDashboardView() {
       ) : null}
 
       {/* Grid de agentes */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-black text-slate-800 dark:text-white">
-            <i className="fas fa-users mr-2 text-indigo-500" />Monitoreo de Agentes
-          </h3>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => prev - 1)}
-              >
-                <i className="fas fa-chevron-left" />
-              </Button>
-              <span className="text-xs font-bold text-slate-500 px-2">
-                {currentPage} / {totalPages}
-              </span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => prev + 1)}
-              >
-                <i className="fas fa-chevron-right" />
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        {loadingTeam ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl h-40 animate-pulse border border-slate-100" />
-            ))}
+      {canManageAgents && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-black text-slate-800 dark:text-white">
+              <i className="fas fa-users mr-2 text-indigo-500" />Monitoreo de Agentes
+            </h3>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                >
+                  <i className="fas fa-chevron-left" />
+                </Button>
+                <span className="text-xs font-bold text-slate-500 px-2">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                >
+                  <i className="fas fa-chevron-right" />
+                </Button>
+              </div>
+            )}
           </div>
-        ) : teamLicenses.length === 0 ? (
-          <div className="bg-white rounded-2xl p-10 text-center text-slate-400 border border-slate-100">
-            <i className="fas fa-user-slash text-3xl mb-3 block" />
-            <p>No hay reclutadores registrados aún.</p>
-          </div>
-        ) : (
-          <>
+          
+          {loadingTeam ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {paginatedAgents.map(lic => (
-                <RecruiterCard 
-                  key={lic.id} 
-                  license={lic} 
-                  canInteract={canManageAgents}
-                  onClick={() => setSelectedAgent(lic)} 
-                />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl h-40 animate-pulse border border-slate-100" />
               ))}
             </div>
-          </>
-        )}
-      </div>
+          ) : teamLicenses.length === 0 ? (
+            <div className="bg-white rounded-2xl p-10 text-center text-slate-400 border border-slate-100">
+              <i className="fas fa-user-slash text-3xl mb-3 block" />
+              <p>No hay reclutadores registrados aún.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {paginatedAgents.map(lic => (
+                  <RecruiterCard 
+                    key={lic.id} 
+                    license={lic} 
+                    canInteract={canManageAgents}
+                    onClick={() => setSelectedAgent(lic)} 
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
       
       <AgentDetailModal 
         license={selectedAgent} 

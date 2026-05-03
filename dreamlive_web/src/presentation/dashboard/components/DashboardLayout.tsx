@@ -21,7 +21,8 @@ import { UserPermissions } from '../../../core/entities';
  * @returns {JSX.Element}
  */
 export function DashboardLayout() {
-  const { user, role, logout } = useAuth();
+  const { user, role: rawRole, logout } = useAuth();
+  const role = rawRole?.toLowerCase();
   const { isDark, toggleTheme } = useTheme();
   const { permissions } = useAgencyPermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -88,7 +89,9 @@ export function DashboardLayout() {
             <div className="font-bold text-white text-base truncate tracking-tight">{user?.username}</div>
             <div className="flex items-center gap-2 mt-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
-              <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest leading-none">{role}</span>
+              <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest leading-none">
+                {role?.toLowerCase() === 'superuser' ? 'ADMINISTRADOR' : role?.toLowerCase() === 'agency_admin' ? 'GERENTE' : role?.toLowerCase() === 'agent' || role?.toLowerCase() === 'recruiter' ? 'AGENTE' : String(role).toUpperCase()}
+              </span>
             </div>
           </div>
         </div>
@@ -107,6 +110,7 @@ export function DashboardLayout() {
                 <MenuLink to="/dashboard/admin/licenses" icon="fa-key" text="Licencias" onClick={() => setSidebarOpen(false)} />
                 <MenuLink to="/dashboard/admin/agencies" icon="fa-building" text="Agencias" onClick={() => setSidebarOpen(false)} />
                 <MenuLink to="/dashboard/admin/updates" icon="fa-cloud-arrow-up" text="Actualizaciones" onClick={() => setSidebarOpen(false)} />
+                <MenuLink to="/dashboard/admin/notifications" icon="fa-bell" text="Notificaciones" onClick={() => setSidebarOpen(false)} />
                 <MenuLink to="/dashboard/settings/ticket-support" icon="fa-headset" text="Gestión Tickets" onClick={() => setSidebarOpen(false)} />
                 <MenuLink to="/dashboard/settings/audit" icon="fa-shield-alt" text="Auditoría" onClick={() => setSidebarOpen(false)} />
               </div>
@@ -121,9 +125,11 @@ export function DashboardLayout() {
               </div>
               <div className="space-y-1">
                 {(canViewMetrics || role === 'agent') && <MenuLink to="/dashboard/agency/overview" icon="fa-chart-line" text="Dashboard Agencia" onClick={() => setSidebarOpen(false)} />}
-                <MenuLink to="/dashboard/agency/leads" icon="fa-address-book" text="Global Leads" onClick={() => setSidebarOpen(false)} />
+                {role !== 'agent' && <MenuLink to="/dashboard/agency/leads" icon="fa-address-book" text="Global Leads" onClick={() => setSidebarOpen(false)} />}
+                {role === 'agent' && <MenuLink to="/dashboard/agency/my-leads" icon="fa-address-card" text="Panel de Leads" onClick={() => setSidebarOpen(false)} />}
                 {canManageTeam && <MenuLink to="/dashboard/agency/team" icon="fa-users-cog" text="Team Manager" onClick={() => setSidebarOpen(false)} />}
                 {canManageLicenses && <MenuLink to="/dashboard/agency/licenses" icon="fa-key" text="Mis Licencias" onClick={() => setSidebarOpen(false)} />}
+                <MenuLink to="/dashboard/agency/notifications" icon="fa-bell" text="Notificaciones" onClick={() => setSidebarOpen(false)} />
               </div>
             </div>
           )}
@@ -134,9 +140,10 @@ export function DashboardLayout() {
               Configuración
             </div>
             <div className="space-y-1">
-              <MenuLink to="/dashboard/settings/profiles" icon="fa-users" text="Perfiles" onClick={() => setSidebarOpen(false)} />
+              {role !== 'agent' && <MenuLink to="/dashboard/settings/profiles" icon="fa-users" text="Perfiles" onClick={() => setSidebarOpen(false)} />}
               <MenuLink to="/dashboard/settings/account" icon="fa-user-circle" text="Mi Cuenta" onClick={() => setSidebarOpen(false)} />
               <MenuLink to="/dashboard/settings/support" icon="fa-headset" text="Soporte" onClick={() => setSidebarOpen(false)} />
+              <MenuLink to="/dashboard/settings/updates" icon="fa-cloud-download-alt" text="Actualización" onClick={() => setSidebarOpen(false)} />
               {/* Opción Elegante y Hermosa de Roles (Desactivada temporalmente) */}
               {/* {role === 'agency_admin' && (
                 <MenuLink to="/dashboard/settings/roles" icon="fa-user-shield" text="Roles y Permisos" onClick={() => setSidebarOpen(false)} />

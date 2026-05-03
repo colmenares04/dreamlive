@@ -15,7 +15,7 @@ export class UsersAdapter {
     return data;
   }
 
-  static async create(payload: { username: string; full_name?: string; email: string; password?: string; role: string; agency_id?: string | null }): Promise<ProfileUser> {
+  static async create(payload: { username: string; full_name?: string; email: string; password?: string; role: string; agency_id?: string | null; license_id?: string }): Promise<ProfileUser> {
     const { data } = await http.post<ProfileUser>('/users/', payload);
     return data;
   }

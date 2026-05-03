@@ -11,11 +11,11 @@ import type { AppVersion, VersionTag } from '../../../core/entities';
 
 // ─── Constantes de tags ────────────────────────────────────────────────────
 const TAG_META: Record<VersionTag, { label: string; icon: string; cls: string }> = {
-  new:  { label: 'Novedad',    icon: 'fa-sparkles',      cls: 'bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
-  fix:  { label: 'Fix',        icon: 'fa-bug',           cls: 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400' },
-  feat: { label: 'Feature',    icon: 'fa-star',          cls: 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
-  perf: { label: 'Rendimiento',icon: 'fa-bolt',          cls: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
-  sec:  { label: 'Seguridad',  icon: 'fa-shield-halved', cls: 'bg-slate-100 dark:bg-slate-500/10 text-slate-700 dark:text-slate-400' },
+  new: { label: 'Novedad', icon: 'fa-sparkles', cls: 'bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
+  fix: { label: 'Fix', icon: 'fa-bug', cls: 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400' },
+  feat: { label: 'Feature', icon: 'fa-star', cls: 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
+  perf: { label: 'Rendimiento', icon: 'fa-bolt', cls: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
+  sec: { label: 'Seguridad', icon: 'fa-shield-halved', cls: 'bg-slate-100 dark:bg-slate-500/10 text-slate-700 dark:text-slate-400' },
 };
 
 const TAG_KEYS = Object.keys(TAG_META) as VersionTag[];
@@ -26,11 +26,10 @@ function TagChip({ tag, selected, onToggle }: { tag: VersionTag; selected: boole
   return (
     <button
       onClick={onToggle}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-        selected
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${selected
           ? `${cls} border-current scale-105 shadow-sm`
           : 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:border-slate-300'
-      }`}>
+        }`}>
       <i className={`fas ${icon} text-[10px]`} />
       {label}
     </button>
@@ -59,11 +58,10 @@ function UploadBox({ platform, file, onFile }: UploadBoxProps) {
   return (
     <div
       onClick={() => ref.current?.click()}
-      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-        file
+      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${file
           ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-500/5'
           : 'border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:border-slate-400 hover:bg-white dark:hover:bg-slate-800'
-      }`}>
+        }`}>
       <input
         ref={ref}
         type="file"
@@ -89,11 +87,11 @@ export function UpdatesView() {
 
   // Formulario
   const [versionNum, setVersionNum] = useState('');
-  const [changelog,  setChangelog]  = useState('');
-  const [tags,       setTags]       = useState<Set<VersionTag>>(new Set());
-  const [fileWin,    setFileWin]    = useState<File | null>(null);
-  const [fileMac,    setFileMac]    = useState<File | null>(null);
-  const [progress,   setProgress]   = useState(0);
+  const [changelog, setChangelog] = useState('');
+  const [tags, setTags] = useState<Set<VersionTag>>(new Set());
+  const [fileWin, setFileWin] = useState<File | null>(null);
+  const [fileMac, setFileMac] = useState<File | null>(null);
+  const [progress, setProgress] = useState(0);
   const [publishing, setPublishing] = useState(false);
 
   const toggleTag = (tag: VersionTag) =>
@@ -104,18 +102,17 @@ export function UpdatesView() {
     setPublishing(true);
     setProgress(10);
 
-    // Simular subida (en producción se subiría a Supabase Storage y se obtiene URL)
-    // Por ahora se envía URL placeholder – adaptar cuando se integre Storage
-    setProgress(50);
-    await publishVersion({
-      version_number: versionNum.trim(),
-      changelog,
-      tags: Array.from(tags),
-      windows_url: `https://storage.example.com/v${versionNum}_windows_${fileWin.name}`,
-      windows_size_kb: Math.round(fileWin.size / 1024),
-      macos_url: `https://storage.example.com/v${versionNum}_macos_${fileMac.name}`,
-      macos_size_kb: Math.round(fileMac.size / 1024),
-    });
+    // Construir FormData con los archivos reales
+    setProgress(30);
+    const formData = new FormData();
+    formData.append('version_number', versionNum.trim());
+    formData.append('changelog', changelog);
+    formData.append('tags', Array.from(tags).join(','));
+    formData.append('win_file', fileWin);
+    formData.append('mac_file', fileMac);
+
+    setProgress(70);
+    await publishVersion(formData);
     setProgress(100);
     setTimeout(() => {
       setPublishing(false);
@@ -177,7 +174,7 @@ export function UpdatesView() {
       header: 'Acciones',
       render: (v: AppVersion) => (
         <div className="flex gap-1 justify-end">
-          <a href={v.file_url} target="_blank" rel="noreferrer"
+          <a href={`${(import.meta.env.VITE_API_URL || 'http://217.216.94.178:8000').replace(/\/api\/v[12]$/, '')}${v.file_url}`} target="_blank" rel="noreferrer"
             className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="Descargar">
             <i className="fas fa-download text-slate-500 text-sm" />
           </a>
@@ -230,7 +227,7 @@ export function UpdatesView() {
         {/* Upload boxes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <UploadBox platform="windows" file={fileWin} onFile={setFileWin} />
-          <UploadBox platform="macos"   file={fileMac} onFile={setFileMac} />
+          <UploadBox platform="macos" file={fileMac} onFile={setFileMac} />
         </div>
 
         {/* Changelog */}

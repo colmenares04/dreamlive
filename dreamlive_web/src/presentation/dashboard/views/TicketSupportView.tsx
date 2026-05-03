@@ -134,7 +134,7 @@ export function TicketSupportView() {
                 <p className="text-sm text-slate-400 dark:text-slate-500 line-clamp-1">{t.description}</p>
                 <div className="flex items-center gap-4 mt-4 text-[10px] font-medium text-slate-300 uppercase tracking-widest">
                   <span><i className="fas fa-building mr-1.5" /> Agencia: {t.agency_id?.split('-')[0] || 'N/A'}</span>
-                  <span><i className="fas fa-calendar-alt mr-1.5" /> {new Date(t.created_at).toLocaleDateString()}</span>
+                  <span><i className="fas fa-calendar-alt mr-1.5" /> {t.created_at ? new Date(t.created_at).toLocaleDateString() : 'Reciente'}</span>
                 </div>
               </div>
 

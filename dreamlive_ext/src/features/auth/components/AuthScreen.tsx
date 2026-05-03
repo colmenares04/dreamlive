@@ -73,10 +73,10 @@ export const AuthScreen: React.FC = () => {
         <button onClick={toggleTheme} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Cambiar tema">
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
-        <ExternalLink 
-          onClick={() => window.open('http://localhost', '_blank')}
-          size={20} 
-          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors" 
+        <ExternalLink
+          onClick={() => window.open('http://217.216.94.178', '_blank')}
+          size={20}
+          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors"
         />
       </div>
     </div>

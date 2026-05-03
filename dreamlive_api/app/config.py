@@ -14,11 +14,12 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     API_PREFIX: str = "/api/v1"
+    API_PREFIX_V2: str = "/api/v2"
     HOST_IP: str = "0.0.0.0"
     HOST_PORT: int = 8000
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/dreamlive"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/dreamlive"
 
     # ── Seguridad JWT ─────────────────────────────────────────────────────────
     SECRET_KEY: str = secrets.token_urlsafe(64)
@@ -28,11 +29,11 @@ class Settings(BaseSettings):
 
     # ── CORS ──────────────────────────────────────────────────────────────────
     ALLOWED_ORIGINS: Union[str, List[str]] = [
-        "http://localhost",
-        "http://127.0.0.1",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
+        "http://217.216.94.178",
+        "http://217.216.94.178",
+        "http://217.216.94.178:5173",
+        "http://217.216.94.178:5173",
+        "http://217.216.94.178:3000",
     ]
 
     # ── Email (recuperación de contraseña) ───────────────────────────────────
@@ -55,7 +56,7 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
 
     # ── Redis (Caché) ─────────────────────────────────────────────────────────
-    REDIS_HOST: str = "localhost"
+    REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
     REDIS_DB: int = 0

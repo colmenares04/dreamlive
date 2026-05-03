@@ -31,7 +31,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     if (!token) return;
 
     // El SOCKET_URL debe ser la base (vía wrapper ASGI en main.py)
-    const BASE_URL = import.meta.env.VITE_API_URL_BASE || 'http://localhost:8000';
+    const BASE_URL = import.meta.env.VITE_API_URL_BASE || 'http://217.216.94.178:8000';
 
     const newSocket = io(BASE_URL, {
       path: "/socket.io",

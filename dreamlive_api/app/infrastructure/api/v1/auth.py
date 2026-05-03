@@ -11,7 +11,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Any, Dict, List, Optional
 
 from app.core.domain.exceptions import UnauthorizedAccess
-from app.infrastructure.api.deps import get_current_agency, AuthUser
+from app.infrastructure.api.deps import get_current_agency, AuthUser, get_uow
 from app.core.ports.security import ITokenService
 from app.infrastructure.api.schemas import TokenResponse
 from app.infrastructure.api.providers import (
@@ -305,3 +305,83 @@ async def get_me(
         usados_hoy=getattr(profile, "usados_hoy", 0),
         tiempo_para_reinicio=getattr(profile, "tiempo_para_reinicio", 0),
     )
+
+
+class AgencyUserOut(BaseModel):
+    id: str
+    username: str
+    email: str
+    role: str
+    has_password: bool = True
+
+
+class CreateAgencyUserRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+    role: str = "agency_admin"
+
+
+@router.get("/agency/users", response_model=List[AgencyUserOut])
+async def get_agency_users(
+    agency: Any = Depends(get_current_agency),
+    uow: Any = Depends(get_uow),
+):
+    from sqlalchemy import select
+    from app.adapters.db.models import LicenseORM
+    
+    stmt = select(LicenseORM).where(LicenseORM.agency_id == str(agency.id))
+    result = await uow._session.execute(stmt)
+    users = result.scalars().all()
+    
+    return [
+        AgencyUserOut(
+            id=str(u.id),
+            username=u.recruiter_name or "",
+            email=u.email or "",
+            role=u.role or "agency_admin",
+            has_password=bool(u.admin_password),
+        ) for u in users
+    ]
+
+
+@router.post("/agency/users", response_model=AgencyUserOut)
+async def create_agency_user(
+    payload: CreateAgencyUserRequest,
+    agency: Any = Depends(get_current_agency),
+    uow: Any = Depends(get_uow),
+):
+    from app.adapters.db.models import LicenseORM
+    import uuid
+
+    # Check if user already exists
+    from sqlalchemy import select
+    res = await uow._session.execute(select(LicenseORM).where(LicenseORM.email == payload.email))
+    if res.scalar_one_or_none():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado.")
+        
+    license_id = str(uuid.uuid4())
+    license_key = f"DL-{str(uuid.uuid4())[:8].upper()}"
+
+    new_lic = LicenseORM(
+        id=license_id,
+        key=license_key,
+        agency_id=str(agency.id),
+        recruiter_name=payload.username,
+        email=payload.email,
+        admin_password=payload.password,
+        role=payload.role or "agency_admin",
+    )
+    uow._session.add(new_lic)
+    await uow._session.flush()
+    await uow._session.commit()
+    
+    return AgencyUserOut(
+        id=license_id,
+        username=payload.username,
+        email=payload.email,
+        role=payload.role or "agency_admin",
+        has_password=True,
+    )
+

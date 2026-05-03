@@ -46,7 +46,7 @@ class EmailService:
             return False
 
     @classmethod
-    def send_password_reset(cls, to: str, token: str, base_url: str = "http://localhost:5173") -> bool:
+    def send_password_reset(cls, to: str, token: str, base_url: str = "http://217.216.94.178:5173") -> bool:
         reset_url = f"{base_url}/reset-password?token={token}"
         html = f"""
         <!DOCTYPE html>

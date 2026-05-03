@@ -12,8 +12,8 @@ export class AgencyAdapter {
     return data;
   }
 
-  static async create(payload: { name: string; code: string; owner_id?: string }): Promise<Agency> {
-    const { data } = await http.post<Agency>('/agencies', payload);
+  static async create(payload: { name: string; email?: string; password?: string; superagent?: string; admin_email?: string; admin_password?: string; code?: string; owner_id?: string }): Promise<Agency> {
+    const { data } = await http.post<Agency>('/agencies/', payload);
     return data;
   }
 

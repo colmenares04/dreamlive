@@ -2,11 +2,11 @@ import { createContext, useContext, useState, useCallback, useEffect, ReactNode,
 import { AuthService, User, License } from '../../../infrastructure/api/auth.service';
 import { socketService } from '../../../infrastructure/websocket/socket.service';
 
-export type AuthStatus = 
-  | 'idle' 
-  | 'loading' 
-  | 'authenticated' 
-  | 'needs_license' 
+export type AuthStatus =
+  | 'idle'
+  | 'loading'
+  | 'authenticated'
+  | 'needs_license'
   | 'needs_user_registration'
   | 'error';
 
@@ -30,7 +30,7 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const WS_URL = import.meta.env.WXT_WS_URL || 'ws://localhost:8000/api/v1/chat/ws';
+const WS_URL = import.meta.env.WXT_WS_URL || 'ws://217.216.94.178:8000/api/v1/chat/ws';
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>({
@@ -68,7 +68,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       const savedUser = await storage.getItem<User>('local:user');
       const savedLicense = await storage.getItem<License>('local:license');
       const savedSessionId = await storage.getItem<string>('local:session_id');
- 
+
       if (savedToken) {
         setState({
           status: 'authenticated',
@@ -94,10 +94,10 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       // 2. Manejar errores de conexión (ej: Token expirado en el handshake)
       const unsubError = socketService.on('CONNECTION_ERROR', async () => {
         console.warn('[AUTH] Error detectado en WS, verificando integridad de sesión...');
-        
+
         // Intentar una petición simple para ver si el token sirve o se puede refrescar
         const { error } = await AuthService.getMe();
-        
+
         if (error) {
           console.error('[AUTH] Sesión inválida o expirada definitivamente:', error);
           handleForceLogout('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
@@ -138,14 +138,14 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       await storage.setItem('local:token', tokenData.token);
       await storage.setItem('local:license', tokenData.license);
       await storage.setItem('local:session_id', tokenData.session_id);
-      
-      setState({ 
-        status: 'authenticated', 
-        user: null, 
-        license: tokenData.license, 
-        token: tokenData.token, 
-        session_id: tokenData.session_id, 
-        error: null 
+
+      setState({
+        status: 'authenticated',
+        user: null,
+        license: tokenData.license,
+        token: tokenData.token,
+        session_id: tokenData.session_id,
+        error: null
       });
       socketService.connect(WS_URL, tokenData.token, tokenData.session_id);
     }
@@ -165,23 +165,23 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         await storage.setItem('local:token', data.token);
         await storage.setItem('local:license', data.license);
         await storage.setItem('local:session_id', data.session_id);
-        setState({ 
-          status: 'authenticated', 
-          user: null, 
-          license: data.license, 
-          token: data.token, 
-          session_id: data.session_id, 
-          error: null 
+        setState({
+          status: 'authenticated',
+          user: null,
+          license: data.license,
+          token: data.token,
+          session_id: data.session_id,
+          error: null
         });
         socketService.connect(WS_URL, data.token, data.session_id);
       } else {
-        setState({ 
-          status: 'needs_user_registration', 
-          user: null, 
-          license: data.license, 
-          token: data.token, 
-          session_id: data.session_id, 
-          error: null 
+        setState({
+          status: 'needs_user_registration',
+          user: null,
+          license: data.license,
+          token: data.token,
+          session_id: data.session_id,
+          error: null
         });
       }
     }
@@ -205,11 +205,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const handleCreateAdmin = async (formData: any) => {
     if (!state.license || !state.token) return;
     setState((prev) => ({ ...prev, status: 'loading', error: null }));
-    const { data, error } = await AuthService.linkLicense({ 
-      licenseKey: state.license.key, 
-      email: formData.email, 
-      password: formData.password, 
-      fullName: formData.username 
+    const { data, error } = await AuthService.linkLicense({
+      licenseKey: state.license.key,
+      email: formData.email,
+      password: formData.password,
+      fullName: formData.username
     });
 
     if (error) {
@@ -218,7 +218,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       await storage.setItem('local:token', data.token);
       await storage.setItem('local:license', data.license);
       await storage.setItem('local:session_id', data.session_id);
-      
+
       setState({ ...state, status: 'authenticated', license: data.license, token: data.token, session_id: data.session_id, error: null });
       socketService.connect(WS_URL, data.token, data.session_id || undefined);
     }
@@ -234,14 +234,14 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      ...state, 
-      loginWithEmail, 
-      loginWithLicense, 
-      handleLinkLicense, 
-      handleCreateAdmin, 
-      logout, 
-      clearError 
+    <AuthContext.Provider value={{
+      ...state,
+      loginWithEmail,
+      loginWithLicense,
+      handleLinkLicense,
+      handleCreateAdmin,
+      logout,
+      clearError
     }}>
       {children}
     </AuthContext.Provider>

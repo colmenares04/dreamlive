@@ -10,6 +10,7 @@ from .leads import leads_router
 from .versions import versions_router
 from .overview import overview_router, dashboard_router
 from .chat import router as chat_router
+from .notifications import router as notifications_v1_router
 
 __all__ = [
     "licenses_router",
@@ -29,4 +30,5 @@ ROUTERS = [
     overview_router,
     dashboard_router,
     chat_router,
+    notifications_v1_router,
 ]

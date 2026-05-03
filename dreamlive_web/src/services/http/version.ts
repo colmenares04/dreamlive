@@ -10,12 +10,10 @@ export class VersionAdapter {
     return data;
   }
 
-  static async publish(payload: {
-    version_number: string; changelog: string; tags: string[];
-    windows_url: string; windows_size_kb: number;
-    macos_url: string; macos_size_kb: number;
-  }): Promise<{ published: number; version: string }> {
-    const { data } = await http.post('/versions/publish', payload);
+  static async publish(payload: FormData): Promise<{ published: number; version: string }> {
+    const { data } = await http.post('/versions/publish', payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return data;
   }
 

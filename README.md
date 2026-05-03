@@ -147,7 +147,7 @@ STORAGE_BUCKET=dreamlive-updates
 python main.py
 
 # Produccion (con Gunicorn)
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 217.216.94.178:8000
 ```
 
 ### 4. Panel Web
@@ -199,7 +199,7 @@ docker build -t dreamlive-api .
 docker run -p 8000:8000 --env-file .env dreamlive-api
 
 # O directamente con Gunicorn
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 217.216.94.178:8000
 ```
 
 ### Web (Recomendado: Vercel)

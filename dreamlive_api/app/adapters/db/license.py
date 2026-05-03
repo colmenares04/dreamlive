@@ -15,7 +15,7 @@ class LicenseORM(Base):
     recruiter_name = Column(String(200), nullable=False)
     status = Column(Enum(LicenseStatus), default=LicenseStatus.ACTIVE, nullable=False)
     request_limit = Column(Integer, default=60, nullable=False)
-    refresh_minutes = Column(Integer, default=1, nullable=False)
+    refresh_minutes = Column(Integer, default=60, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     last_seen_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -31,6 +31,7 @@ class LicenseORM(Base):
     theme = Column(String(50), default="dark", nullable=True)
     daily_contact_count = Column(Integer, default=0, nullable=False)
     last_contact_date = Column(DateTime(timezone=True), nullable=True)
+    role = Column(String(50), default="agent", nullable=True)
 
     # Relaciones
     agency = relationship("AgencyORM", back_populates="licenses")

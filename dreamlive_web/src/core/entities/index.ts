@@ -15,6 +15,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   agency_id: string | null;
+  license_id?: string | null;
 }
 
 export interface RolePermissions {
@@ -36,70 +37,78 @@ export interface AgencyPermissionsConfig {
  * Ahora soporta configuración dinámica por agencia.
  */
 export class UserPermissions {
-  static isAdminGroup(role: UserRole): boolean {
-    return role === 'superuser';
+  static isAdminGroup(role: UserRole | string): boolean {
+    return role?.toLowerCase() === 'superuser';
   }
 
-  static isAgencyGroup(role: UserRole): boolean {
-    return role === 'agency_admin' || role === 'agent';
+  static isAgencyGroup(role: UserRole | string): boolean {
+    const norm = role?.toLowerCase();
+    return norm === 'agency_admin' || norm === 'agent' || norm === 'recruiter';
   }
 
   // --- Herramientas de decisión dinámica ---
   
-  private static getRoleConfig(role: UserRole, config?: AgencyPermissionsConfig): Partial<RolePermissions> {
-    if (role === 'superuser') return { 
+  private static getRoleConfig(role: UserRole | string, config?: AgencyPermissionsConfig): Partial<RolePermissions> {
+    const norm = role?.toLowerCase();
+    if (norm === 'superuser') return { 
       can_manage_team: true, can_manage_licenses: true, can_view_metrics: true, 
       can_purge_leads: true, can_view_leads: true, can_open_tickets: true 
     };
     
-    if (role === 'agency_admin') return { 
+    if (norm === 'agency_admin') return { 
       can_manage_team: true, can_manage_licenses: true, can_view_metrics: true, 
       can_purge_leads: true, can_view_leads: true, can_open_tickets: true 
     };
 
     if (!config) return {};
-    return config[role as keyof AgencyPermissionsConfig] || {};
+    return config[norm as keyof AgencyPermissionsConfig] || {};
   }
 
-  static canManageTeam(role: UserRole, config?: AgencyPermissionsConfig): boolean {
-    if (role === 'superuser' || role === 'agency_admin') return true;
-    return !!this.getRoleConfig(role, config).can_manage_team;
+  static canManageTeam(role: UserRole | string, config?: AgencyPermissionsConfig): boolean {
+    const norm = role?.toLowerCase();
+    if (norm === 'superuser' || norm === 'agency_admin') return true;
+    return !!this.getRoleConfig(norm, config).can_manage_team;
   }
 
-  static canManageLicenses(role: UserRole, config?: AgencyPermissionsConfig): boolean {
-    if (role === 'superuser' || role === 'agency_admin') return true;
-    return !!this.getRoleConfig(role, config).can_manage_licenses;
+  static canManageLicenses(role: UserRole | string, config?: AgencyPermissionsConfig): boolean {
+    const norm = role?.toLowerCase();
+    if (norm === 'superuser' || norm === 'agency_admin') return true;
+    return !!this.getRoleConfig(norm, config).can_manage_licenses;
   }
 
-  static canViewMetrics(role: UserRole, config?: AgencyPermissionsConfig): boolean {
-    if (role === 'superuser' || role === 'agency_admin') return true;
-    return !!this.getRoleConfig(role, config).can_view_metrics;
+  static canViewMetrics(role: UserRole | string, config?: AgencyPermissionsConfig): boolean {
+    const norm = role?.toLowerCase();
+    if (norm === 'superuser' || norm === 'agency_admin') return true;
+    return !!this.getRoleConfig(norm, config).can_view_metrics;
   }
 
-  static canPurgeLeads(role: UserRole, config?: AgencyPermissionsConfig): boolean {
-    if (role === 'superuser' || role === 'agency_admin') return true;
-    return !!this.getRoleConfig(role, config).can_purge_leads;
+  static canPurgeLeads(role: UserRole | string, config?: AgencyPermissionsConfig): boolean {
+    const norm = role?.toLowerCase();
+    if (norm === 'superuser' || norm === 'agency_admin') return true;
+    return !!this.getRoleConfig(norm, config).can_purge_leads;
   }
 
-  static canViewLeads(role: UserRole, config?: AgencyPermissionsConfig): boolean {
-    if (role === 'superuser' || role === 'agency_admin') return true;
-    return !!this.getRoleConfig(role, config).can_view_leads;
+  static canViewLeads(role: UserRole | string, config?: AgencyPermissionsConfig): boolean {
+    const norm = role?.toLowerCase();
+    if (norm === 'superuser' || norm === 'agency_admin') return true;
+    return !!this.getRoleConfig(norm, config).can_view_leads;
   }
 
-  static canOpenTickets(role: UserRole, config?: AgencyPermissionsConfig): boolean {
-    if (role === 'superuser' || role === 'agency_admin') return true;
-    return !!this.getRoleConfig(role, config).can_open_tickets;
+  static canOpenTickets(role: UserRole | string, config?: AgencyPermissionsConfig): boolean {
+    const norm = role?.toLowerCase();
+    if (norm === 'superuser' || norm === 'agency_admin') return true;
+    return !!this.getRoleConfig(norm, config).can_open_tickets;
   }
 
-  static canPushUpdates(role: UserRole): boolean {
-    return role === 'superuser';
+  static canPushUpdates(role: UserRole | string): boolean {
+    return role?.toLowerCase() === 'superuser';
   }
 
-  static canSeeAdminConsole(role: UserRole): boolean {
+  static canSeeAdminConsole(role: UserRole | string): boolean {
     return UserPermissions.isAdminGroup(role);
   }
 
-  static canSeeAgencyPanel(role: UserRole): boolean {
+  static canSeeAgencyPanel(role: UserRole | string): boolean {
     return UserPermissions.isAgencyGroup(role);
   }
 }
@@ -205,6 +214,26 @@ export interface AgencyDashboard {
   conversion_rate: number;
   trends: Array<{ date: string, count: number }>;
   top_keywords: string[];
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  description_ext: string;
+  description_web: string;
+  images: string[];
+  created_at: string;
+  is_read: boolean;
+}
+
+export interface NotificationLatest {
+  id: string;
+  title: string;
+  description_ext: string;
+  created_at: string | null;
+  image: string | null;
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────

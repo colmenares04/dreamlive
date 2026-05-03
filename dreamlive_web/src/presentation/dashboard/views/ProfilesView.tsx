@@ -12,15 +12,17 @@ import type { ProfileUser } from '../../../core/entities/settings';
 
 const ALLOWED_ROLES = ['agency_admin', 'agent'];
 const ROLE_LABELS: Record<string, string> = {
-  superuser: 'Super Admin',
-  agency_admin: 'Admin Agencia',
-  agent: 'Agente',
+  superuser: 'ADMINISTRADOR',
+  agency_admin: 'GERENTE',
+  agent: 'AGENTE',
 };
 const ROLE_COLORS: Record<string, 'green' | 'blue' | 'yellow' | 'gray'> = {
   superuser: 'blue',
   agency_admin: 'green',
   agent: 'yellow',
 };
+
+import { http } from '../../../services/http/apiClient';
 
 // ─── Modal Invitar / Editar ───────────────────────────────────────────────────
 function UserFormModal({
@@ -38,19 +40,32 @@ function UserFormModal({
   const { user: currentUser } = useAuth();
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole]         = useState('agent');
-  const [saving, setSaving]     = useState(false);
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [role, setRole] = useState('agent');
+  const [saving, setSaving] = useState(false);
+  const [licenses, setLicenses] = useState<{ id: string; key: string; recruiter_name?: string }[]>([]);
+  const [selectedLicense, setSelectedLicense] = useState('');
   const isEdit = Boolean(user);
 
   useEffect(() => {
     if (user) {
       setUsername(user.username); setFullName(user.full_name || '');
-      setEmail(user.email);       setRole(user.role);
-      setPassword('');
+      setEmail(user.email); setRole(user.role);
+      setPassword(''); setPasswordConfirm('');
+      setLicenses([]); setSelectedLicense('');
     } else {
-      setUsername(''); setFullName(''); setEmail(''); setRole('agent'); setPassword('');
+      setUsername(''); setFullName(''); setEmail(''); setRole('agent'); setPassword(''); setPasswordConfirm('');
+      if (open) {
+        http.get('/licenses/unassigned').then(({ data }) => {
+          setLicenses(data);
+          if (data.length > 0) setSelectedLicense(data[0].id);
+          else setSelectedLicense('');
+        }).catch(() => {
+          setLicenses([]); setSelectedLicense('');
+        });
+      }
     }
   }, [user, open]);
 
@@ -58,31 +73,39 @@ function UserFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password && password !== passwordConfirm) {
+      error('Las contraseñas no coinciden.');
+      return;
+    }
     setSaving(true);
     try {
       if (isEdit && user) {
-        await UsersAdapter.update(user.id, { 
-          username, 
-          full_name: fullName, 
+        const payload: any = {
+          username,
+          full_name: fullName,
+          email,
           role,
-          agency_id: user.agency_id || currentUser?.agency_id 
-        });
+          agency_id: user.agency_id || currentUser?.agency_id
+        };
+        if (password) payload.password = password;
+        await UsersAdapter.update(user.id, payload);
         success('Usuario actualizado.');
       } else {
-        await UsersAdapter.create({ 
-          username, 
-          full_name: fullName, 
-          email, 
-          password, 
+        await UsersAdapter.create({
+          username,
+          full_name: fullName,
+          email,
+          password,
           role,
-          agency_id: currentUser?.agency_id
+          agency_id: currentUser?.agency_id,
+          license_id: selectedLicense
         });
         success('Usuario creado correctamente.');
       }
       onSaved(); onClose();
-    } catch (err: any) { 
+    } catch (err: any) {
       const msg = err.response?.data?.detail || 'Error al guardar el usuario.';
-      error(msg); 
+      error(msg);
     }
     finally { setSaving(false); }
   };
@@ -95,11 +118,11 @@ function UserFormModal({
           <h2 className="text-2xl font-black text-white tracking-widest uppercase">
             {isEdit ? 'Modificar Acceso' : 'Cifrar Nueva Cuenta'}
           </h2>
-          <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all flex items-center justify-center active:scale-90">
+          <button type="button" onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all flex items-center justify-center active:scale-90">
             <i className="fas fa-times text-xl" />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-8 space-y-7 bg-white dark:bg-slate-900">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
@@ -112,13 +135,12 @@ function UserFormModal({
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-3 ml-1">E-Mail Seguro</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-white/30 uppercase tracking-[0.2em] block mb-3 ml-1">E-Mail Seguro</label>
               <div className="relative group">
                 <i className="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 transition-colors group-focus-within:text-indigo-400" />
                 <input required type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition-all font-bold disabled:opacity-20 disabled:cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-white/10"
-                  placeholder="admin@cyber.com" 
-                  disabled={isEdit} />
+                  className="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-white/10"
+                  placeholder="admin@cyber.com" />
               </div>
             </div>
           </div>
@@ -133,22 +155,55 @@ function UserFormModal({
             </div>
           </div>
 
-          {!isEdit && (
-            <div>
-              <label className="text-[10px] font-black text-slate-500 dark:text-white/30 uppercase tracking-[0.2em] block mb-3 ml-1">Criptografía de Acceso</label>
+          <div>
+            <label className="text-[10px] font-black text-slate-500 dark:text-white/30 uppercase tracking-[0.2em] block mb-3 ml-1">
+              Criptografía de Acceso {isEdit && '(Opcional)'}
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="relative group">
                 <i className="fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 transition-colors group-focus-within:text-indigo-400" />
-                <input required type="password" value={password} onChange={e => setPassword(e.target.value)}
+                <input required={!isEdit} type="password" value={password} onChange={e => setPassword(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-white/10"
-                  placeholder="••••••••••••" />
+                  placeholder={isEdit ? "Dejar en blanco para mantener" : "••••••••••••"} />
               </div>
+              <div className="relative group">
+                <i className="fas fa-check-double absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 transition-colors group-focus-within:text-indigo-400" />
+                <input required={!isEdit || password.length > 0} type="password" value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-white/10"
+                  placeholder="Confirmar contraseña" />
+              </div>
+            </div>
+          </div>
+
+          {!isEdit && (
+            <div>
+              <label className="text-[10px] font-black text-slate-500 dark:text-white/30 uppercase tracking-[0.2em] block mb-3 ml-1">Licencia Disponible</label>
+              <div className="relative group">
+                <i className="fas fa-id-card absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 group-focus-within:text-indigo-400" />
+                <select
+                  required
+                  value={selectedLicense}
+                  onChange={e => setSelectedLicense(e.target.value)}
+                  className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl pl-12 pr-12 py-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236366f1%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_1rem_center] bg-no-repeat transition-all font-black uppercase text-[11px] tracking-widest cursor-pointer"
+                >
+                  <option value="">Selecciona una licencia</option>
+                  {licenses.map(l => (
+                    <option key={l.id} value={l.id} className="text-slate-900 bg-white">
+                      {l.key} {l.recruiter_name ? `(${l.recruiter_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {licenses.length === 0 && (
+                <p className="text-[10px] text-rose-500 font-bold mt-2 ml-1 uppercase">No hay licencias disponibles. Solicita una Primero.</p>
+              )}
             </div>
           )}
 
           <div>
             <label className="text-[10px] font-black text-slate-500 dark:text-white/30 uppercase tracking-[0.2em] block mb-3 ml-1">Nivel de Autorización</label>
             <div className="relative group">
-             <i className="fas fa-shield-alt absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 group-focus-within:text-indigo-400" />
+              <i className="fas fa-shield-alt absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 group-focus-within:text-indigo-400" />
               <select value={role} onChange={e => setRole(e.target.value)}
                 className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl pl-12 pr-12 py-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236366f1%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_1rem_center] bg-no-repeat transition-all font-black uppercase text-[11px] tracking-widest cursor-pointer">
                 {ALLOWED_ROLES.map(r => (
@@ -158,7 +213,7 @@ function UserFormModal({
             </div>
           </div>
 
-          <Button variant="primary" className="w-full py-5 rounded-2xl font-black shadow-2xl shadow-indigo-600/20 mt-8 text-[11px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-transform hover:scale-[1.02]" loading={saving} type="submit">
+          <Button variant="primary" className="w-full py-5 rounded-2xl font-black shadow-2xl shadow-indigo-600/20 mt-8 text-[11px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-transform hover:scale-[1.02]" loading={saving} type="submit" disabled={!isEdit && !selectedLicense}>
             {isEdit ? 'Ejecutar Actualización' : 'Instanciar Nueva Cuenta'}
             <i className="fas fa-bolt text-indigo-400" />
           </Button>
@@ -171,10 +226,11 @@ function UserFormModal({
 
 // ─── Vista principal ──────────────────────────────────────────────────────────
 export function ProfilesView() {
-  const { role: myRole, user: currentUser } = useAuth();
+  const { role: rawRole, user: currentUser } = useAuth();
+  const myRole = rawRole?.toLowerCase();
   const { error } = useNotifications();
-  const [users, setUsers]       = useState<ProfileUser[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [users, setUsers] = useState<ProfileUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ProfileUser | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -182,16 +238,16 @@ export function ProfilesView() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { 
+    try {
       let data = await UsersAdapter.list();
-      
+
       // Strict isolation: Even for superusers, show local agency by default in "Settings" context
       // only if globalView is false and the user has an agency association
       if (!globalView && currentUser?.agency_id) {
         data = data.filter(u => u.agency_id === currentUser.agency_id);
       }
-      
-      setUsers(data); 
+
+      setUsers(data);
     }
     catch { error('Error cargando perfiles.'); }
     finally { setLoading(false); }
@@ -222,7 +278,7 @@ export function ProfilesView() {
           {myRole === 'superuser' && (
             <div className="flex items-center gap-3 bg-muted/30 px-4 py-2 rounded-2xl border border-border mr-2">
               <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Vista Global</span>
-              <button 
+              <button
                 onClick={() => setGlobalView(!globalView)}
                 className={`w-10 h-6 rounded-full transition-all relative ${globalView ? 'bg-indigo-600' : 'bg-slate-700'}`}
               >
@@ -282,13 +338,13 @@ export function ProfilesView() {
                   {myRole === 'superuser' && (
                     <td className="px-6 py-4">
                       <span className="text-[10px] font-black bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500 uppercase tracking-tighter">
-                        {u.agency_id ? u.agency_id.slice(0,8) : 'SISTEMA'}
+                        {u.agency_id ? u.agency_id.slice(0, 8) : 'SISTEMA'}
                       </span>
                     </td>
                   )}
                   <td className="px-6 py-4">
-                    <Badge variant={ROLE_COLORS[u.role] ?? 'gray'}>
-                      {ROLE_LABELS[u.role] ?? u.role}
+                    <Badge variant={ROLE_COLORS[u.role?.toLowerCase()] ?? 'gray'}>
+                      {ROLE_LABELS[u.role?.toLowerCase()] ?? u.role}
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
@@ -299,10 +355,12 @@ export function ProfilesView() {
                   {(myRole === 'superuser' || myRole === 'agency_admin') && u.role !== 'superuser' && (
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => { setSelected(u); setShowForm(true); }} className="!rounded-xl border-border hover:bg-card">
-                          <i className="fas fa-pen mr-2 text-[10px]" /> Gestionar
-                        </Button>
-                        
+                        {(myRole?.toLowerCase() === 'superuser' || (u.id !== currentUser?.id && u.role?.toLowerCase() !== myRole?.toLowerCase())) && (
+                          <Button size="sm" variant="outline" onClick={() => { setSelected(u); setShowForm(true); }} className="!rounded-xl border-border hover:bg-card">
+                            <i className="fas fa-pen mr-2 text-[10px]" /> Gestionar
+                          </Button>
+                        )}
+
                         {/* 
                           RESTRICTIONS:
                           1. Cannot delete yourself.

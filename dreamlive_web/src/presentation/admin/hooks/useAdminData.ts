@@ -19,7 +19,8 @@ const CACHE_VERSIONS = 'admin:versions';
 
 export function useAdminData() {
   const { success, error: showError, confirm } = useNotifications();
-  const { user, role } = useAuth();
+  const { user, role: rawRole } = useAuth();
+  const role = rawRole?.toLowerCase();
 
   const [overview, setOverview]     = useState<AdminOverview | null>(() => DataCache.get(CACHE_OVERVIEW));
   const [licenses, setLicenses]     = useState<License[]>(() => DataCache.get(CACHE_LICENSES) ?? []);
@@ -163,9 +164,9 @@ export function useAdminData() {
     }
   }, [showError, loadDeps]);
 
-  const createAgency = useCallback(async (name: string) => {
+  const createAgency = useCallback(async (payload: { name: string; email?: string; password?: string; superagent?: string; admin_email?: string; admin_password?: string }) => {
     try {
-      await AgencyAdapter.create({ name, code: name.toUpperCase().slice(0, 6) });
+      await AgencyAdapter.create(payload);
       success('Agencia creada.');
       DataCache.invalidate(CACHE_AGENCIES);
       await loadDeps(true);
@@ -207,11 +208,7 @@ export function useAdminData() {
     }
   }, [overview, confirm, success, showError, loadOverview]);
 
-  const publishVersion = useCallback(async (payload: {
-    version_number: string; changelog: string; tags: string[];
-    windows_url: string; windows_size_kb: number;
-    macos_url: string; macos_size_kb: number;
-  }) => {
+  const publishVersion = useCallback(async (payload: FormData) => {
     try {
       const res = await VersionAdapter.publish(payload);
       success(`Versión ${res.version} publicada (${res.published} builds).`);

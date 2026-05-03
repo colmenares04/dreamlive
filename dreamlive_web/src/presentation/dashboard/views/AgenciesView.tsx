@@ -283,31 +283,149 @@ function AgencyDetailModal({
  * 
  * Componente principal de la vista de agencias.
  */
+function CreateAgencyModal({
+  isOpen,
+  onClose,
+  onCreated,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreated: (payload: { name: string; email?: string; password?: string; superagent?: string; admin_email?: string; admin_password?: string }) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [superagent, setSuperagent] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await onCreated({
+        name,
+        email,
+        password,
+        superagent,
+        admin_email: adminEmail,
+        admin_password: adminPassword,
+      });
+      setName('');
+      setEmail('');
+      setPassword('');
+      setSuperagent('');
+      setAdminEmail('');
+      setAdminPassword('');
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Registrar Nueva Agencia" maxWidth="max-w-xl">
+      <form onSubmit={handleSubmit} className="space-y-6 py-2">
+        {/* Section 1: Datos de la Agencia */}
+        <div className="p-5 rounded-2xl bg-indigo-50/40 dark:bg-indigo-500/5 border border-indigo-100/50 dark:border-indigo-500/10 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-6 h-6 rounded-lg bg-indigo-500 text-white flex items-center justify-center text-xs font-black">1</span>
+            <h4 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Datos de la Organización</h4>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nombre de la Agencia</label>
+            <input
+              required
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+              placeholder="Ej: Agencia VIP"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email de la Organización (Login Principal)</label>
+            <input
+              required
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+              placeholder="Ej: org@agencia.com"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contraseña de la Organización</label>
+            <input
+              required
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
+
+        {/* Section 2: Datos del Administrador */}
+        <div className="p-5 rounded-2xl bg-purple-50/40 dark:bg-purple-500/5 border border-purple-100/50 dark:border-purple-500/10 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-6 h-6 rounded-lg bg-purple-500 text-white flex items-center justify-center text-xs font-black">2</span>
+            <h4 className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">Datos del Administrador</h4>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nombre del Superagente</label>
+            <input
+              required
+              value={superagent}
+              onChange={e => setSuperagent(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+              placeholder="Ej: Carlos"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email del Administrador</label>
+            <input
+              required
+              type="email"
+              value={adminEmail}
+              onChange={e => setAdminEmail(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+              placeholder="Ej: carlos@agencia.com"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contraseña del Administrador</label>
+            <input
+              required
+              type="password"
+              value={adminPassword}
+              onChange={e => setAdminPassword(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
+
+        <Button variant="primary" loading={saving} type="submit" className="w-full !rounded-2xl py-4 font-black tracking-widest text-xs uppercase shadow-xl shadow-indigo-500/20 mt-2">
+          Confirmar Registro
+        </Button>
+      </form>
+    </Modal>
+  );
+}
+
 export function AgenciesView() {
   const { agencies, licenses, loadingDeps, createAgency } = useAdminData();
   const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   /**
    * Obtiene el número de licencias para una agencia específica.
    */
   const getLicenseCount = (agencyId: string) =>
     licenses.filter(l => l.agency_id === agencyId).length;
-
-  /**
-   * Procesa la creación de una nueva agencia.
-   */
-  const handleCreate = async () => {
-    if (!newName.trim()) return;
-    setCreating(true);
-    try {
-      await createAgency(newName.trim());
-      setNewName('');
-    } finally {
-      setCreating(false);
-    }
-  };
 
   return (
     <div className="space-y-10 p-2">
@@ -316,21 +434,9 @@ export function AgenciesView() {
         subtitle="Administra organizaciones, reclutadores y monitorea conversiones globales"
         actions={
           <div className="flex items-center gap-3">
-            <div className="relative group hidden sm:block">
-              <i className="fas fa-building absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input
-                type="text"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                placeholder="Nombre de la agencia..."
-                className="pl-12 pr-5 py-3.5 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm bg-background focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all w-72 shadow-sm"
-              />
-            </div>
             <Button
               variant="primary"
-              loading={creating}
-              onClick={handleCreate}
+              onClick={() => setShowCreateModal(true)}
               className="px-8 whitespace-nowrap shadow-xl shadow-indigo-500/20"
             >
               <i className="fas fa-plus mr-2" />Registrar
@@ -371,6 +477,12 @@ export function AgenciesView() {
         agency={selectedAgency}
         onClose={() => setSelectedAgency(null)}
         onRefresh={() => setSelectedAgency(null)}
+      />
+
+      <CreateAgencyModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={createAgency}
       />
     </div>
   );

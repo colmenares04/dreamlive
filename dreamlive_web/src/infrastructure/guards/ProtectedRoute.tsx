@@ -36,7 +36,7 @@ export function ProtectedRoute({
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  if (roles && role && !roles.includes(role)) {
+  if (roles && role && !roles.map(r => r.toLowerCase()).includes(role.toLowerCase())) {
     // Usuario autenticado pero sin el rol correcto → lo expulsamos a su raíz base de dashboard segura
     const fallback = '/dashboard';
     return <Navigate to={fallback} replace />;

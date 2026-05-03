@@ -57,7 +57,7 @@ class CreateLicenseBody(BaseModel):
     recruiter_name: str
     days: int
     request_limit: int = 60
-    refresh_minutes: int = 1
+    refresh_minutes: int = 60
 
 
 class ExtendLicenseBody(BaseModel):

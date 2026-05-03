@@ -37,7 +37,7 @@ services:
     container_name: dreamlive_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@dreamlive.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_PASSWORD: dreamlive2026**
     ports:
       - "5050:80"
     networks:
@@ -73,7 +73,7 @@ services:
       context: ./dreamlive_web
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:8000/api/v1
+        - VITE_API_URL=http://217.216.94.178:8000/api/v2
     container_name: dreamlive_web
     depends_on:
       - api

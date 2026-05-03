@@ -229,8 +229,7 @@ export function useAgencyData() {
     const ok = await confirm(msg);
     if (!ok) return;
     try {
-      // Reutilizamos LeadAdapter.purge como proxy (el backend maneja scope por token)
-      const res = await LeadAdapter.purge();
+      const res = await LeadAdapter.purge({ status: type === 'all' ? undefined : type, license_id: licenseId });
       success(`${res.deleted} leads eliminados.`);
       DataCache.invalidate(CACHE_DASH);
       await loadDashboard(true);
@@ -239,6 +238,20 @@ export function useAgencyData() {
       showError('Error en la limpieza de datos.');
     }
   }, [confirm, success, showError, loadDashboard, resetAndLoadLeads]);
+
+  // ── Delete single lead ─────────────────────────────────────────────────────
+  const deleteLead = useCallback(async (leadId: string) => {
+    const ok = await confirm('¿Eliminar este lead de forma permanente?');
+    if (!ok) return;
+    try {
+      await LeadAdapter.delete(leadId);
+      setLeads(prev => prev.filter(l => l.id !== leadId));
+      setLeadsTotal(prev => Math.max(0, prev - 1));
+      success('Lead eliminado correctamente.');
+    } catch {
+      showError('Error al eliminar lead.');
+    }
+  }, [confirm, success, showError]);
 
   // ── Update license field (Team Manager inline edit) ────────────────────────
   const updateLicenseField = useCallback(async (
@@ -297,6 +310,7 @@ export function useAgencyData() {
     updateFilters,
     exportLeads,
     purgeLeads,
+    deleteLead,
     updateLicenseField,
     syncAllPasswords,
   };

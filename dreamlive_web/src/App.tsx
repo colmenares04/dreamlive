@@ -23,6 +23,7 @@ import { UpdatesView } from './presentation/dashboard/views/UpdatesView';
 // Views – Agency
 import { AgencyDashboardView } from './presentation/dashboard/views/AgencyDashboardView';
 import { GlobalLeadsView } from './presentation/dashboard/views/GlobalLeadsView';
+import { MyLeadsView } from './presentation/dashboard/views/MyLeadsView';
 import { TeamManagerView } from './presentation/dashboard/views/TeamManagerView';
 import { UnderConstructionView } from './presentation/dashboard/components/UnderConstructionView';
 
@@ -33,13 +34,16 @@ import { TicketView } from './presentation/dashboard/views/TicketView';
 import { TicketSupportView } from './presentation/dashboard/views/TicketSupportView';
 import { AuditView } from './presentation/dashboard/views/AuditView';
 import { RolesView } from './presentation/dashboard/views/RolesView';
+import { SettingsUpdatesView } from './presentation/dashboard/views/SettingsUpdatesView';
+import { AdminNotificationsView } from './presentation/dashboard/views/AdminNotificationsView';
+import { NotificationsView } from './presentation/dashboard/views/NotificationsView';
 
 function RoleRedirect() {
   const { isAuthenticated, role } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   // Dependiendo del rol inicial, lanzamos al lugar correcto
-  if (role === 'superuser') return <Navigate to="/dashboard/admin/overview" replace />;
-  if (role === 'agency_admin') return <Navigate to="/dashboard/agency/overview" replace />;
+  if (role?.toLowerCase() === 'superuser') return <Navigate to="/dashboard/admin/overview" replace />;
+  if (role?.toLowerCase() === 'agency_admin') return <Navigate to="/dashboard/agency/overview" replace />;
 
   // Failsafe genérico al dash de agencia (luego se pueden meter mas roles)
   return <Navigate to="/dashboard/agency/overview" replace />;
@@ -82,6 +86,7 @@ function AppRoutes() {
           <Route path="licenses" element={<LicensesView />} />
           <Route path="agencies" element={<AgenciesView />} />
           <Route path="updates" element={<UpdatesView />} />
+          <Route path="notifications" element={<AdminNotificationsView />} />
           <Route index element={<Navigate to="overview" replace />} />
         </Route>
 
@@ -91,17 +96,20 @@ function AppRoutes() {
           <ProtectedRoute roles={['agency_admin', 'superuser', 'agent']}><OutletRouter /></ProtectedRoute>
         }>
           <Route path="overview" element={<AgencyDashboardView />} />
-          <Route path="leads" element={<GlobalLeadsView />} />
+          <Route path="leads" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><GlobalLeadsView /></ProtectedRoute>} />
+          <Route path="my-leads" element={<ProtectedRoute roles={['agent']}><MyLeadsView /></ProtectedRoute>} />
           <Route path="team" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><TeamManagerView /></ProtectedRoute>} />
           <Route path="licenses" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><AgencyLicensesView /></ProtectedRoute>} />
+          <Route path="notifications" element={<NotificationsView />} />
           <Route index element={<Navigate to="overview" replace />} />
         </Route>
 
         {/* ── SECCIÓN CONFIGURACIÓN (compartida por roles) ── */}
         <Route path="settings">
-          <Route path="profiles" element={<ProtectedRoute><ProfilesView /></ProtectedRoute>} />
+          <Route path="profiles" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><ProfilesView /></ProtectedRoute>} />
           <Route path="account" element={<ProtectedRoute><AccountView /></ProtectedRoute>} />
           <Route path="support" element={<ProtectedRoute><TicketView /></ProtectedRoute>} />
+          <Route path="updates" element={<ProtectedRoute><SettingsUpdatesView /></ProtectedRoute>} />
           <Route path="roles" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><RolesView /></ProtectedRoute>} />
           <Route path="ticket-support" element={<ProtectedRoute roles={['superuser']}><TicketSupportView /></ProtectedRoute>} />
           <Route path="audit" element={<ProtectedRoute roles={['superuser']}><AuditView /></ProtectedRoute>} />

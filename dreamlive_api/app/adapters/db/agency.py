@@ -11,7 +11,7 @@ class AgencyORM(Base):
     id = Column(String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(200), nullable=False)
     code = Column(String(20), default="", nullable=True, index=True)
-    owner_id = Column(String(36), ForeignKey("users.id", use_alter=True, name="fk_agency_owner"), nullable=True)
+    owner_id = Column(String(36), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -22,9 +22,3 @@ class AgencyORM(Base):
 
     # Relaciones
     licenses = relationship("LicenseORM", back_populates="agency", lazy="select")
-    users = relationship(
-        "UserORM",
-        back_populates="agency",
-        foreign_keys="UserORM.agency_id",
-        lazy="select",
-    )

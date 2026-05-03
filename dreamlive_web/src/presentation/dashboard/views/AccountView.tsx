@@ -54,9 +54,9 @@ export function AccountView() {
   };
 
   const roleLabels: Record<string, string> = {
-    superuser: 'Super Administrador',
-    agency_admin: 'Admin de Agencia',
-    agent: 'Agente',
+    superuser: 'ADMINISTRADOR',
+    agency_admin: 'GERENTE',
+    agent: 'AGENTE',
   };
 
   return (
@@ -87,7 +87,7 @@ export function AccountView() {
 
               <div className="text-center md:text-left space-y-2">
                 <Badge variant="indigo" className="bg-white/10 border-white/10 text-indigo-300 uppercase tracking-[0.3em] font-black !px-4 !py-1 text-[10px]">
-                  {roleLabels[user?.role ?? ''] ?? user?.role}
+                  {roleLabels[user?.role?.toLowerCase() ?? ''] ?? user?.role}
                 </Badge>
                 <h2 className="text-4xl font-black tracking-tighter leading-none">{user?.username}</h2>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-bold text-slate-400">
@@ -190,7 +190,7 @@ export function AccountView() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                     <span className="text-xs font-bold text-slate-500 uppercase">Nodo Origen</span>
-                    <span className="text-xs font-black text-indigo-500 font-mono">127.0.0.1</span>
+                    <span className="text-xs font-black text-indigo-500 font-mono">217.216.94.178</span>
                   </div>
                   <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                     <span className="text-xs font-bold text-slate-500 uppercase">Encriptación</span>
