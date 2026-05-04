@@ -17,7 +17,7 @@ from app.infrastructure.api.v1.users import (
 from app.infrastructure.api.v1 import routes as v1_routes
 from app.infrastructure.api.v2 import routes as v2_routes
 from fastapi.responses import JSONResponse
-from starlette.types import ASGIApp, Scope, Receive, Send
+from starlette.types import ASGIApp, Scope, Receive, Send, Message
 from app.infrastructure.middleware.handlers import (
     RequestLoggingMiddleware, register_exception_handlers
 )
@@ -80,18 +80,82 @@ class SecurityHeadersMiddleware:
 
         await self.app(scope, receive, send_wrapper)
 
+# ── Extension CORS Middleware ────────────────────────────────────────────────
+class ExtensionCORSMiddleware:
+    """Middleware para permitir dinámicamente orígenes de extensiones de Chrome."""
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        method = scope.get("method", "")
+        path = scope.get("path", "")
+        
+        origin = ""
+        for k, v in scope.get("headers", []):
+            if k.lower() == b"origin":
+                origin = v.decode()
+                break
+
+        is_extension = origin.startswith("chrome-extension://") or "tiktok.com" in origin
+
+        if settings.DEBUG_LOGS:
+            print(f"DEBUG [CORS]: {method} {path} | Origin: {origin} | IsExtension: {is_extension}")
+
+        if is_extension and method == "OPTIONS":
+            if settings.DEBUG_LOGS:
+                print(f"DEBUG [CORS]: Handling Preflight (OPTIONS) for Extension")
+            from starlette.responses import Response
+            response = Response(
+                status_code=204,
+                headers={
+                    "Access-Control-Allow-Origin": origin if origin else "*",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                }
+            )
+            await response(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Message) -> None:
+            if is_extension and message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                # Eliminar cabeceras CORS duplicadas si las hay
+                headers = [h for h in headers if h[0].lower() not in [b"access-control-allow-origin", b"access-control-allow-credentials"]]
+                
+                headers.append((b"access-control-allow-origin", (origin if origin else "*").encode()))
+                headers.append((b"access-control-allow-credentials", b"true"))
+                message["headers"] = headers
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
 # ── Middleware Stack ─────────────────────────────────────────────────────────
 fastapi_app.add_middleware(RequestLoggingMiddleware)
 fastapi_app.add_middleware(RateLimitMiddleware) 
 fastapi_app.add_middleware(SecurityHeadersMiddleware)
 
+# Orígenes controlados para la web
+allowed_origins = [
+    "https://dreamlive.app",
+    "https://api.dreamlive.app",
+    "http://localhost",
+    "http://localhost:5173",
+    "http://localhost:3000"
+]
+
 fastapi_app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+fastapi_app.add_middleware(ExtensionCORSMiddleware)
 
 register_exception_handlers(fastapi_app)
 

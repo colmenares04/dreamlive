@@ -33,6 +33,16 @@ class CreateLicenseBody(BaseModel):
     refresh_minutes: int = 60
 
 
+class ConfigLicenseBody(BaseModel):
+    recruiter_name: Optional[str] = None
+    admin_password: Optional[str] = None
+    request_limit: Optional[int] = None
+    refresh_minutes: Optional[int] = None
+    keywords: Optional[str] = None
+    message_templates: Optional[List[str]] = None
+    invitation_types: Optional[List[str]] = None
+
+
 @router.get("/unassigned")
 async def list_unassigned_licenses(
     agency: Any = Depends(get_current_v2_agency),
@@ -138,14 +148,43 @@ async def get_license_metrics(
     else:
         stmt = select(LicenseORM).where(LicenseORM.agency_id == str(agency.id))
 
+    from app.adapters.db.models import LeadORM
+    from sqlalchemy import func
+
     result = await uow.session.execute(stmt)
     licenses = result.scalars().all()
+    lic_ids = [str(l.id) for l in licenses]
     
+    # Contar leads por estado para todas las licencias de la agencia de una sola vez
+    leads_stmt = select(
+        LeadORM.license_id, 
+        LeadORM.status, 
+        func.count(LeadORM.id)
+    ).where(LeadORM.license_id.in_(lic_ids)).group_by(LeadORM.license_id, LeadORM.status)
+    
+    leads_res = await uow.session.execute(leads_stmt)
+    leads_counts = leads_res.all()
+    
+    # Organizar conteos por licencia
+    counts_map = {}
+    for lid, status, count in leads_counts:
+        if lid not in counts_map:
+            counts_map[lid] = {"collected": 0, "available": 0, "contacted": 0}
+        
+        if status == 'recopilado': counts_map[lid]["collected"] = count
+        elif status == 'disponible': counts_map[lid]["available"] = count
+        elif status == 'contactado': counts_map[lid]["contacted"] = count
+
     metrics = {}
     for l in licenses:
-        metrics[str(l.id)] = {
+        l_id = str(l.id)
+        l_counts = counts_map.get(l_id, {"collected": 0, "available": 0, "contacted": 0})
+        metrics[l_id] = {
             "today": l.daily_contact_count or 0,
             "total": l.daily_contact_count or 0,
+            "collected": l_counts["collected"],
+            "available": l_counts["available"],
+            "contacted": l_counts["contacted"],
             "last_ping": datetime.now(timezone.utc).isoformat(),
         }
     return metrics
@@ -180,6 +219,49 @@ async def create_license(
     await uow.session.commit()
     
     return {"id": lic_id, "key": key, "expires_at": expires.isoformat()}
+
+
+@router.get("/templates")
+async def get_license_templates(
+    agency: Any = Depends(get_current_v2_agency),
+    uow: Any = Depends(get_uow),
+):
+    # En V2 el agency_id del token es el de la licencia (si se logueó con licencia)
+    # o el de la agencia (si se logueó como admin)
+    from sqlalchemy import select
+    res = await uow.session.execute(select(LicenseORM).where(LicenseORM.id == str(agency.id)))
+    lic = res.scalar_one_or_none()
+    
+    if not lic:
+        raise HTTPException(status_code=404, detail="Licencia no encontrada.")
+
+    return {
+        "message_templates": lic.message_templates or [],
+        "invitation_types": lic.invitation_types or []
+    }
+
+
+@router.post("/templates")
+async def update_license_templates(
+    body: ConfigLicenseBody,
+    agency: Any = Depends(get_current_v2_agency),
+    uow: Any = Depends(get_uow),
+):
+    from sqlalchemy import select
+    res = await uow.session.execute(select(LicenseORM).where(LicenseORM.id == str(agency.id)))
+    lic = res.scalar_one_or_none()
+    
+    if not lic:
+        raise HTTPException(status_code=404, detail="Licencia no encontrada.")
+
+    if body.message_templates is not None:
+        lic.message_templates = body.message_templates
+    if body.invitation_types is not None:
+        lic.invitation_types = body.invitation_types
+
+    await uow.session.flush()
+    await uow.session.commit()
+    return {"status": "ok"}
 
 
 class ExtendLicenseBody(BaseModel):
@@ -223,14 +305,6 @@ async def toggle_license(
     await uow.session.flush()
     await uow.session.commit()
     return {"is_active": lic.is_active}
-
-
-class ConfigLicenseBody(BaseModel):
-    recruiter_name: Optional[str] = None
-    admin_password: Optional[str] = None
-    request_limit: Optional[int] = None
-    refresh_minutes: Optional[int] = None
-    keywords: Optional[str] = None
 
 
 @router.patch("/{license_id}/config")

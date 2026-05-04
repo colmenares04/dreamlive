@@ -22,9 +22,11 @@ export const KeywordsService = {
     if (!licenseId) return [];
 
     try {
+      // Limpiar caché antes de pedir la nueva para evitar fantasmas
+      await browser.storage.local.remove('keywords');
+      
       const res = await apiClient.get<any>(`/leads/keywords?license_id=${licenseId}`);
       if (res.data && res.data.items) {
-        // Actualizar caché local
         await browser.storage.local.set({ keywords: res.data.items });
         return res.data.items;
       }

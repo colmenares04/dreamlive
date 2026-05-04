@@ -9,6 +9,10 @@ export default defineConfig({
     name: 'DreamLive',
     version: '3.0.0',
     permissions: ['storage'],
+    host_permissions: [
+      'https://api.dreamlive.app/*',
+      'https://dreamlive.app/*',
+    ],
   },
   vite: () => ({
     plugins: [tailwindcss()],

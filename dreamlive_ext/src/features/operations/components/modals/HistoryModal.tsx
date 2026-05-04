@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, History, User, Clock, ExternalLink, Users, Heart, AlertCircle, RefreshCw, Search, Hash } from 'lucide-react';
+import { X, History, User, Clock, ExternalLink, Users, Heart, AlertCircle, RefreshCw, Search, Hash, Trash2 } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { LeadsService } from '../../services/leads.service';
 
@@ -130,6 +130,33 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
     window.open(`https://www.tiktok.com/@${clean}`, '_blank');
   };
 
+  const handleDeleteLead = async (id: string) => {
+    try {
+      await LeadsService.deleteLead(id);
+      setLeads(leads.filter(l => l.id !== id));
+    } catch (err: any) {
+      alert('Error al borrar lead: ' + err.message);
+    }
+  };
+
+  const handlePurgeLeads = async () => {
+    let status = 'recopilado';
+    if (activeModal === 'HISTORY_DISPONIBILIDAD') status = 'disponible';
+    else if (activeModal === 'HISTORY_CONTACTAR') status = 'contactado';
+
+    if (!confirm(`¿Estás seguro de que deseas borrar TODOS los leads de tipo "${status}" de tu licencia activa?`)) return;
+
+    try {
+      setIsLoading(true);
+      await LeadsService.clearLeads(status);
+      setLeads([]);
+    } catch (err: any) {
+      alert('Error al limpiar historial: ' + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div
       style={{
@@ -151,6 +178,7 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
               </span>
             </div>
             <div className="dreamlive-header-actions" style={{ gap: '8px' }}>
+              <button onClick={handlePurgeLeads} className="dreamlive-icon-btn" title="Limpiar todo" style={{ color: '#FF3B30' }}><Trash2 size={14} /></button>
               <button onClick={fetchLeads} className="dreamlive-icon-btn" title="Refrescar"><RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /></button>
               <button onClick={onClose} className="dreamlive-icon-btn"><X size={16} /></button>
             </div>
@@ -250,7 +278,14 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
                           </div>
                         </div>
                       </div>
-                      <button onClick={() => openTikTokProfile(lead.username)} className="dreamlive-icon-btn" style={{ width: '30px', height: '30px', background: 'var(--apple-bg)' }}><ExternalLink size={14} color="var(--apple-text-main)" /></button>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => handleDeleteLead(lead.id)} className="dreamlive-icon-btn" style={{ width: '30px', height: '30px', background: 'var(--apple-bg)' }} title="Borrar lead">
+                          <Trash2 size={14} color="#FF3B30" />
+                        </button>
+                        <button onClick={() => openTikTokProfile(lead.username)} className="dreamlive-icon-btn" style={{ width: '30px', height: '30px', background: 'var(--apple-bg)' }} title="Ver perfil">
+                          <ExternalLink size={14} color="var(--apple-text-main)" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}

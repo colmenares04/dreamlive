@@ -13,12 +13,8 @@ export const LeadsService = {
       
       // Fallback de seguridad: si no viene el ID, lo buscamos en el storage
       if (!licenseId) {
-        let license = await storage.getItem<any>('local:license');
-        if (!license) {
-          const res = await browser.storage.local.get('license');
-          license = res.license as any;
-        }
-        licenseId = license?.id;
+        let license = await browser.storage.local.get('license');
+        licenseId = (license.license as any)?.id;
       }
 
       if (!licenseId) {
@@ -64,13 +60,21 @@ export const LeadsService = {
   },
 
   async deleteLead(id: string) {
-    const res = await apiClient.delete<any>(`/leads/${id}`);
+    const resL = await browser.storage.local.get('license');
+    const licId = (resL.license as any)?.id;
+    if (!licId) throw new Error('No license active');
+
+    const res = await apiClient.delete<any>(`/leads/${id}?license_id=${licId}`);
     if (res.error) throw new Error((res.error as any).detail || 'Error deleting lead');
     return true;
   },
 
   async clearLeads(status: string) {
-    const res = await apiClient.delete<any>(`/leads/status/${status}`);
+    const resL = await browser.storage.local.get('license');
+    const licId = (resL.license as any)?.id;
+    if (!licId) throw new Error('No license active');
+
+    const res = await apiClient.post<any>(`/leads/purge?status=${status}&license_id=${licId}`, {});
     if (res.error) throw new Error((res.error as any).detail || 'Error clearing leads');
     return true;
   }

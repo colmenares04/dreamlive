@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "DreamLive API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    DEBUG_LOGS: bool = True
     API_PREFIX: str = "/api/v1"
     API_PREFIX_V2: str = "/api/v2"
     HOST_IP: str = "0.0.0.0"

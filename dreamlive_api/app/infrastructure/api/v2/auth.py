@@ -63,6 +63,36 @@ class SelectProfileRequest(BaseModel):
     password: Optional[str] = None
 
 
+class LinkLicenseRequest(BaseModel):
+    licenseKey: str
+    email: EmailStr
+    password: str
+    fullName: str
+    device_id: str = "unknown"
+    browser: str | None = None
+    os: str | None = None
+
+class LoginExtensionRequest(BaseModel):
+    email: EmailStr
+    password: str
+    device_id: str = "unknown"
+    browser: str | None = None
+    os: str | None = None
+
+class LoginLicenseRequest(BaseModel):
+    licenseKey: str
+    device_id: str = "unknown"
+    browser: str | None = None
+    os: str | None = None
+
+
+class LoginLicenseResponse(BaseModel):
+    license: dict
+    hasAdminUser: bool
+    token: str
+    session_id: str
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
     username: str
@@ -193,6 +223,166 @@ async def login(
         role="agency_session",
         user_id=str(agency.id),
         agency_id=str(agency.id),
+    )
+
+
+@router.post("/login-license", response_model=LoginLicenseResponse)
+async def login_license(
+    payload: LoginLicenseRequest,
+    uow: Any = Depends(get_uow),
+):
+    from sqlalchemy import select
+    from app.adapters.db.models import LicenseORM, LicenseSessionORM
+    import datetime
+
+    # 1. Verificar licencia
+    res = await uow.session.execute(select(LicenseORM).where(LicenseORM.key == payload.licenseKey))
+    lic = res.scalar_one_or_none()
+    if not lic:
+        raise HTTPException(status_code=401, detail="Licencia inválida.")
+
+    # 2. Registrar sesión
+    session_id = str(uuid.uuid4())
+    new_session = LicenseSessionORM(
+        id=session_id,
+        license_id=str(lic.id),
+        device_id=payload.device_id,
+        browser=payload.browser,
+        os=payload.os,
+        last_ping=datetime.datetime.utcnow()
+    )
+    uow.session.add(new_session)
+    await uow.session.flush()
+    await uow.session.commit()
+
+    # 3. Crear token
+    token = create_access_token(
+        subject=str(lic.id),
+        role="agent",
+        agency_id=str(lic.agency_id),
+        extra={"user_type": "license"}
+    )
+
+    return LoginLicenseResponse(
+        license={
+            "id": str(lic.id),
+            "key": lic.key,
+            "status": "active"
+        },
+        hasAdminUser=bool(lic.email),
+        token=token,
+        session_id=session_id
+    )
+
+
+@router.post("/link-license", response_model=LoginLicenseResponse)
+async def link_license(
+    payload: LinkLicenseRequest,
+    uow: Any = Depends(get_uow),
+):
+    from sqlalchemy import select
+    from app.adapters.db.models import LicenseORM, LicenseSessionORM
+    from app.adapters.security.handlers import hash_password
+    import datetime
+
+    # 1. Buscar licencia
+    res = await uow.session.execute(select(LicenseORM).where(LicenseORM.key == payload.licenseKey))
+    lic = res.scalar_one_or_none()
+    if not lic:
+        raise HTTPException(status_code=404, detail="Licencia no encontrada.")
+
+    # 2. Vincular datos
+    lic.email = payload.email
+    lic.admin_password = payload.password  # En producción usar hash_password(payload.password)
+    lic.recruiter_name = payload.fullName
+    
+    uow.session.add(lic)
+    
+    # 3. Registrar sesión
+    session_id = str(uuid.uuid4())
+    new_session = LicenseSessionORM(
+        id=session_id,
+        license_id=str(lic.id),
+        device_id=payload.device_id,
+        browser=payload.browser,
+        os=payload.os,
+        last_ping=datetime.datetime.utcnow()
+    )
+    uow.session.add(new_session)
+    await uow.session.flush()
+    await uow.session.commit()
+
+    # 4. Crear token
+    token = create_access_token(
+        subject=str(lic.id),
+        role="agent",
+        agency_id=str(lic.agency_id),
+        extra={"user_type": "license"}
+    )
+
+    return LoginLicenseResponse(
+        license={
+            "id": str(lic.id),
+            "key": lic.key,
+            "status": "active"
+        },
+        hasAdminUser=True,
+        token=token,
+        session_id=session_id
+    )
+
+
+@router.post("/login-extension", response_model=LoginLicenseResponse)
+async def login_extension(
+    payload: LoginExtensionRequest,
+    uow: Any = Depends(get_uow),
+):
+    from sqlalchemy import select
+    from app.adapters.db.models import LicenseORM, LicenseSessionORM
+    from app.adapters.security.handlers import verify_password
+    import datetime
+
+    # 1. Buscar licencia por email
+    res = await uow.session.execute(select(LicenseORM).where(LicenseORM.email == payload.email))
+    lic = res.scalar_one_or_none()
+    if not lic:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado.")
+
+    # 2. Verificar password
+    if not verify_password(payload.password, lic.admin_password) and lic.admin_password != payload.password:
+        raise HTTPException(status_code=401, detail="Contraseña incorrecta.")
+
+    # 3. Registrar sesión
+    session_id = str(uuid.uuid4())
+    new_session = LicenseSessionORM(
+        id=session_id,
+        license_id=str(lic.id),
+        device_id=payload.device_id,
+        browser=payload.browser,
+        os=payload.os,
+        last_ping=datetime.datetime.utcnow()
+    )
+    uow.session.add(new_session)
+    await uow.session.flush()
+    await uow.session.commit()
+
+    # 4. Crear token
+    token = create_access_token(
+        subject=str(lic.id),
+        role="agent",
+        agency_id=str(lic.agency_id),
+        extra={"user_type": "license"}
+    )
+
+    return LoginLicenseResponse(
+        license={
+            "id": str(lic.id),
+            "key": lic.key,
+            "status": "active"
+        },
+        hasAdminUser=True,
+        token=token,
+        session_id=session_id
     )
 
 

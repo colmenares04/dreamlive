@@ -84,13 +84,15 @@ export default defineBackground(() => {
         return true; // Mantener canal abierto para respuesta asíncrona
 
       case 'SAVE_INVITATION_CONFIG':
-        // Guardar la selección múltiple en la base de datos
         (async () => {
           try {
             const tags = (msg as any).invitation_types;
-            await apiClient.post('/licenses/templates', {
+            const res = await apiClient.post('/licenses/templates', {
               invitation_types: tags
             });
+            if (res.error) {
+              throw new Error(`API Error (${res.status}): ${res.error}`);
+            }
             console.log('✅ Configuración de etiquetas guardada:', tags);
             sendResponse({ success: true });
           } catch (e) {
@@ -104,29 +106,39 @@ export default defineBackground(() => {
         (async () => {
           try {
             const templates = (msg as any).message_templates;
-            await apiClient.post('/licenses/templates', {
-              message_templates: templates
+            const invitation_types = (msg as any).invitation_types;
+            const res = await apiClient.post('/licenses/templates', {
+              message_templates: templates,
+              invitation_types: invitation_types
             });
-            console.log('✅ Plantillas de mensaje guardadas en API:', templates);
+            
+            if (res.error) {
+              throw new Error(`API Error (${res.status}): ${res.error}`);
+            }
+
+            console.log('✅ Configuración de licencia guardada en API:', { templates, invitation_types });
             sendResponse({ success: true });
           } catch (e) {
-            console.error('Error guardando plantillas de mensaje en API:', e);
+            console.error('Error guardando configuración de licencia en API:', e);
             sendResponse({ success: false });
           }
         })();
         return true;
 
       case 'GET_INVITATION_CONFIG':
-        // El content script de backstage necesita la configuración de invitaciones y plantillas
         (async () => {
           try {
             const res = await apiClient.get<any>('/licenses/templates');
             if (res.data) {
+              console.log('[Background] Configuración recuperada:', res.data);
               sendResponse({
                 invitation_types: res.data.invitation_types || ["Normal", "Elite", "Popular", "Premium"],
                 message_templates: res.data.message_templates || []
               });
               return;
+            }
+            if (res.error) {
+              console.warn(`[Background] Error recuperando config (${res.status}):`, res.error);
             }
           } catch (e) {
             console.error('Error fetching invitation config:', e);
@@ -275,6 +287,8 @@ export default defineBackground(() => {
       case 'PROCESS_CONTACT_FLOW':
       case 'ABORT_CONTACT_FLOW':
       case 'LIMIT_REACHED':
+      case 'KEYWORDS_UPDATED':
+      case 'KEYWORD_CHANGED':
         // Estos mensajes usualmente viajan entre el popup y el content script directamente, 
         // o son broadcasts a los que la UI se suscribe.
         sendResponse({ success: true });

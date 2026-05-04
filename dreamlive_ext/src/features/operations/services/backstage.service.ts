@@ -48,8 +48,8 @@ export const BackstageService = {
     const discarded = all.filter((u) => !availables.includes(u));
 
     // Delegamos la lógica compleja de batch update/delete al backend
-    // Usamos / para evitar redirecciones 307
-    await apiClient.post('/leads/batch-process/', {
+    // No usamos barra final para evitar redirección CORS
+    await apiClient.post('/leads/batch-process', {
       availables,
       discarded
     });

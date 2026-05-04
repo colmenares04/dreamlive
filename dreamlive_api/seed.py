@@ -46,7 +46,7 @@ async def run_seed():
             license_id = str(uuid.uuid4())
             new_license = LicenseORM(
                 id=license_id,
-                key=f"SUPER-{str(uuid.uuid4())[:6].upper()}",
+                key=f"RUSSO-2026",
                 agency_id=agency_id,
                 recruiter_name="Dreamlive Dev",
                 email="admin@dreamlive.com",

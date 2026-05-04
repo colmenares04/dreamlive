@@ -25,6 +25,8 @@ export type MessageType =
   | 'SAVE_MESSAGE_TEMPLATES'
   | 'START_CONTACTING'
   | 'STOP_CONTACTING'
+  | 'KEYWORDS_UPDATED'
+  | 'KEYWORD_CHANGED'
   | 'GET_LEADS_FOR_CONTACTING';
 
 export interface BaseMessage {
@@ -117,4 +119,16 @@ export type ExtensionMessage =
   | DeleteLeadMessage
   | GetBatchToCheckMessage
   | SaveInvitationConfigMessage
-  | SaveMessageTemplatesMessage;
+  | SaveMessageTemplatesMessage
+  | KeywordsUpdatedMessage
+  | KeywordChangedMessage;
+
+export interface KeywordsUpdatedMessage extends BaseMessage {
+  type: 'KEYWORDS_UPDATED';
+  payload: string[];
+}
+
+export interface KeywordChangedMessage extends BaseMessage {
+  type: 'KEYWORD_CHANGED';
+  payload: string;
+}

@@ -21,11 +21,12 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
   const [logs, setLogs] = useState<string[]>(['[SISTEMA] Motor de mensajería listo...', '[INFO] Esperando apertura de chat de TikTok...']);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates, setTemplates] = useState<string[]>([]);
+  const [invitationTypes, setInvitationTypes] = useState<string[]>(["Normal", "Elite", "Popular", "Premium"]);
   
   const isValidRoute = location.href.includes('/instant-messages');
 
   useEffect(() => {
-    browser.storage.local.get(['contact_position', 'cachedCounts', 'messageTemplates']).then((res: any) => {
+    browser.storage.local.get(['contact_position', 'cachedCounts', 'messageTemplates', 'invitationTypes']).then((res: any) => {
       const pos = res?.contact_position as { x: number; y: number } | undefined;
       if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
         setPosition(pos);
@@ -36,21 +37,27 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
 
       // First fetch from background/API
       browser.runtime.sendMessage({ type: 'GET_INVITATION_CONFIG' }).then((configRes: any) => {
-        if (configRes && configRes.message_templates && configRes.message_templates.length > 0) {
-          setTemplates(configRes.message_templates);
-          browser.storage.local.set({ messageTemplates: configRes.message_templates });
-        } else if (res?.messageTemplates) {
-          setTemplates(res.messageTemplates);
-        } else {
-          setTemplates(['¡Hola {username}, me encanta tu contenido!']);
+        if (configRes) {
+          if (configRes.message_templates && configRes.message_templates.length > 0) {
+            setTemplates(configRes.message_templates);
+            browser.storage.local.set({ messageTemplates: configRes.message_templates });
+          } else if (res?.messageTemplates) {
+            setTemplates(res.messageTemplates);
+          } else {
+            setTemplates(['¡Hola {username}, me encanta tu contenido!']);
+          }
+
+          if (configRes.invitation_types && configRes.invitation_types.length > 0) {
+            setInvitationTypes(configRes.invitation_types);
+            browser.storage.local.set({ invitationTypes: configRes.invitation_types });
+          } else if (res?.invitationTypes) {
+            setInvitationTypes(res.invitationTypes);
+          }
         }
       }).catch((e) => {
         console.error('Error getting message config:', e);
-        if (res?.messageTemplates) {
-          setTemplates(res.messageTemplates);
-        } else {
-          setTemplates(['¡Hola {username}, me encanta tu contenido!']);
-        }
+        if (res?.messageTemplates) setTemplates(res.messageTemplates);
+        if (res?.invitationTypes) setInvitationTypes(res.invitationTypes);
       });
     });
 
@@ -64,6 +71,20 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
       onStatusChange: (running) => setIsRunning(running)
     });
   }, []);
+
+  const handleConfigChange = async (newTemplates: string[], newInvitationTypes: string[]) => {
+    setTemplates(newTemplates);
+    setInvitationTypes(newInvitationTypes);
+    await browser.storage.local.set({ 
+      messageTemplates: newTemplates,
+      invitationTypes: newInvitationTypes
+    });
+    await browser.runtime.sendMessage({
+      type: 'SAVE_MESSAGE_TEMPLATES',
+      message_templates: newTemplates,
+      invitation_types: newInvitationTypes
+    });
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -141,15 +162,9 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
             {showTemplates ? (
               <TemplateManager 
                 templates={templates} 
-                onTemplatesChange={async (newTemplates) => {
-                  setTemplates(newTemplates);
-                  await browser.storage.local.set({ messageTemplates: newTemplates });
-                  await browser.runtime.sendMessage({
-                    type: 'SAVE_MESSAGE_TEMPLATES',
-                    message_templates: newTemplates
-                  });
-                }} 
-                isDarkMode={isDarkMode} 
+                invitationTypes={invitationTypes}
+                onConfigChange={handleConfigChange}
+                isDarkMode={true} 
               />
             ) : (
               <>
