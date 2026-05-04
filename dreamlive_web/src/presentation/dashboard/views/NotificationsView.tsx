@@ -13,7 +13,7 @@ export function NotificationsView() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = (import.meta.env.VITE_API_URL || 'http://217.216.94.178:8000').replace(/\/api\/v[12]$/, '');
+  const API_BASE = (import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2').split('/api/')[0];
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -69,7 +69,6 @@ class SecurityHeadersMiddleware:
                     (b"X-Content-Type-Options", b"nosniff"),
                     (b"X-Frame-Options", b"DENY"),
                     (b"X-XSS-Protection", b"1; mode=block"),
-                    (b"Strict-Transport-Security", b"max-age=31536000; includeSubDomains"),
                     (b"Referrer-Policy", b"strict-origin-when-cross-origin"),
                 ]
                 existing_keys = {h[0].lower() for h in headers}

@@ -62,7 +62,7 @@ cp .env.local.example .env.local
 # Editar VITE_API_URL y VITE_RECAPTCHA_SITE_KEY
 
 # 3. Iniciar servidor de desarrollo
-npm run dev          # → http://217.216.94.178:5173
+npm run dev          # → http://localhost:5173
 
 # 4. Build de producción
 npm run build        # → dist/
@@ -115,5 +115,5 @@ npm run preview      # Previsualizar build
 
 | Variable                   | Descripción                          | Ejemplo                            |
 |---------------------------|--------------------------------------|------------------------------------|
-| `VITE_API_URL`             | URL base de la API FastAPI           | `http://217.216.94.178:8000/api/v1`     |
+| `VITE_API_URL`             | URL base de la API FastAPI           | `https://api.dreamlive.app/api/v2`     |
 | `VITE_RECAPTCHA_SITE_KEY`  | Site key pública de reCAPTCHA v2    | `6Le...`                           |

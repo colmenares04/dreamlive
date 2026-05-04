@@ -445,7 +445,7 @@ function UpdatesSection() {
       render: (v: AppVersion) => (
         <div className="flex gap-1 justify-end">
           {!v.is_active && <Button size="sm" variant="success" onClick={() => handleActivate(v)}>Activar</Button>}
-          <a href={`${(import.meta.env.VITE_API_URL || 'http://217.216.94.178:8000').replace(/\/api\/v[12]$/, '')}${v.file_url}`} target="_blank" rel="noreferrer"><Button size="sm" variant="ghost">{I.download}</Button></a>
+          <a href={`${(import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2').split('/api/')[0]}${v.file_url}`} target="_blank" rel="noreferrer"><Button size="sm" variant="ghost">{I.download}</Button></a>
           <Button size="sm" variant="danger" onClick={() => handleDelete(v)}>{I.trash}</Button>
         </div>
       )

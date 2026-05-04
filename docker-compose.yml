@@ -16,6 +16,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
 
   # --- Base de datos en memoria (Caché) ---
   redis:
@@ -73,12 +75,26 @@ services:
       context: ./dreamlive_web
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://217.216.94.178:8000/api/v2
+        - VITE_API_URL=https://api.dreamlive.app/api/v2
     container_name: dreamlive_web
     depends_on:
       - api
+    # No mapeamos puertos externos, el Proxy se encargará
+    networks:
+      - dreamlive-net
+
+  # --- Proxy Inverso y SSL (Nginx Proxy Manager) ---
+  nginx-proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: dreamlive_proxy
+    restart: always
     ports:
-      - "80:80"
+      - '80:80'   # HTTP
+      - '81:81'   # Panel de Administración
+      - '443:443' # HTTPS
+    volumes:
+      - ./nginx_data:/data
+      - ./nginx_letsencrypt:/etc/letsencrypt
     networks:
       - dreamlive-net
 

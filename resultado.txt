@@ -1,0 +1,105 @@
+root@vmi3263350:~/dreamlive_Work# cat dreamlive_web/.env                                      # URL del backend FastAPI
+VITE_API_URL=https://api.dreamlive.app/api/v2
+
+# Google reCAPTCHA v2 – Site Key (pública)
+root@vmi3263350:~/dreamlive_Work# grep -r "217.216.94.178" dreamlive_web/                     root@vmi3263350:~/dreamlive_Work# docker compose logs web | tail -n 50                        dreamlive_web  | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+dreamlive_web  | /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+dreamlive_web  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+dreamlive_web  | 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+dreamlive_web  | 10-listen-on-ipv6-by-default.sh: info: /etc/nginx/conf.d/default.conf differs from the packaged version
+dreamlive_web  | /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
+dreamlive_web  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+dreamlive_web  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+dreamlive_web  | /docker-entrypoint.sh: Configuration complete; ready for start up
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: using the "epoll" event method
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: nginx/1.30.0
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: built by gcc 15.2.0 (Alpine 15.2.0)
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: OS: Linux 5.15.0-176-generic
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1024:524288
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: start worker processes
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: start worker process 29
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: start worker process 30
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: start worker process 31
+dreamlive_web  | 2026/05/04 01:49:51 [notice] 1#1: start worker process 32
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:50:46 +0000] "GET /login HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:50:46 +0000] "GET /assets/index-Caw3UQzU.js HTTP/1.1" 200 926759 "https://dreamlive.app/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:50:46 +0000] "GET /assets/index-DDB4b-mN.css HTTP/1.1" 200 88422 "https://dreamlive.app/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:50:47 +0000] "GET /vite.svg HTTP/1.1" 200 821 "https://dreamlive.app/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:51:48 +0000] "GET /login HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:51:48 +0000] "GET /assets/index-DDB4b-mN.css HTTP/1.1" 304 0 "https://dreamlive.app/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:51:48 +0000] "GET /assets/index-Caw3UQzU.js HTTP/1.1" 304 0 "https://dreamlive.app/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:51:49 +0000] "GET /vite.svg HTTP/1.1" 304 0 "https://dreamlive.app/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:55:18 +0000] "GET /5050 HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:55:18 +0000] "GET /assets/index-Caw3UQzU.js HTTP/1.1" 304 0 "https://dreamlive.app/5050" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:55:18 +0000] "GET /assets/index-DDB4b-mN.css HTTP/1.1" 304 0 "https://dreamlive.app/5050" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:55:18 +0000] "GET /vite.svg HTTP/1.1" 304 0 "https://dreamlive.app/5050" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET / HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /robots.txt HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /assets/js/message.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /css/support_parent.css HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /assets/js/auth.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /vite.svg HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /static/style/protect/index.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /bot-connect.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /js/twint_ch.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:01 +0000] "GET /static/style/sys_files/index.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:02 +0000] "GET /assets/js/qr_modal.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:01:56:02 +0000] "GET /js/lkk_ch.js HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" "155.2.225.177"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:02:00:11 +0000] "GET / HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:02:00:12 +0000] "GET /assets/index-Caw3UQzU.js HTTP/1.1" 304 0 "https://dreamlive.app/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:02:00:12 +0000] "GET /assets/index-DDB4b-mN.css HTTP/1.1" 304 0 "https://dreamlive.app/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:02:00:12 +0000] "GET /vite.svg HTTP/1.1" 304 0 "https://dreamlive.app/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "149.100.145.70"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:02:03:07 +0000] "GET / HTTP/1.1" 200 821 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582" "44.244.74.196"
+dreamlive_web  | 172.18.0.2 - - [04/May/2026:02:03:07 +0000] "GET / HTTP/1.1" 200 821 "-" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1" "44.244.74.196"
+root@vmi3263350:~/dreamlive_Work# docker compose logs api | tail -n 50
+dreamlive_api  | 2026-05-04 01:56:53 [INFO] dreamlive – GET / → 404 (0.3ms)
+dreamlive_api  | 2026-05-04 01:57:07 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (13.5ms)
+dreamlive_api  | INFO:     38.121.214.85:57484 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | 2026-05-04 01:58:27 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (10.5ms)
+dreamlive_api  | INFO:     38.121.214.85:57529 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | INFO:     172.18.0.2:43058 - "POST /api/v2/auth/login-license HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:41 [INFO] dreamlive – POST /api/v2/auth/login-license → 404 (4.4ms)
+dreamlive_api  | INFO:     172.18.0.2:43074 - "POST /api/v2/auth/login-license HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:44 [INFO] dreamlive – POST /api/v2/auth/login-license → 404 (0.8ms)
+dreamlive_api  | 2026-05-04 01:59:44 [INFO] dreamlive – POST /api/v2/auth/login-license → 404 (0.6ms)
+dreamlive_api  | INFO:     172.18.0.2:43076 - "POST /api/v2/auth/login-license HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:51 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (28.7ms)
+dreamlive_api  | INFO:     38.121.214.85:57552 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | 2026-05-04 01:59:53 [INFO] dreamlive – GET / → 404 (0.5ms)
+dreamlive_api  | INFO:     172.18.0.2:51576 - "GET / HTTP/1.1" 404 Not Found
+dreamlive_api  | INFO:     172.18.0.2:51578 - "GET /js/lkk_ch.js HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /js/lkk_ch.js → 404 (0.6ms)
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /assets/js/qr_modal.js → 404 (0.9ms)
+dreamlive_api  | INFO:     172.18.0.2:51580 - "GET /assets/js/qr_modal.js HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /css/support_parent.css → 404 (0.7ms)
+dreamlive_api  | INFO:     172.18.0.2:51594 - "GET /css/support_parent.css HTTP/1.1" 404 Not Found
+dreamlive_api  | INFO:     172.18.0.2:51610 - "GET /assets/js/auth.js HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /assets/js/auth.js → 404 (0.6ms)
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /static/style/sys_files/index.js → 404 (0.7ms)
+dreamlive_api  | INFO:     172.18.0.2:51620 - "GET /static/style/sys_files/index.js HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /bot-connect.js → 404 (0.6ms)
+dreamlive_api  | INFO:     172.18.0.2:51634 - "GET /bot-connect.js HTTP/1.1" 404 Not Found
+dreamlive_api  | INFO:     172.18.0.2:51646 - "GET /robots.txt HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /robots.txt → 404 (0.7ms)
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /assets/js/message.js → 404 (1.4ms)
+dreamlive_api  | INFO:     172.18.0.2:51660 - "GET /assets/js/message.js HTTP/1.1" 404 Not Found
+dreamlive_api  | INFO:     172.18.0.2:51668 - "GET /js/twint_ch.js HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:54 [INFO] dreamlive – GET /js/twint_ch.js → 404 (0.6ms)
+dreamlive_api  | INFO:     172.18.0.2:51682 - "GET /static/style/protect/index.js HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 01:59:55 [INFO] dreamlive – GET /static/style/protect/index.js → 404 (0.7ms)
+dreamlive_api  | 2026-05-04 02:00:39 [INFO] dreamlive – GET /api/v2/auth/login → 405 (1.1ms)
+dreamlive_api  | INFO:     149.100.145.70:65236 - "GET /api/v2/auth/login HTTP/1.1" 405 Method Not Allowed
+dreamlive_api  | INFO:     149.100.145.70:65236 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+dreamlive_api  | 2026-05-04 02:00:39 [INFO] dreamlive – GET /favicon.ico → 404 (0.5ms)
+dreamlive_api  | 2026-05-04 02:01:13 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (19.3ms)
+dreamlive_api  | INFO:     38.121.214.85:57585 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | INFO:     38.121.214.85:57637 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | 2026-05-04 02:02:37 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (22.7ms)
+dreamlive_api  | 2026-05-04 02:03:38 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (8.9ms)
+dreamlive_api  | INFO:     38.121.214.85:57696 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | 2026-05-04 02:05:11 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (20.1ms)
+dreamlive_api  | INFO:     38.121.214.85:57751 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | INFO:     38.121.214.85:57806 - "OPTIONS /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+dreamlive_api  | 2026-05-04 02:06:59 [INFO] dreamlive – GET /api/v2/licenses/metrics → 200 (15.8ms)
+dreamlive_api  | INFO:     38.121.214.85:57806 - "GET /api/v2/licenses/metrics?agency_id=63878523-09b5-4a19-9caf-bb03b9061c52 HTTP/1.1" 200 OK
+root@vmi3263350:~/dreamlive_Work#

@@ -190,7 +190,7 @@ export function AccountView() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                     <span className="text-xs font-bold text-slate-500 uppercase">Nodo Origen</span>
-                    <span className="text-xs font-black text-indigo-500 font-mono">217.216.94.178</span>
+                    <span className="text-xs font-black text-indigo-500 font-mono">dreamlive.app</span>
                   </div>
                   <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                     <span className="text-xs font-bold text-slate-500 uppercase">Encriptación</span>

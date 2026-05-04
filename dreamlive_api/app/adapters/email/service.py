@@ -46,7 +46,10 @@ class EmailService:
             return False
 
     @classmethod
-    def send_password_reset(cls, to: str, token: str, base_url: str = "http://217.216.94.178:5173") -> bool:
+    def send_password_reset(cls, to: str, token: str, base_url: str = None) -> bool:
+        from app.config import settings
+        if base_url is None:
+            base_url = f"https://{settings.DOMAIN_NAME}"
         reset_url = f"{base_url}/reset-password?token={token}"
         html = f"""
         <!DOCTYPE html>

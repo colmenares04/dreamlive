@@ -9,7 +9,8 @@ import axios, { AxiosInstance } from 'axios';
 import { TokenStorage } from './tokenStorage';
 import type { AuthTokens } from '../../core/entities';
 
-const BASE_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/v1', '/v2') : 'http://217.216.94.178:8000/api/v2';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2';
+console.log('[ApiClient] BASE_URL initialized as:', BASE_URL);
 
 class ApiClient {
   private readonly http: AxiosInstance;

@@ -30,8 +30,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const token = TokenStorage.getAccessToken() || TokenStorage.getAgencyToken();
     if (!token) return;
 
-    // El SOCKET_URL debe ser la base (vía wrapper ASGI en main.py)
-    const BASE_URL = import.meta.env.VITE_API_URL_BASE || 'http://217.216.94.178:8000';
+    // El BASE_URL para socket.io debe ser la raíz del dominio de la API
+    const API_URL = import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2';
+    const BASE_URL = API_URL.split('/api/')[0];
 
     const newSocket = io(BASE_URL, {
       path: "/socket.io",

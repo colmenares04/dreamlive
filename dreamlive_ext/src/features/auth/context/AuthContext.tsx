@@ -30,7 +30,7 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const WS_URL = import.meta.env.WXT_WS_URL || 'ws://217.216.94.178:8000/api/v1/chat/ws';
+const WS_URL = import.meta.env.WXT_WS_URL || 'wss://api.dreamlive.app/api/v2/chat/ws';
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>({

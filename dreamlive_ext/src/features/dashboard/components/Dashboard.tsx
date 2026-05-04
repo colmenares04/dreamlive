@@ -25,7 +25,8 @@ interface NotifItem {
   image: string | null;
 }
 
-const WEB_URL = 'http://217.216.94.178';
+const WEB_URL = import.meta.env.WXT_WEB_DOMAIN ? `https://${import.meta.env.WXT_WEB_DOMAIN}` : 'https://dreamlive.app';
+const API_IMAGE_BASE = (import.meta.env.WXT_API_BASE_URL || 'https://api.dreamlive.app/api/v2').split('/api/')[0];
 
 export const Dashboard: React.FC = () => {
   const { user, license, logout } = useAuth();
@@ -190,7 +191,7 @@ export const Dashboard: React.FC = () => {
                         className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border-b border-black/3 dark:border-white/3 last:border-0"
                       >
                         {n.image ? (
-                          <img src={`http://217.216.94.178:8000${n.image}`} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                          <img src={`${API_IMAGE_BASE}${n.image}`} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
                         ) : (
                           <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
                             <Bell size={16} className="text-indigo-500" />

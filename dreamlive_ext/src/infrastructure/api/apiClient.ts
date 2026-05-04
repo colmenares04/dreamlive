@@ -19,7 +19,7 @@ class ApiClient {
   private refreshSubscribers: ((token: string) => void)[] = [];
 
   constructor() {
-    this.baseUrl = import.meta.env.WXT_API_BASE_URL || 'http://217.216.94.178:8000/api/v1';
+    this.baseUrl = import.meta.env.WXT_API_BASE_URL || 'https://api.dreamlive.app/api/v2';
   }
 
   private onTokenRefreshed(token: string) {
@@ -103,6 +103,7 @@ class ApiClient {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      console.log(`[API FETCH] ${method} ${url.toString()}`);
       const response = await fetch(url.toString(), {
         method,
         headers,

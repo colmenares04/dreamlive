@@ -51,7 +51,7 @@ export function SettingsUpdatesView() {
                   Versión {winVersion.version_number} <br />
                   <span className="text-xs opacity-75">Publicada el {formatDate(winVersion.release_date)}</span>
                 </p>
-                <a href={`${(import.meta.env.VITE_API_URL || 'http://217.216.94.178:8000').replace(/\/api\/v[12]$/, '')}${winVersion.file_url}`} target="_blank" rel="noreferrer" className="w-full">
+                <a href={`${(import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2').split('/api/')[0]}${winVersion.file_url}`} target="_blank" rel="noreferrer" className="w-full">
                   <Button variant="primary" className="w-full justify-center text-base py-3">
                     <i className="fas fa-download mr-2" />
                     Descargar Windows
@@ -78,7 +78,7 @@ export function SettingsUpdatesView() {
                   Versión {macVersion.version_number} <br />
                   <span className="text-xs opacity-75">Publicada el {formatDate(macVersion.release_date)}</span>
                 </p>
-                <a href={`${(import.meta.env.VITE_API_URL || 'http://217.216.94.178:8000').replace(/\/api\/v[12]$/, '')}${macVersion.file_url}`} target="_blank" rel="noreferrer" className="w-full">
+                <a href={`${(import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2').split('/api/')[0]}${macVersion.file_url}`} target="_blank" rel="noreferrer" className="w-full">
                   <Button variant="primary" className="w-full justify-center text-base py-3">
                     <i className="fas fa-download mr-2" />
                     Descargar MacOS

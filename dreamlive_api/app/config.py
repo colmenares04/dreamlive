@@ -28,12 +28,14 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ── CORS ──────────────────────────────────────────────────────────────────
+    DOMAIN_NAME: str = "dreamlive.app"
+    API_DOMAIN_NAME: str = "api.dreamlive.app"
     ALLOWED_ORIGINS: Union[str, List[str]] = [
-        "http://217.216.94.178",
-        "http://217.216.94.178",
-        "http://217.216.94.178:5173",
-        "http://217.216.94.178:5173",
-        "http://217.216.94.178:3000",
+        "https://dreamlive.app",
+        "https://api.dreamlive.app",
+        "http://localhost",
+        "http://localhost:5173",
+        "http://localhost:3000",
     ]
 
     # ── Email (recuperación de contraseña) ───────────────────────────────────

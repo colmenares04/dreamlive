@@ -174,7 +174,7 @@ export function UpdatesView() {
       header: 'Acciones',
       render: (v: AppVersion) => (
         <div className="flex gap-1 justify-end">
-          <a href={`${(import.meta.env.VITE_API_URL || 'http://217.216.94.178:8000').replace(/\/api\/v[12]$/, '')}${v.file_url}`} target="_blank" rel="noreferrer"
+          <a href={`${(import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2').split('/api/')[0]}${v.file_url}`} target="_blank" rel="noreferrer"
             className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="Descargar">
             <i className="fas fa-download text-slate-500 text-sm" />
           </a>
