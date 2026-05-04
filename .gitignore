@@ -48,3 +48,10 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
+
+
+
+postgres_data/
+nginx_letsencrypt/
+nginx_data/
+nginx_data
