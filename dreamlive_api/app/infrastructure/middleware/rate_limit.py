@@ -19,9 +19,9 @@ class RateLimitMiddleware:
         self.requests = defaultdict(list)
         # Rutas sensibles que requieren blindaje extra
         self.sensitive_routes = [
-            "/api/v1/auth/login", 
-            "/api/v1/auth/register", 
-            "/api/v1/licenses/sync-passwords"
+            "/api/v2/web/auth/login", 
+            "/api/v2/extension/auth/login",
+            "/api/v2/extension/licenses/sync-passwords"
         ]
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

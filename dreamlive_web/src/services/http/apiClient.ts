@@ -9,7 +9,9 @@ import axios, { AxiosInstance } from 'axios';
 import { TokenStorage } from './tokenStorage';
 import type { AuthTokens } from '../../core/entities';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.dreamlive.app/api/v2';
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/web`
+  : 'https://api.dreamlive.app/api/v2/web';
 console.log('[ApiClient] BASE_URL initialized as:', BASE_URL);
 
 class ApiClient {

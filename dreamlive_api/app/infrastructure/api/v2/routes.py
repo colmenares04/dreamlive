@@ -1,26 +1,51 @@
-from .auth import router as auth_v2_router
-from .agencies import router as agencies_v2_router
-from .licenses import router as licenses_v2_router
-from .leads import router as leads_v2_router
-from .tickets import router as tickets_v2_router
-from .chat import router as chat_v2_router
-from .overview import overview_router, dashboard_router
-from .versions import router as versions_v2_router
-from .users import router as users_v2_router
-from .audit import router as audit_v2_router
-from .notifications import router as notifications_v2_router
+from fastapi import APIRouter
+
+# --- Extension Namespace ---
+from .extension.auth import router as auth_ext
+from .extension.licenses import router as licenses_ext
+from .extension.leads import router as leads_ext
+from .extension.chat import router as chat_ext
+from .extension.notifications import router as notifications_ext
+from .extension.operations import router as operations_ext
+
+extension_router = APIRouter(prefix="/extension")
+extension_router.include_router(auth_ext)
+extension_router.include_router(licenses_ext)
+extension_router.include_router(leads_ext)
+extension_router.include_router(chat_ext)
+extension_router.include_router(notifications_ext)
+extension_router.include_router(operations_ext)
+
+# --- Web Namespace ---
+from .web.auth import router as auth_web
+from .web.agencies import router as agencies_web
+from .web.users import router as users_web
+from .web.tickets import router as tickets_web
+from .web.overview import overview_router, dashboard_router
+from .web.notifications import router as notifications_web
+from .web.versions import router as versions_web
+from .web.audit import router as audit_web
+from .web.leads import router as leads_web
+from .web.licenses import router as licenses_web
+
+# Placeholder for future routers (leads_web, licenses_web)
+# We will create them soon.
+
+web_router = APIRouter(prefix="/web")
+web_router.include_router(auth_web)
+web_router.include_router(agencies_web)
+web_router.include_router(users_web)
+web_router.include_router(tickets_web)
+web_router.include_router(overview_router)
+web_router.include_router(dashboard_router)
+web_router.include_router(notifications_web)
+web_router.include_router(versions_web)
+web_router.include_router(audit_web)
+web_router.include_router(leads_web)
+web_router.include_router(licenses_web)
+web_router.include_router(chat_ext) # Reuse chat logic
 
 ROUTERS = [
-    auth_v2_router,
-    agencies_v2_router,
-    licenses_v2_router,
-    leads_v2_router,
-    tickets_v2_router,
-    chat_v2_router,
-    overview_router,
-    dashboard_router,
-    versions_v2_router,
-    users_v2_router,
-    audit_v2_router,
-    notifications_v2_router,
+    extension_router,
+    web_router
 ]

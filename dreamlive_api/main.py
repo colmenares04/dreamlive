@@ -9,12 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import socketio
 
 from app.config import settings
-from app.infrastructure.api.v1.auth import router as auth_router
-from app.infrastructure.api.v2.auth import router as auth_v2_router
-from app.infrastructure.api.v1.users import (
-    users_router, tickets_router, audit_router
-)
-from app.infrastructure.api.v1 import routes as v1_routes
 from app.infrastructure.api.v2 import routes as v2_routes
 from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Scope, Receive, Send, Message
@@ -35,7 +29,7 @@ async def lifespan(app: FastAPI):
         from seed import run_seed
         await run_seed()
     except Exception as e:
-        print(f"❌ Error during startup seeding: {e}")
+        print(f"Error during startup seeding: {e}")
     yield
 
 
@@ -162,13 +156,6 @@ register_exception_handlers(fastapi_app)
 # ── Routers ───────────────────────────────────────────────────────────────────
 PREFIX = settings.API_PREFIX
 PREFIX_V2 = settings.API_PREFIX_V2
-
-fastapi_app.include_router(auth_router,      prefix=PREFIX)
-fastapi_app.include_router(users_router,     prefix=PREFIX)
-fastapi_app.include_router(tickets_router,   prefix=PREFIX)
-fastapi_app.include_router(audit_router,     prefix=PREFIX)
-for router in getattr(v1_routes, "ROUTERS", []):
-    fastapi_app.include_router(router, prefix=PREFIX)
 
 # --- V2 ---
 for router in getattr(v2_routes, "ROUTERS", []):

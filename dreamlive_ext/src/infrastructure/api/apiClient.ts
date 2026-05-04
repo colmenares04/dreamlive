@@ -19,7 +19,7 @@ class ApiClient {
   private refreshSubscribers: ((token: string) => void)[] = [];
 
   constructor() {
-    this.baseUrl = import.meta.env.WXT_API_BASE_URL || 'https://api.dreamlive.app/api/v2';
+    this.baseUrl = import.meta.env.WXT_API_BASE_URL || 'https://api.dreamlive.app/api/v2/extension';
   }
 
   private onTokenRefreshed(token: string) {

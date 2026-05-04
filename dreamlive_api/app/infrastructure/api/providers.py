@@ -13,7 +13,7 @@ from app.adapters.security.handlers import JWTHandler, PasswordHandler
 from app.infrastructure.cache.redis_cache import cache_service
 from app.core.ports.cache import ICacheService
 from app.core.ports.realtime import IRealTimeGateway
-from app.infrastructure.api.v1.socket_manager import socket_manager
+from app.infrastructure.api.v2.socket_manager import socket_manager
 
 _token_service = JWTHandler()
 _password_hasher = PasswordHandler()
