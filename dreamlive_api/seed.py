@@ -46,18 +46,29 @@ async def run_seed():
             license_id = str(uuid.uuid4())
             new_license = LicenseORM(
                 id=license_id,
-                key=f"RUSSO-2026",
+                key="RUSSO-2026",
                 agency_id=agency_id,
                 recruiter_name="Dreamlive Dev",
                 email="admin@dreamlive.com",
-                admin_password="dream2026", # Contraseña del superagente
+                admin_password="dream2026", 
                 role="SUPERUSER",
                 status="active",
-                request_limit=999999,
+                request_limit=2,
+                max_devices=2,
+                is_active=True,
+                full_name="Superuser Russo",
+                keywords="batallas/pk/versus",
+                message_templates=["Hola!", "Únete a mi agencia"],
+                theme="dark"
             )
             session.add(new_license)
         else:
             print(f"  - Superuser exists: {lic.recruiter_name} (Key: {lic.key})")
+            # Actualizar el límite si ya existe
+            lic.max_devices = 2
+            lic.request_limit = 2
+            lic.refresh_minutes = 5
+            session.add(lic)
 
         await session.commit()
     print("✅ Seed completed successfully!")

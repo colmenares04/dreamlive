@@ -37,6 +37,8 @@ class Settings(BaseSettings):
         "http://localhost",
         "http://localhost:5173",
         "http://localhost:3000",
+        "chrome-extension://ilbiiifaldpieepoimgkhcjbbjfhijhl",
+        "chrome-extension://"
     ]
 
     # ── Email (recuperación de contraseña) ───────────────────────────────────

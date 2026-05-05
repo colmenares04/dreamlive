@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, History, User, Clock, ExternalLink, Users, Heart, AlertCircle, RefreshCw, Search, Hash, Trash2 } from 'lucide-react';
+import { X, History, User, Clock, ExternalLink, Users, Heart, AlertCircle, RefreshCw, Search, Hash, Trash2, Play } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { LeadsService } from '../../services/leads.service';
 
@@ -32,7 +32,13 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
   const [minQuantity, setMinQuantity] = useState<number | ''>('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
+  const isValidPage = useMemo(() => {
+    const url = window.location.href.toLowerCase();
+    return url.includes('tiktok.com') || url.includes('live-backstage.tiktok.com');
+  }, []);
+
   const fetchLeads = async () => {
+    if (!isValidPage) return;
     try {
       setIsLoading(true);
       setError(null);
@@ -54,6 +60,30 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoToOperation = async () => {
+    let targetModal: any = 'RECOPILAR';
+    let targetUrl = 'https://www.tiktok.com/search/live?q=live';
+
+    if (activeModal === 'HISTORY_RECOPILAR') {
+      targetModal = 'RECOPILAR';
+      targetUrl = 'https://www.tiktok.com/search/live?q=live';
+    } else if (activeModal === 'HISTORY_DISPONIBILIDAD') {
+      targetModal = 'DISPONIBILIDAD';
+      targetUrl = 'https://live-backstage.tiktok.com/portal/anchor/relation';
+    } else if (activeModal === 'HISTORY_CONTACTAR') {
+      targetModal = 'CONTACTAR';
+      targetUrl = 'https://live-backstage.tiktok.com/portal/anchor/instant-messages';
+    }
+
+    await browser.storage.local.set({ activeOperationsModal: targetModal });
+    
+    // Si no estamos en la página correcta, forzamos navegación
+    const currentUrl = window.location.href.toLowerCase();
+    if (!currentUrl.includes(targetUrl.replace('https://', '').split('/')[0])) {
+      await browser.runtime.sendMessage({ type: 'NAVIGATE', url: targetUrl });
     }
   };
 
@@ -178,6 +208,9 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
               </span>
             </div>
             <div className="dreamlive-header-actions" style={{ gap: '8px' }}>
+              <button onClick={handleGoToOperation} className="dreamlive-icon-btn" title="Ir al Panel Operativo" style={{ color: 'var(--color-blue)' }}>
+                <Play size={14} fill="currentColor" />
+              </button>
               <button onClick={handlePurgeLeads} className="dreamlive-icon-btn" title="Limpiar todo" style={{ color: '#FF3B30' }}><Trash2 size={14} /></button>
               <button onClick={fetchLeads} className="dreamlive-icon-btn" title="Refrescar"><RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /></button>
               <button onClick={onClose} className="dreamlive-icon-btn"><X size={16} /></button>
@@ -235,7 +268,21 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
 
           {/* Body */}
           <div className="dreamlive-modal-body" style={{ padding: '0 12px 20px 12px' }}>
-            {isLoading && leads.length === 0 ? (
+            {!isValidPage ? (
+              <div style={{ height: '240px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px', gap: '16px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(255, 59, 48, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertCircle size={32} color="#FF3B30" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '14px', fontWeight: '800', marginBottom: '4px' }}>
+                    Página no válida
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--apple-text-sub)', maxWidth: '240px' }}>
+                    Para visualizar el historial, debes estar en TikTok o el Backstage.
+                  </p>
+                </div>
+              </div>
+            ) : isLoading && leads.length === 0 ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
                 <div className="animate-spin" style={{ width: '24px', height: '24px', border: '3px solid var(--color-blue)', borderTopColor: 'transparent', borderRadius: '50%' }} />
               </div>

@@ -375,7 +375,7 @@ export class ChatAutomationService {
     this.abortSignal = true;
   }
 
-  public async start(leads: string[], templates: string[], limit: number = 9999) {
+  public async start(leads: string[], templates: string[], limit: number = 9999, total: number = 0) {
     if (this.isRunning) {
       this.log("⚠️ Proceso ya activo.", "info");
       return;
@@ -387,6 +387,7 @@ export class ChatAutomationService {
     this.abortSignal = false;
     this.log(`📨 Iniciando campaña (Meta: ${MAX_ENVIOS})...`);
 
+    const totalSession = total > 0 ? total : leads.length;
     let enviados = 0;
     let errores = 0;
     let saltados = 0;
@@ -394,7 +395,7 @@ export class ChatAutomationService {
 
     for (let i = 0; i < leads.length; i++) {
       const username = leads[i];
-      this.progress(i + 1, leads.length);
+      this.progress(i + 1, totalSession);
 
       if (enviados >= MAX_ENVIOS) {
         this.log(`✅ Meta alcanzada (${enviados}).`, "success");

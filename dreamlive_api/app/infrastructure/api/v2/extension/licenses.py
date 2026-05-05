@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import uuid
 
 from app.infrastructure.api.deps import get_uow
-from app.infrastructure.api.v2.shared import get_current_v2_agency
+from app.infrastructure.api.v2.shared import get_current_v2_agency, get_current_v2_license
 from app.adapters.db.models import LicenseORM, AgencyORM
 
 router = APIRouter(prefix="/licenses", tags=["Licenses V2"])
@@ -223,41 +223,27 @@ async def create_license(
 
 @router.get("/templates")
 async def get_license_templates(
-    agency: Any = Depends(get_current_v2_agency),
+    license: Any = Depends(get_current_v2_license),
     uow: Any = Depends(get_uow),
 ):
-    # En V2 el agency_id del token es el de la licencia (si se logueó con licencia)
-    # o el de la agencia (si se logueó como admin)
-    from sqlalchemy import select
-    res = await uow.session.execute(select(LicenseORM).where(LicenseORM.id == str(agency.id)))
-    lic = res.scalar_one_or_none()
-    
-    if not lic:
-        raise HTTPException(status_code=404, detail="Licencia no encontrada.")
-
     return {
-        "message_templates": lic.message_templates or [],
-        "invitation_types": lic.invitation_types or []
+        "message_templates": license.message_templates or [],
+        "invitation_types": license.invitation_types or [],
+        "request_limit": license.request_limit or 60,
+        "refresh_minutes": license.refresh_minutes or 60
     }
 
 
 @router.post("/templates")
 async def update_license_templates(
     body: ConfigLicenseBody,
-    agency: Any = Depends(get_current_v2_agency),
+    license: Any = Depends(get_current_v2_license),
     uow: Any = Depends(get_uow),
 ):
-    from sqlalchemy import select
-    res = await uow.session.execute(select(LicenseORM).where(LicenseORM.id == str(agency.id)))
-    lic = res.scalar_one_or_none()
-    
-    if not lic:
-        raise HTTPException(status_code=404, detail="Licencia no encontrada.")
-
     if body.message_templates is not None:
-        lic.message_templates = body.message_templates
+        license.message_templates = body.message_templates
     if body.invitation_types is not None:
-        lic.invitation_types = body.invitation_types
+        license.invitation_types = body.invitation_types
 
     await uow.session.flush()
     await uow.session.commit()

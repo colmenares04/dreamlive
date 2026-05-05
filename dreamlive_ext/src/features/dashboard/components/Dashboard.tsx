@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { browser } from 'wxt/browser';
 import {
   LogOut,
   Moon,
@@ -8,7 +9,8 @@ import {
   ExternalLink,
   Bell,
   X,
-  ChevronRight
+  ChevronRight,
+  MonitorOff
 } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useTheme } from '../../../shared/contexts/ThemeContext';
@@ -29,11 +31,11 @@ const WEB_URL = import.meta.env.WXT_WEB_DOMAIN ? `https://${import.meta.env.WXT_
 const API_IMAGE_BASE = (import.meta.env.WXT_API_BASE_URL || 'https://api.dreamlive.app/api/v2').split('/api/')[0];
 
 export const Dashboard: React.FC = () => {
-  const { user, license, logout } = useAuth();
+  const { user, license, logout, logoutAll } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'profile' | 'ops'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'ops'>('ops');
   const [showKey, setShowKey] = useState(false);
-  const [dailyUsage, setDailyUsage] = useState<{ limite_diario: number; usados_hoy: number; tiempo_para_reinicio: number } | null>(null);
+  const [dailyUsage, setDailyUsage] = useState<{ limite_diario: number; usados_hoy: number; tiempo_para_reinicio: number; active_sessions: number; max_sessions: number } | null>(null);
 
   // Notifications state
   const [showNotifs, setShowNotifs] = useState(false);
@@ -49,6 +51,8 @@ export const Dashboard: React.FC = () => {
           limite_diario: res.data.limite_diario || 60,
           usados_hoy: res.data.usados_hoy || 0,
           tiempo_para_reinicio: res.data.tiempo_para_reinicio || 0,
+          active_sessions: res.data.active_sessions || 1,
+          max_sessions: res.data.max_sessions || 5
         });
       }
     } catch (e) {
@@ -87,6 +91,46 @@ export const Dashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
+  // Live update listener
+  useEffect(() => {
+    const handleMessage = (msg: any) => {
+      // Escuchar solo mensajes que vienen del background como broadcast para evitar doble conteo
+      if ((msg.type === 'LEAD_CONTACTED_SUCCESS' || msg.type === 'MARK_CONTACTED') && msg.internalBroadcast) {
+        console.log('[Dashboard] Lead contacted broadcast received, updating counter locally');
+        setDailyUsage(prev => {
+          if (!prev) return prev;
+          const newUsados = prev.usados_hoy + 1;
+          // Si llegamos al límite, activamos 5 min de espera si no hay tiempo definido
+          return {
+            ...prev,
+            usados_hoy: newUsados,
+            tiempo_para_reinicio: (newUsados >= prev.limite_diario && prev.tiempo_para_reinicio <= 0)
+              ? 300
+              : prev.tiempo_para_reinicio
+          };
+        });
+      }
+    };
+    browser.runtime.onMessage.addListener(handleMessage);
+    return () => browser.runtime.onMessage.removeListener(handleMessage);
+  }, []);
+
+  // Real-time countdown effect
+  useEffect(() => {
+    if (dailyUsage && dailyUsage.tiempo_para_reinicio > 0) {
+      const timer = setInterval(() => {
+        setDailyUsage(prev => {
+          if (!prev || prev.tiempo_para_reinicio <= 0) return prev;
+          return {
+            ...prev,
+            tiempo_para_reinicio: prev.tiempo_para_reinicio - 1
+          };
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [dailyUsage?.tiempo_para_reinicio]);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -117,9 +161,15 @@ export const Dashboard: React.FC = () => {
   };
 
   const formatTime = (seconds: number) => {
+    if (seconds <= 0) return '00:00';
+    if (seconds < 3600) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    return `${hrs} horas y ${mins} minutos`;
+    return `${hrs}h ${mins}m`;
   };
 
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'AD';
@@ -241,15 +291,6 @@ export const Dashboard: React.FC = () => {
       <div className="px-4 pb-2">
         <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-[10px]">
           <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${activeTab === 'profile'
-              ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-              }`}
-          >
-            Suscripción
-          </button>
-          <button
             onClick={() => setActiveTab('ops')}
             className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${activeTab === 'ops'
               ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
@@ -257,6 +298,15 @@ export const Dashboard: React.FC = () => {
               }`}
           >
             Operaciones
+          </button>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${activeTab === 'profile'
+              ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+          >
+            Suscripción
           </button>
         </div>
       </div>
@@ -267,67 +317,111 @@ export const Dashboard: React.FC = () => {
           <div className="space-y-4 animate-in fade-in duration-300 pt-2">
 
             {/* License Card */}
-            <div className="rounded-2xl bg-white dark:bg-[#1C1C1E] overflow-hidden shadow-sm border border-black/5 dark:border-white/5">
-              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <span className="text-[15px] font-semibold tracking-tight">Detalles de Licencia</span>
-                <span className="text-[12px] font-medium text-[var(--color-apple-green)] bg-[var(--color-apple-green)]/10 px-2 py-0.5 rounded-full">Activa</span>
+            <div className="rounded-2xl bg-white dark:bg-[#1C1C1E] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:shadow-none border border-black/[0.03] dark:border-white/5 transition-all">
+              <div className="px-5 py-4 border-b border-black/[0.03] dark:border-white/5 flex items-center justify-between bg-white/50 dark:bg-white/[0.02]">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-6 bg-[var(--color-apple-green)] rounded-full" />
+                  <span className="text-[15px] font-semibold tracking-tight">Estado de la Licencia</span>
+                </div>
+                <Badge variant="green" className="bg-[var(--color-apple-green)]/10 text-[var(--color-apple-green)] border-none font-bold px-2.5">ACTIVA</Badge>
               </div>
 
-              <div className="p-5 space-y-5">
+              <div className="p-5 space-y-6">
                 <div>
-                  <label className="text-[12px] text-gray-500 dark:text-gray-400 mb-1 block">Clave Corporativa</label>
-                  <div className="flex items-center justify-between">
-                    <code className="text-[15px] font-mono text-gray-900 dark:text-white">
+                  <label className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 block">Identificador Corporativo</label>
+                  <div className="flex items-center justify-between bg-gray-50 dark:bg-white/[0.03] p-3 rounded-xl border border-black/[0.03] dark:border-white/5 group transition-colors">
+                    <code className="text-[14px] font-mono text-gray-900 dark:text-gray-200">
                       {showKey ? (license?.key || 'DL-PREMIUM-2026-X') : '••••-••••-••••-••••'}
                     </code>
                     <button
                       onClick={() => setShowKey(!showKey)}
-                      className="p-1.5 rounded-full text-[var(--color-apple-green)] bg-[var(--color-apple-green)]/10 hover:bg-[var(--color-apple-green)]/20 transition-colors"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--color-apple-green)] hover:bg-[var(--color-apple-green)]/10 transition-all"
                     >
-                      {showKey ? <EyeOff size={14} strokeWidth={1.5} /> : <Eye size={14} strokeWidth={1.5} />}
+                      {showKey ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="h-px bg-gray-100 dark:bg-gray-800" />
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <label className="text-[12px] text-gray-500 dark:text-gray-400 block mb-0.5">Vencimiento</label>
-                    <p className="text-[14px] font-medium text-gray-900 dark:text-white">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 dark:bg-white/[0.03] p-3.5 rounded-2xl border border-black/[0.02] dark:border-white/5">
+                    <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-1">Vencimiento</label>
+                    <p className="text-[14px] font-semibold text-gray-900 dark:text-white">
                       {license?.expiration_date ? new Date(license.expiration_date).toLocaleDateString() : '31/12/2026'}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <label className="text-[12px] text-gray-500 dark:text-gray-400 block mb-0.5">Sesiones Activas</label>
-                    <p className="text-[14px] font-medium text-gray-900 dark:text-white">
-                      1 de {license?.max_devices || 5}
-                    </p>
+                  <div className="bg-gray-50 dark:bg-white/[0.03] p-3.5 rounded-2xl border border-black/[0.02] dark:border-white/5 relative group overflow-hidden">
+                    <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-1">Dispositivos</label>
+                    <div className="flex items-end gap-1.5">
+                      <span className="text-[18px] font-bold text-gray-900 dark:text-white leading-none">
+                        {dailyUsage?.active_sessions || 1}
+                      </span>
+                      <span className="text-[12px] text-gray-400 dark:text-gray-500 font-medium pb-0.5">
+                        / {dailyUsage?.max_sessions || license?.max_devices || 5}
+                      </span>
+                    </div>
+
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <div className={`w-1.5 h-1.5 rounded-full ${((dailyUsage?.active_sessions || 1) >= (dailyUsage?.max_sessions || 5)) ? 'bg-amber-500 animate-pulse' : 'bg-[var(--color-apple-green)]'}`} />
+                    </div>
                   </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Deseas desconectar todas las demás sesiones de esta licencia? Esta acción es inmediata.')) {
+                        logoutAll();
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#F2F2F7] dark:bg-white/[0.05] hover:bg-red-50 dark:hover:bg-red-500/10 text-[#007AFF] dark:text-[#0A84FF] hover:text-red-500 dark:hover:text-red-400 rounded-2xl transition-all duration-300 text-[13px] font-semibold group shadow-sm active:scale-[0.98]"
+                  >
+                    <MonitorOff size={18} strokeWidth={2} className="group-hover:rotate-12 transition-transform" />
+                    Desconectar sesiones activas
+                  </button>
+                  <p className="text-[10px] text-center text-gray-400 dark:text-gray-500 mt-3 px-4 leading-snug">
+                    Usa esta opción si el límite de dispositivos te impide iniciar sesión en un nuevo equipo.
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Daily Usage */}
-            <div className="rounded-2xl bg-white dark:bg-[#1C1C1E] overflow-hidden shadow-sm border border-black/5 dark:border-white/5 p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-semibold tracking-tight">Límite de Uso Diario</span>
-                <span className="text-[12px] font-medium text-gray-500">
-                  {dailyUsage ? `${dailyUsage.usados_hoy} / ${dailyUsage.limite_diario}` : '0 / 60'}
-                </span>
+            <div className="rounded-2xl bg-white dark:bg-[#1C1C1E] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:shadow-none border border-black/[0.03] dark:border-white/5 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col">
+                  <span className="text-[15px] font-semibold tracking-tight">Límite de Uso Diario</span>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">Capacidad de envíos por licencia</span>
+                </div>
+                <div className="text-right">
+                  <span className={`text-[16px] font-bold ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'text-red-500' : 'text-[var(--color-apple-green)]'}`}>
+                    {dailyUsage ? `${dailyUsage.usados_hoy} / ${dailyUsage.limite_diario}` : '0 / 60'}
+                  </span>
+                </div>
               </div>
 
-              <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-3 overflow-hidden mb-4 border border-black/[0.03] dark:border-white/5">
                 <div
-                  className="bg-gradient-to-r from-[var(--color-apple-green)] to-[#A2F0B3] h-full transition-all duration-500 rounded-full"
+                  className={`h-full transition-all duration-1000 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario 
+                    ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' 
+                    : 'bg-gradient-to-r from-[var(--color-apple-green)] to-[#A2F0B3]'}`}
                   style={{ width: `${Math.min(100, (dailyUsage?.usados_hoy || 0) / (dailyUsage?.limite_diario || 60) * 100)}%` }}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-                <span>{dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? '🛑 Límite diario alcanzado' : 'Disponible para envíos'}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'bg-red-500 animate-pulse' : 'bg-[var(--color-apple-green)]'}`} />
+                  <span className="text-[12px] font-medium text-gray-600 dark:text-gray-300">
+                    {dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'Límite alcanzado' : 'Disponible para envíos'}
+                  </span>
+                </div>
+                
                 {dailyUsage && dailyUsage.tiempo_para_reinicio > 0 && (
-                  <span>Se reinicia en {formatTime(dailyUsage.tiempo_para_reinicio)}</span>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-500/10 rounded-full border border-amber-200/50 dark:border-amber-500/20">
+                    <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                      Reinicio: {formatTime(dailyUsage.tiempo_para_reinicio)}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>

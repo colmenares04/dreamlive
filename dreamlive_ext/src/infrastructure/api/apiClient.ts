@@ -103,6 +103,15 @@ class ApiClient {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      let sessionId = await storage.getItem<string>('local:session_id');
+      if (!sessionId) {
+        const s = await browser.storage.local.get('session_id');
+        sessionId = s.session_id as string;
+      }
+      if (sessionId) {
+        headers['X-Session-ID'] = sessionId;
+      }
+
       console.log(`[API FETCH] ${method} ${url.toString()}`);
       const response = await fetch(url.toString(), {
         method,

@@ -3,18 +3,17 @@ import { RecopilarModal } from "./modals/RecopilarModal";
 import { AvailabilityModal } from "./modals/AvailabilityModal";
 import { ContactModal } from "./modals/ContactModal";
 import { HistoryModal } from "./modals/HistoryModal";
-import { ControlCenterWidget } from "./ControlCenterWidget";
 import { OperationsConsole } from "./OperationsConsole";
 import { browser } from "wxt/browser";
 import { ThemeProvider, useTheme } from "../../../shared/contexts/ThemeContext";
 
-export type ModalType = 
-  | 'RECOPILAR' 
-  | 'DISPONIBILIDAD' 
-  | 'CONTACTAR' 
-  | 'HISTORY_RECOPILAR' 
-  | 'HISTORY_DISPONIBILIDAD' 
-  | 'HISTORY_CONTACTAR' 
+export type ModalType =
+  | 'RECOPILAR'
+  | 'DISPONIBILIDAD'
+  | 'CONTACTAR'
+  | 'HISTORY_RECOPILAR'
+  | 'HISTORY_DISPONIBILIDAD'
+  | 'HISTORY_CONTACTAR'
   | null;
 
 export const InjectedModalOrchestrator = () => {
@@ -30,7 +29,7 @@ export const InjectedModalOrchestrator = () => {
         case 'PING_MODALS':
           sendResponse({ status: 'alive', activeModal });
           break;
-        
+
         case 'FORCE_CLOSE_MODALS':
           handleCloseModal();
           sendResponse({ status: 'closed' });
@@ -107,25 +106,24 @@ const InjectedUIWrapper = ({ activeModal, handleCloseModal }: { activeModal: Mod
   return (
     <div className={`dreamlive-scope ${isDarkMode ? 'dark' : ''}`} data-theme={theme}>
       {/* Botón de control visible solo si hay un modal activo */}
-      <ControlCenterWidget isDarkMode={isDarkMode} activeModal={activeModal} />
 
-        {/* Operaciones Principales */}
-        {activeModal === 'RECOPILAR' && (
-          <RecopilarModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
-        )}
-        {activeModal === 'DISPONIBILIDAD' && (
-          <AvailabilityModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
-        )}
-        {activeModal === 'CONTACTAR' && (
-          <ContactModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
-        )}
+      {/* Operaciones Principales */}
+      {activeModal === 'RECOPILAR' && (
+        <RecopilarModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+      )}
+      {activeModal === 'DISPONIBILIDAD' && (
+        <AvailabilityModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+      )}
+      {activeModal === 'CONTACTAR' && (
+        <ContactModal onClose={handleCloseModal} isDarkMode={isDarkMode} />
+      )}
 
-        {/* Historiales Específicos */}
-        {(activeModal === 'HISTORY_RECOPILAR' || 
-          activeModal === 'HISTORY_DISPONIBILIDAD' || 
-          activeModal === 'HISTORY_CONTACTAR') && (
+      {/* Historiales Específicos */}
+      {(activeModal === 'HISTORY_RECOPILAR' ||
+        activeModal === 'HISTORY_DISPONIBILIDAD' ||
+        activeModal === 'HISTORY_CONTACTAR') && (
           <HistoryModal onClose={handleCloseModal} isDarkMode={isDarkMode} activeModal={activeModal} />
         )}
-      </div>
+    </div>
   );
 };

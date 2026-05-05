@@ -17,6 +17,10 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
   const [isRunning, setIsRunning] = useState(false);
   const [count, setCount] = useState(0);
   const [total, setTotal] = useState(0);
+  const [dailyUsed, setDailyUsed] = useState(0);
+  const [requestLimit, setRequestLimit] = useState(60);
+  const [refreshMinutes, setRefreshMinutes] = useState(60);
+  const [resetIn, setResetIn] = useState(0);
   const [showConsole, setShowConsole] = useState(false);
   const [logs, setLogs] = useState<string[]>(['[SISTEMA] Motor de mensajería listo...', '[INFO] Esperando apertura de chat de TikTok...']);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -24,6 +28,19 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
   const [invitationTypes, setInvitationTypes] = useState<string[]>(["Normal", "Elite", "Popular", "Premium"]);
   
   const isValidRoute = location.href.includes('/instant-messages');
+
+  const fetchLimits = useCallback(async () => {
+    try {
+      const res = await browser.runtime.sendMessage({ type: 'GET_LIMITS' });
+      if (res && res.success) {
+        setDailyUsed(res.count);
+        setRequestLimit(res.limit);
+        setResetIn(res.reset_in);
+      }
+    } catch (e) {
+      console.error('Error fetching limits:', e);
+    }
+  }, []);
 
   useEffect(() => {
     browser.storage.local.get(['contact_position', 'cachedCounts', 'messageTemplates', 'invitationTypes']).then((res: any) => {
@@ -35,7 +52,6 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
         setTotal(res.cachedCounts.DISPONIBILIDAD);
       }
 
-      // First fetch from background/API
       browser.runtime.sendMessage({ type: 'GET_INVITATION_CONFIG' }).then((configRes: any) => {
         if (configRes) {
           if (configRes.message_templates && configRes.message_templates.length > 0) {
@@ -53,12 +69,17 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
           } else if (res?.invitationTypes) {
             setInvitationTypes(res.invitationTypes);
           }
+
+          if (configRes.request_limit) setRequestLimit(configRes.request_limit);
+          if (configRes.refresh_minutes) setRefreshMinutes(configRes.refresh_minutes);
         }
       }).catch((e) => {
         console.error('Error getting message config:', e);
         if (res?.messageTemplates) setTemplates(res.messageTemplates);
         if (res?.invitationTypes) setInvitationTypes(res.invitationTypes);
       });
+
+      fetchLimits();
     });
 
     const chatService = ChatAutomationService.getInstance();
@@ -70,7 +91,39 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
       },
       onStatusChange: (running) => setIsRunning(running)
     });
-  }, []);
+  }, [fetchLimits]);
+
+  // Live update listener for ContactModal
+  useEffect(() => {
+    const handleMessage = (msg: any) => {
+      // Escuchamos tanto LEAD_CONTACTED_SUCCESS como MARK_CONTACTED
+      if ((msg.type === 'LEAD_CONTACTED_SUCCESS' || msg.type === 'MARK_CONTACTED') && msg.internalBroadcast) {
+        console.log('[ContactModal] 📥 Live counter update received:', msg);
+        setDailyUsed(prev => {
+          const next = prev + 1;
+          console.log(`[ContactModal] 📈 Updating counter: ${prev} -> ${next} / ${requestLimit}`);
+          // Activar cuenta atrás local si llegamos al límite
+          if (next >= requestLimit && resetIn <= 0) {
+            console.log('[ContactModal] ⏱️ Limit reached, starting local countdown');
+            setResetIn(300); // 5 min fallback
+          }
+          return next;
+        });
+      }
+    };
+    browser.runtime.onMessage.addListener(handleMessage);
+    return () => browser.runtime.onMessage.removeListener(handleMessage);
+  }, [requestLimit, resetIn]);
+
+  // Real-time countdown for ContactModal
+  useEffect(() => {
+    if (resetIn > 0) {
+      const timer = setInterval(() => {
+        setResetIn(prev => (prev <= 0 ? 0 : prev - 1));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resetIn]);
 
   const handleConfigChange = async (newTemplates: string[], newInvitationTypes: string[]) => {
     setTemplates(newTemplates);
@@ -164,7 +217,7 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
                 templates={templates} 
                 invitationTypes={invitationTypes}
                 onConfigChange={handleConfigChange}
-                isDarkMode={true} 
+                isDarkMode={isDarkMode} 
               />
             ) : (
               <>
@@ -180,6 +233,25 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
                   >
                     <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)', lineHeight: '1.2' }}>{count}</span>
                     <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)' }}>/ {total || '-'}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px', marginTop: '-4px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase' }}>Límite Diario</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800', color: dailyUsed >= requestLimit ? '#FF3B30' : 'var(--apple-text-main)' }}>
+                      {dailyUsed} / {requestLimit}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase' }}>Reinicio</span>
+                    <span style={{ fontSize: '14px', fontVariantNumeric: 'tabular-nums', fontWeight: '800', color: resetIn > 0 ? '#AF52DE' : 'var(--apple-text-main)' }}>
+                      {resetIn > 0 ? (
+                        `${Math.floor(resetIn / 60)}:${(resetIn % 60).toString().padStart(2, '0')}`
+                      ) : (
+                        'Listo'
+                      )}
+                    </span>
                   </div>
                 </div>
 
@@ -203,7 +275,8 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
                       try {
                         const res = await browser.runtime.sendMessage({ type: 'GET_LEADS_FOR_CONTACTING' });
                         if (res && res.success && res.leads && res.leads.length > 0) {
-                          chatService.start(res.leads, res.templates, res.targetSuccessCount);
+                          if (res.totalInDb > 0) setTotal(res.totalInDb);
+                          chatService.start(res.leads, res.templates, res.targetSuccessCount, res.totalInDb || 0);
                         } else {
                           setLogs(prev => [...prev, '[INFO] No hay leads disponibles para contactar.']);
                         }

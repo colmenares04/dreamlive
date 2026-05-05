@@ -96,8 +96,10 @@ export class AvailabilityScraperService {
       }
 
       const users = response.users as string[];
+      
+      // Capturar el total esperado SOLO la primera vez para que sea estático
       if (this.totalExpected === 0) {
-        this.totalExpected = users.length + (response.totalRemaining || 0);
+        this.totalExpected = response.totalInDb || 0;
       }
 
       this.log(`🚀 Procesando lote de ${users.length} usuarios...`, "info");
@@ -114,13 +116,16 @@ export class AvailabilityScraperService {
 
       // 3. Enviar resultados
       this.log(`✅ Lote procesado. ${disponibles.length} disponibles encontrados que cumplen tus filtros.`, "success");
-      await browser.runtime.sendMessage({
+      const updateRes = await browser.runtime.sendMessage({
         type: MESSAGES.BATCH_PROCESSED,
         disponibles,
         procesados: users
       });
 
-      if (response.totalRemaining === 0) {
+      // El totalInDb puede haber cambiado tras el procesamiento (leads ya no son 'recopilado')
+      // pero el background nos lo dirá en la siguiente llamada a GET_BATCH_TO_CHECK
+      
+      if (response.totalRemaining === 0 && (!response.totalInDb || response.totalInDb <= users.length)) {
         this.log("🏁 Todos los leads procesados con éxito.", "success");
         break;
       }

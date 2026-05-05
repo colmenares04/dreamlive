@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   AlertCircle,
   Moon,
-  Sun
+  Sun,
+  MonitorOff
 } from 'lucide-react';
 
 const VaultIcon = () => {
@@ -35,7 +36,7 @@ const VaultIcon = () => {
 
 export const AuthScreen: React.FC = () => {
   const {
-    status, user, license, error,
+    status, user, license, error, limitReachedInfo,
     loginWithEmail, loginWithLicense,
     handleLinkLicense, handleCreateAdmin,
     logout, clearError
@@ -57,9 +58,30 @@ export const AuthScreen: React.FC = () => {
   const passwordsMatch = regPass === regPassConfirm;
 
   const renderError = () => error && (
-    <div className="mb-4 p-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 flex items-start gap-2 animate-fade-in">
-      <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
-      <p className="text-[13px] text-red-700 dark:text-red-400">{error}</p>
+    <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 animate-fade-in">
+      <div className="flex items-start gap-2">
+        <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-[13px] font-medium text-red-800 dark:text-red-300">{error}</p>
+          {limitReachedInfo && (
+            <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-500/20">
+              <p className="text-[11px] text-amber-800 dark:text-amber-400 mb-2.5 font-medium leading-relaxed">
+                Parece que ya tienes el máximo de sesiones activas ({limitReachedInfo.active}/{limitReachedInfo.max}).
+              </p>
+              <button
+                onClick={() => {
+                  if (view === 'email') loginWithEmail(email, pass, true);
+                  else loginWithLicense(licenseKey, true);
+                }}
+                className="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[12px] font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                <MonitorOff size={14} />
+                Desconectar otra y entrar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 
@@ -109,9 +131,15 @@ export const AuthScreen: React.FC = () => {
             className="mt-6"
             disabled={!licenseKey}
             isLoading={isLoading}
-            onClick={() => handleLinkLicense(licenseKey, email, pass, email.split('@')[0])}
+            onClick={() => {
+              if (limitReachedInfo) {
+                handleLinkLicense(licenseKey, email, pass, email.split('@')[0], true);
+              } else {
+                handleLinkLicense(licenseKey, email, pass, email.split('@')[0]);
+              }
+            }}
           >
-            Continuar
+            {limitReachedInfo ? "Desconectar y vincular" : "Continuar"}
           </Button>
         </div>
       ) : status === 'needs_user_registration' ? (
@@ -201,9 +229,15 @@ export const AuthScreen: React.FC = () => {
                 className="mt-6"
                 disabled={!licenseKey}
                 isLoading={isLoading}
-                onClick={() => loginWithLicense(licenseKey)}
+                onClick={() => {
+                  if (limitReachedInfo) {
+                    loginWithLicense(licenseKey, true);
+                  } else {
+                    loginWithLicense(licenseKey);
+                  }
+                }}
               >
-                Continuar con SSO
+                {limitReachedInfo ? "Desconectar y entrar" : "Continuar con SSO"}
               </Button>
 
               <div className="text-center my-3 text-[11px] text-gray-500 dark:text-gray-400">o</div>

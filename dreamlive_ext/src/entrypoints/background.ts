@@ -11,6 +11,8 @@ export default defineBackground(() => {
 
   // Cola de usuarios (leads) en memoria para el modelo PULL
   let leadsQueue: any[] = [];
+  let totalRemainingInDb = 0;
+  let isFetchingLeads = false;
 
   browser.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
     const msg = message as ExtensionMessage;
@@ -56,32 +58,59 @@ export default defineBackground(() => {
         // El scraper solicita un nuevo lote por modelo PULL
         (async () => {
           try {
-            if (leadsQueue.length === 0) {
+            // Si la cola está vacía y no estamos buscando, buscamos
+            if (leadsQueue.length === 0 && !isFetchingLeads) {
+              isFetchingLeads = true;
               console.log('[Background] Cola de leads vacía. Auto-poblando desde la API...');
               const res = await apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100');
               if (res && res.data && res.data.items) {
                 const fetchedLeads = res.data.items.map((item: any) => item.username);
                 leadsQueue = [...fetchedLeads];
-                console.log(`[Background] Auto-población completa con ${leadsQueue.length} leads desde la API.`);
+                totalRemainingInDb = res.data.total || 0;
+                console.log(`[Background] Auto-población completa con ${leadsQueue.length} leads desde la API. Total en DB: ${totalRemainingInDb}`);
               }
+              isFetchingLeads = false;
             }
 
             if (leadsQueue.length > 0) {
-              // Extraer un lote de usuarios (leads por defecto según constante)
               const batchSize = (msg as any).batchSize || SCRAPER_BATCH_SIZE;
               const batch = leadsQueue.splice(0, batchSize);
-              console.log(`[Background] GET_BATCH_TO_CHECK extrayendo lote de ${batch.length} leads. Quedan ${leadsQueue.length} en cola.`);
-              sendResponse({ users: batch, totalRemaining: leadsQueue.length });
+              
+              // Si nos quedan pocos después de este splice, lanzamos un pre-fetch asíncrono para el siguiente
+              if (leadsQueue.length < batchSize && !isFetchingLeads) {
+                isFetchingLeads = true;
+                apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100').then(res => {
+                  if (res && res.data && res.data.items) {
+                    const fetchedLeads = res.data.items.map((item: any) => item.username)
+                      .filter((u: string) => !batch.includes(u)); // Evitar duplicados inmediatos
+                    leadsQueue = [...leadsQueue, ...fetchedLeads];
+                    totalRemainingInDb = res.data.total || 0;
+                    console.log(`[Background] Pre-fetch completado. Nueva cola: ${leadsQueue.length}. Total DB: ${totalRemainingInDb}`);
+                  }
+                  isFetchingLeads = false;
+                }).catch(e => {
+                  console.error('[Background] Error en pre-fetch:', e);
+                  isFetchingLeads = false;
+                });
+              }
+
+              console.log(`[Background] GET_BATCH_TO_CHECK enviando ${batch.length} leads. Quedan ${leadsQueue.length} en cola local. DB dice total: ${totalRemainingInDb}`);
+              sendResponse({ 
+                users: batch, 
+                totalRemaining: leadsQueue.length,
+                totalInDb: totalRemainingInDb 
+              });
             } else {
-              console.log('[Background] GET_BATCH_TO_CHECK: Cola de leads sigue vacía.');
-              sendResponse({ users: [], totalRemaining: 0 });
+              console.log('[Background] GET_BATCH_TO_CHECK: Cola vacía y nada más en DB.');
+              sendResponse({ users: [], totalRemaining: 0, totalInDb: 0 });
             }
           } catch (error) {
-            console.error('[Background] Error auto-populating batch leads from API:', error);
-            sendResponse({ users: [], totalRemaining: 0 });
+            console.error('[Background] Error in GET_BATCH_TO_CHECK:', error);
+            isFetchingLeads = false;
+            sendResponse({ users: [], totalRemaining: 0, totalInDb: 0 });
           }
         })();
-        return true; // Mantener canal abierto para respuesta asíncrona
+        return true;
 
       case 'SAVE_INVITATION_CONFIG':
         (async () => {
@@ -133,7 +162,9 @@ export default defineBackground(() => {
               console.log('[Background] Configuración recuperada:', res.data);
               sendResponse({
                 invitation_types: res.data.invitation_types || ["Normal", "Elite", "Popular", "Premium"],
-                message_templates: res.data.message_templates || []
+                message_templates: res.data.message_templates || [],
+                request_limit: res.data.request_limit || 60,
+                refresh_minutes: res.data.refresh_minutes || 60
               });
               return;
             }
@@ -147,6 +178,26 @@ export default defineBackground(() => {
             invitation_types: ["Normal", "Elite", "Popular", "Premium"],
             message_templates: []
           });
+        })();
+        return true;
+
+      case 'GET_LIMITS':
+        (async () => {
+          try {
+            const res = await apiClient.get<any>('/operations/limits');
+            if (res.data) {
+              sendResponse({
+                success: true,
+                count: res.data.count,
+                limit: res.data.limit,
+                reset_in: res.data.reset_in
+              });
+              return;
+            }
+          } catch (e) {
+            console.error('[Background] Error in GET_LIMITS:', e);
+          }
+          sendResponse({ success: false });
         })();
         return true;
 
@@ -171,28 +222,40 @@ export default defineBackground(() => {
         if ('username' in message) {
           (async () => {
             try {
-              const { AuthService } = await import('../infrastructure/api/auth.service');
-              const meRes = await AuthService.getMe();
-              const license_id = meRes.data?.license_id;
-              if (license_id) {
-                const res = await apiClient.patch('/leads/status', {
-                  license_id,
-                  username: message.username,
-                  status: 'contactado'
+              const username = message.username.replace('@', '');
+              
+              // Broadcast interno para actualización en vivo de la UI (Extension context y Content Scripts)
+              const broadcastMsg = { 
+                type: message.type, 
+                username: username,
+                internalBroadcast: true 
+              };
+              
+              // Enviar a la UI de la extensión (Dashboard)
+              browser.runtime.sendMessage(broadcastMsg).catch(() => {});
+              
+              // Enviar a todas las pestañas (ContactModal en TikTok)
+              browser.tabs.query({}).then(tabs => {
+                tabs.forEach(tab => {
+                  if (tab.id) browser.tabs.sendMessage(tab.id, broadcastMsg).catch(() => {});
                 });
-                if (res && res.error) {
-                  console.error('Error in patch:', res.error);
-                  sendResponse({ success: false, error: res.error, status: res.status });
-                } else {
-                  console.log(`✅ Lead ${message.username} actualizado a 'contactado' en backend.`);
-                  sendResponse({ success: true });
-                }
+              });
+
+              console.log(`[Background] Guardando estado 'contactado' para: ${username}`);
+              const res = await apiClient.patch('/leads/status', {
+                usernames: [username],
+                status: 'contactado'
+              });
+              
+              if (res && res.error) {
+                console.error('[Background] Error en PATCH lead status:', res.error, res.status);
+                sendResponse({ success: false, error: res.error, status: res.status });
               } else {
-                console.warn('No active license_id found for current user.');
-                sendResponse({ success: false, error: 'No active license' });
+                console.log(`✅ Lead ${username} actualizado exitosamente.`);
+                sendResponse({ success: true });
               }
             } catch (err: any) {
-              console.error('Error in LEAD_CONTACTED_SUCCESS handler:', err);
+              console.error('[Background] Error crítico en LEAD_CONTACTED_SUCCESS:', err);
               sendResponse({ success: false, error: err.message || 'Error desconocido' });
             }
           })();
@@ -202,7 +265,8 @@ export default defineBackground(() => {
 
       case 'DELETE_LEAD':
         if ('username' in message) {
-          MessagingService.deleteLead(message.username)
+          const username = message.username.replace('@', '');
+          MessagingService.deleteLead(username)
             .then(() => sendResponse({ success: true }))
             .catch(err => {
               console.error(err);
@@ -266,7 +330,8 @@ export default defineBackground(() => {
               success: true,
               leads: (leadsRes.data?.items || []).map((l: any) => l.username),
               templates: templatesRes.data?.message_templates || [],
-              targetSuccessCount: restantes
+              targetSuccessCount: restantes,
+              totalInDb: leadsRes.data?.total || 0
             });
           } catch (e) {
             console.error(e);

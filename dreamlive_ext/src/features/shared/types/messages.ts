@@ -27,6 +27,8 @@ export type MessageType =
   | 'STOP_CONTACTING'
   | 'KEYWORDS_UPDATED'
   | 'KEYWORD_CHANGED'
+  | 'GET_LIMITS'
+  | 'CONTACT_PROGRESS'
   | 'GET_LEADS_FOR_CONTACTING';
 
 export interface BaseMessage {
@@ -105,6 +107,10 @@ export interface SaveMessageTemplatesMessage extends BaseMessage {
   message_templates: string[];
 }
 
+export interface GetLimitsMessage extends BaseMessage {
+  type: 'GET_LIMITS';
+}
+
 export type ExtensionMessage = 
   | BaseMessage 
   | NavigateMessage
@@ -120,6 +126,7 @@ export type ExtensionMessage =
   | GetBatchToCheckMessage
   | SaveInvitationConfigMessage
   | SaveMessageTemplatesMessage
+  | GetLimitsMessage
   | KeywordsUpdatedMessage
   | KeywordChangedMessage;
 

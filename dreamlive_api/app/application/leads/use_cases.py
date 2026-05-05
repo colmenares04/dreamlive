@@ -146,10 +146,10 @@ class GetAdminOverviewUseCase:
             "active_agencies":   len(agencies),
             "active_sessions":   active_sessions,
             "avg_ticket_sla":    round(avg_sla, 1),
-            "available_leads":   counts.get("disponible", 0),
-            "pending_collected": counts.get("recopilado", 0),
-            "today_contacted":   counts.get("contactado", 0),
-            "today_collected":   counts.get("recopilado", 0) + counts.get("disponible", 0),
+            "available_leads":   counts.get(LeadStatus.AVAILABLE, 0),
+            "pending_collected": counts.get(LeadStatus.COLLECTED, 0),
+            "today_contacted":   counts.get(LeadStatus.CONTACTED, 0),
+            "today_collected":   counts.get(LeadStatus.COLLECTED, 0) + counts.get(LeadStatus.AVAILABLE, 0),
             "trends":            trends,
             "recent_activity":   [{
                 "category": a.category, "action": a.action, 
@@ -184,7 +184,7 @@ class GetAgencyDashboardUseCase:
         counts = await self._uow.leads.count_by_status_bulk(license_ids)
         trends = await self._uow.leads.get_daily_stats_bulk(license_ids, days)
 
-        contacted = counts.get("contactado", 0)
+        contacted = counts.get(LeadStatus.CONTACTED, 0)
         total     = sum(counts.values())
         conversion = (contacted / total * 100) if total > 0 else 0
 
@@ -199,8 +199,8 @@ class GetAgencyDashboardUseCase:
             "active_licenses":  sum(1 for l in licenses if l.is_active),
             "total_leads":      total,
             "contacted_total":  contacted,
-            "available_leads":  counts.get("disponible", 0),
-            "collected_leads":  counts.get("recopilado", 0),
+            "available_leads":  counts.get(LeadStatus.AVAILABLE, 0),
+            "collected_leads":  counts.get(LeadStatus.COLLECTED, 0),
             "conversion_rate":  round(conversion, 1),
             "trends":           trends,
             "top_keywords":     [w for w, _ in word_counter.most_common(5)],
@@ -255,7 +255,7 @@ class UpdateLeadStatusUseCase:
             if not lead:
                 return False
 
-            if new_status == "contactado":
+            if new_status == LeadStatus.CONTACTED:
                 # Validar la cuota diaria de la licencia
                 lic = await self._uow.licenses.get_by_id(license_id)
                 if lic:
@@ -340,17 +340,8 @@ class GetLicensePerformanceUseCase:
                 "today": stats.get(lid, {}).get("today", 0),
                 "total": stats.get(lid, {}).get("total", 0),
                 "last_ping": pings.get(lid),
-                "collected": (
-                    grouped_counts.get(lid, {}).get("recopilado", 0) +
-                    grouped_counts.get(lid, {}).get("collected", 0)
-                ),
-                "available": (
-                    grouped_counts.get(lid, {}).get("disponible", 0) +
-                    grouped_counts.get(lid, {}).get("available", 0)
-                ),
-                "contacted": (
-                    grouped_counts.get(lid, {}).get("contactado", 0) +
-                    grouped_counts.get(lid, {}).get("contacted", 0)
-                ),
+                "collected": grouped_counts.get(lid, {}).get(LeadStatus.COLLECTED, 0),
+                "available": grouped_counts.get(lid, {}).get(LeadStatus.AVAILABLE, 0),
+                "contacted": grouped_counts.get(lid, {}).get(LeadStatus.CONTACTED, 0),
             } for lid in license_ids
         }

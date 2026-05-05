@@ -88,193 +88,187 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   return (
     <div
-      className={`flex flex-col gap-4 p-5 rounded-[12px] border transition-all duration-300 ${isDarkMode
-          ? 'bg-[#1C1C1E] border-[#2C2C2E] text-white'
-          : 'bg-[#F2F2F7] border-[#D1D1D6] text-[#1C1C1E]'
-        }`}
+      style={{
+        display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px',
+        borderRadius: '16px', transition: 'all 0.5s ease',
+        background: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+      }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
-          <h3 className="text-[14px] font-bold tracking-tight">Gestor de Configuración</h3>
-          <p className={`text-[11px] font-medium ${isDarkMode ? 'text-[#8E8E93]' : 'text-[#636366]'}`}>
-            Configura tus invitaciones y mensajes
-          </p>
-        </div>
-      </div>
-
-      {/* Sección de Tipos de Invitación - Los "Tipos" reales del Backstage */}
-      <div className={`flex flex-col gap-3 p-3 rounded-[8px] border ${
-        isDarkMode ? 'bg-[#2C2C2E] border-[#3A3A3C]' : 'bg-white border-[#E5E5EA]'
-      }`}>
-        <label className={`text-[11px] font-bold uppercase tracking-wider ${
-          isDarkMode ? 'text-[#8E8E93]' : 'text-[#636366]'
-        }`}>
-          Tipos de Invitación Activos
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {DEFAULT_INVITATIONS.map((type) => {
-            const isActive = invitationTypes.includes(type);
-            return (
-              <button
-                key={type}
-                onClick={() => toggleInvitationType(type)}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all duration-300 border ${
-                  isActive 
-                    ? "bg-[#007AFF] border-[#007AFF] text-white shadow-sm" 
-                    : isDarkMode 
-                      ? "bg-[#1C1C1E] border-[#3A3A3C] text-[#8E8E93] hover:bg-[#3A3A3C]" 
-                      : "bg-[#F2F2F7] border-[#D1D1D6] text-[#636366] hover:bg-[#E5E5EA]"
-                }`}
-              >
-                {type}
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-[10px] opacity-50 italic">
-          * Selecciona los tipos de invitación que deseas procesar.
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <h3 style={{ 
+          margin: 0, fontSize: '16px', fontWeight: '800', letterSpacing: '-0.5px',
+          color: isDarkMode ? '#FFFFFF' : '#000000'
+        }}>
+          Configuración
+        </h3>
+        <p style={{ 
+          margin: 0, fontSize: '12px', fontWeight: '500', 
+          color: isDarkMode ? '#8E8E93' : '#636366' 
+        }}>
+          Personaliza tus invitaciones y mensajes automáticos
         </p>
       </div>
 
+
       {/* Formulario de Nueva Plantilla */}
-      {templates.length < 5 ? (
-        <form onSubmit={handleAddTemplate} className="flex flex-col gap-3">
-          <label className={`text-[11px] font-bold uppercase tracking-wider ${
-            isDarkMode ? 'text-[#8E8E93]' : 'text-[#636366]'
-          }`}>
-            Añadir Mensaje ({templates.length}/5)
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <label style={{ 
+            fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px',
+            color: isDarkMode ? '#8E8E93' : '#8E8E93' 
+          }}>
+            Nuevo Mensaje
           </label>
-          <textarea
-            ref={addTextareaRef}
-            rows={2}
-            placeholder="Escribe el mensaje de la plantilla..."
-            value={newTemplateText}
-            onChange={(e) => setNewTemplateText(e.target.value)}
-            className={`w-full px-3.5 py-2 rounded-[8px] text-[13px] font-medium focus:outline-none focus:ring-1 transition-all border leading-relaxed resize-none ${isDarkMode
-                ? 'bg-[#2C2C2E] border-[#3A3A3C] text-white focus:ring-blue-500/40 focus:border-blue-500'
-                : 'bg-white border-[#C7C7CC] text-black focus:ring-blue-500/30 focus:border-blue-500'
-              }`}
-          />
-          <div className="flex items-center justify-between gap-2 px-0.5">
-            <button
-              type="button"
-              onClick={() => insertVariable("{username}", false)}
-              className={`text-[11px] font-bold px-3 py-1.5 rounded-[6px] border transition-all ${isDarkMode
-                  ? 'bg-[#2C2C2E] border-[#3A3A3C] hover:bg-[#3A3A3C] text-[#0A84FF]'
-                  : 'bg-white border-[#C7C7CC] hover:bg-[#F2F2F7] text-[#007AFF]'
-                }`}
-            >
-              + {`{username}`}
-            </button>
-            <button
-              type="submit"
-              disabled={!newTemplateText.trim()}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-bold transition-all shadow-sm ${newTemplateText.trim()
-                  ? 'bg-[#007AFF] text-white hover:bg-[#0062CC]'
-                  : 'bg-[#D1D1D6] text-[#8E8E93] cursor-not-allowed opacity-50'
-                }`}
-            >
-              <Plus size={14} />
-              <span>Añadir</span>
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className={`flex items-center gap-2 p-3.5 rounded-[8px] border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/10 text-amber-400' : 'bg-amber-50/50 border-amber-200 text-amber-600'
-          }`}>
-          <AlertCircle size={16} className="shrink-0" />
-          <span className="text-[12px] font-bold">Límite de mensajes alcanzado</span>
+          <span style={{ 
+            fontSize: '10px', fontWeight: '800', 
+            color: templates.length >= 5 ? '#FF453A' : '#AF52DE' 
+          }}>
+            {templates.length}/5
+          </span>
         </div>
-      )}
+
+        {templates.length < 5 ? (
+          <div style={{ 
+            display: 'flex', flexDirection: 'column', padding: '14px', borderRadius: '14px',
+            background: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+            border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)'
+          }}>
+            <textarea
+              ref={addTextareaRef}
+              rows={2}
+              placeholder="Escribe el mensaje aquí..."
+              value={newTemplateText}
+              onChange={(e) => setNewTemplateText(e.target.value)}
+              style={{
+                width: '100%', background: 'transparent', border: 'none', outline: 'none',
+                fontSize: '14px', fontWeight: '500', lineHeight: '1.4', resize: 'none',
+                color: isDarkMode ? '#FFFFFF' : '#000000', padding: 0
+              }}
+            />
+            <div style={{ 
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+              marginTop: '10px', paddingTop: '10px', 
+              borderTop: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)' 
+            }}>
+              <button
+                type="button"
+                onClick={() => insertVariable("{username}", false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px', 
+                  padding: '6px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: '700',
+                  background: isDarkMode ? 'rgba(175, 82, 222, 0.15)' : 'rgba(175, 82, 222, 0.1)',
+                  color: '#AF52DE', border: 'none', cursor: 'pointer'
+                }}
+              >
+                <Plus size={12} />
+                {`{username}`}
+              </button>
+              <button
+                type="button"
+                onClick={handleAddTemplate}
+                disabled={!newTemplateText.trim()}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  padding: '8px 16px', borderRadius: '100px', fontSize: '12px', fontWeight: '700',
+                  background: newTemplateText.trim() ? '#AF52DE' : (isDarkMode ? '#3A3A3C' : '#D1D1D6'),
+                  color: '#FFFFFF',
+                  border: 'none', cursor: newTemplateText.trim() ? 'pointer' : 'not-allowed',
+                }}
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', 
+            borderRadius: '14px', background: 'rgba(255, 69, 58, 0.1)', 
+            border: '1px solid rgba(255, 69, 58, 0.2)', color: '#FF453A'
+          }}>
+            <AlertCircle size={16} />
+            <span style={{ fontSize: '12px', fontWeight: '700' }}>Límite alcanzado</span>
+          </div>
+        )}
+      </div>
 
       {/* Lista de Plantillas */}
       {templates.length > 0 && (
-        <div className="flex flex-col gap-3 mt-1">
-          <span className={`text-[11px] font-bold tracking-tight uppercase ${isDarkMode ? 'text-[#8E8E93]' : 'text-[#636366]'
-            }`}>
-            Mensajes Guardados
-          </span>
-
-          <div className="flex flex-col gap-2.5 max-h-[190px] overflow-y-auto pr-1">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <label style={{ 
+            fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px',
+            color: isDarkMode ? '#8E8E93' : '#8E8E93' 
+          }}>
+            Tus Plantillas
+          </label>
+          <div style={{ 
+            display: 'flex', flexDirection: 'column', gap: '8px', 
+            maxHeight: '160px', overflowY: 'auto' 
+          }} className="custom-scrollbar">
             {templates.map((template, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col gap-3 p-3.5 rounded-[8px] border transition-all ${editingIndex === idx
-                    ? isDarkMode ? 'bg-[#2C2C2E] border-[#0A84FF]' : 'bg-[#E5E5EA] border-[#007AFF]'
-                    : isDarkMode ? 'bg-[#2C2C2E] border-[#3A3A3C]' : 'bg-white border-[#E5E5EA] shadow-sm'
-                  }`}
+                style={{
+                  display: 'flex', flexDirection: 'column', padding: '12px', 
+                  borderRadius: '14px', transition: 'all 0.3s ease',
+                  background: editingIndex === idx ? 'rgba(175, 82, 222, 0.1)' : (isDarkMode ? '#2C2C2E' : '#F2F2F7'),
+                  border: editingIndex === idx ? '1px solid rgba(175, 82, 222, 0.3)' : '1px solid transparent'
+                }}
               >
                 {editingIndex === idx ? (
-                  <div className="flex flex-col gap-3">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <textarea
                       ref={editTextareaRef}
                       rows={2}
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
-                      className={`w-full px-3.5 py-2 rounded-[8px] text-[13px] font-medium focus:outline-none focus:ring-1 transition-all border leading-relaxed resize-none ${isDarkMode
-                          ? 'bg-[#1C1C1E] border-[#3A3A3C] text-white focus:ring-blue-500/40 focus:border-blue-500'
-                          : 'bg-white border-[#007AFF] text-black focus:ring-blue-500/30 focus:border-blue-500'
-                        }`}
+                      style={{
+                        width: '100%', background: 'transparent', border: 'none', outline: 'none',
+                        fontSize: '14px', fontWeight: '500', lineHeight: '1.4', resize: 'none',
+                        color: isDarkMode ? '#FFFFFF' : '#000000', padding: 0
+                      }}
                     />
-                    <div className="flex items-center justify-between gap-2 px-0.5">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <button
                         type="button"
                         onClick={() => insertVariable("{username}", true)}
-                        className={`text-[11px] font-bold px-3 py-1.5 rounded-[6px] border transition-all ${isDarkMode
-                            ? 'bg-[#1C1C1E] border-[#3A3A3C] hover:bg-[#2C2C2E] text-[#0A84FF]'
-                            : 'bg-white border-[#C7C7CC] hover:bg-[#F2F2F7] text-[#007AFF]'
-                          }`}
+                        style={{ background: 'none', border: 'none', color: '#AF52DE', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
                       >
                         + {`{username}`}
                       </button>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditingIndex(null)}
-                          className={`p-2 rounded-[6px] border transition-all ${isDarkMode ? 'bg-[#1C1C1E] border-[#3A3A3C] hover:bg-[#3A3A3C]' : 'bg-[#E5E5EA] border-[#C7C7CC] hover:bg-[#D1D1D6]'
-                            }`}
-                        >
-                          <X size={15} className="text-[#8E8E93]" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEdit(idx)}
-                          disabled={!editingText.trim()}
-                          className={`p-2 rounded-[6px] transition-all text-white shadow-sm ${editingText.trim()
-                              ? 'bg-[#34C759] hover:bg-[#28A745]'
-                              : 'bg-[#D1D1D6] opacity-50 cursor-not-allowed'
-                            }`}
-                        >
-                          <Check size={15} />
-                        </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button onClick={() => setEditingIndex(null)} style={{ background: 'none', border: 'none', color: isDarkMode ? '#8E8E93' : '#636366', cursor: 'pointer' }}><X size={16} /></button>
+                        <button onClick={() => handleSaveEdit(idx)} style={{ background: 'none', border: 'none', color: '#34C759', cursor: 'pointer' }}><Check size={16} /></button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between gap-3">
-                    <p className={`text-[13px] font-medium leading-relaxed flex-1 break-words ${isDarkMode ? 'text-[#E5E5EA]' : 'text-[#3A3A3C]'
-                      }`}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <p style={{ 
+                      margin: 0, fontSize: '13px', fontWeight: '500', lineHeight: '1.4', 
+                      color: isDarkMode ? '#FFFFFF' : '#1C1C1E',
+                      flex: 1
+                    }}>
                       {template}
                     </p>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <button
-                        type="button"
                         onClick={() => handleStartEditing(idx)}
-                        className={`p-2 rounded-[6px] border transition-all ${isDarkMode
-                            ? 'bg-[#1C1C1E] border-[#3A3A3C] hover:bg-[#3A3A3C] text-[#E5E5EA]'
-                            : 'bg-[#F2F2F7] border-[#D1D1D6] hover:bg-[#E5E5EA] text-[#3A3A3C]'
-                          }`}
-                        title="Editar Plantilla"
+                        style={{ 
+                          padding: '6px', borderRadius: '100px', background: 'none', border: 'none',
+                          color: isDarkMode ? '#8E8E93' : '#636366',
+                          cursor: 'pointer'
+                        }}
                       >
-                        <Edit2 size={13} />
+                        <Edit2 size={14} />
                       </button>
                       <button
-                        type="button"
                         onClick={() => handleDeleteTemplate(idx)}
-                        className="p-2 rounded-[6px] border border-red-200/20 bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all"
-                        title="Eliminar Plantilla"
+                        style={{ 
+                          padding: '6px', borderRadius: '100px', background: 'none', border: 'none',
+                          color: '#FF453A', cursor: 'pointer', opacity: 0.8
+                        }}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>

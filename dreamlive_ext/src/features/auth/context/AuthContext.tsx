@@ -17,14 +17,16 @@ interface AuthState {
   token: string | null;
   session_id: string | null;
   error: string | null;
+  limitReachedInfo?: { active: number, max: number } | null;
 }
 
 interface AuthContextType extends AuthState {
-  loginWithEmail: (email: string, pass: string) => Promise<void>;
-  loginWithLicense: (licenseKey: string) => Promise<void>;
-  handleLinkLicense: (licenseKey: string, email: string, pass: string, fullName: string) => Promise<void>;
+  loginWithEmail: (email: string, pass: string, force?: boolean) => Promise<void>;
+  loginWithLicense: (licenseKey: string, force?: boolean) => Promise<void>;
+  handleLinkLicense: (licenseKey: string, email: string, pass: string, fullName: string, force?: boolean) => Promise<void>;
   handleCreateAdmin: (formData: any) => Promise<void>;
   logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -120,16 +122,26 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   }, [state.status, state.token, handleForceLogout]);
 
-  const loginWithEmail = async (email: string, pass: string) => {
-    setState((prev) => ({ ...prev, status: 'loading', error: null }));
-    const { data: tokenData, error: loginError } = await AuthService.loginExtension(email, pass);
+  const loginWithEmail = async (email: string, pass: string, force: boolean = false) => {
+    setState((prev) => ({ ...prev, status: 'loading', error: null, limitReachedInfo: null }));
+    const { data: tokenData, error: loginError } = await AuthService.loginExtension(email, pass, force);
 
     if (loginError) {
-      const lowerError = loginError.toLowerCase();
-      if (lowerError.includes("no encontrada") || lowerError.includes("licensenotfound") || lowerError.includes("no encontrado")) {
-        setState((prev) => ({ ...prev, status: 'needs_license', error: null }));
+      if (typeof loginError === 'object' && (loginError as any).code === 'LIMIT_REACHED') {
+        setState((prev) => ({ 
+          ...prev, 
+          status: 'error', 
+          error: (loginError as any).message,
+          limitReachedInfo: { active: (loginError as any).active, max: (loginError as any).max }
+        }));
       } else {
-        setState((prev) => ({ ...prev, status: 'error', error: loginError }));
+        const errStr = typeof loginError === 'string' ? loginError : 'Error desconocido';
+        const lowerError = errStr.toLowerCase();
+        if (lowerError.includes("no encontrada") || lowerError.includes("licensenotfound") || lowerError.includes("no encontrado")) {
+          setState((prev) => ({ ...prev, status: 'needs_license', error: null }));
+        } else {
+          setState((prev) => ({ ...prev, status: 'error', error: errStr }));
+        }
       }
       return;
     }
@@ -145,18 +157,28 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         license: tokenData.license,
         token: tokenData.token,
         session_id: tokenData.session_id,
-        error: null
+        error: null,
+        limitReachedInfo: null
       });
       socketService.connect(WS_URL, tokenData.token, tokenData.session_id);
     }
   };
 
-  const loginWithLicense = async (licenseKey: string) => {
-    setState((prev) => ({ ...prev, status: 'loading', error: null }));
-    const { data, error } = await AuthService.loginWithLicense(licenseKey);
+  const loginWithLicense = async (licenseKey: string, force: boolean = false) => {
+    setState((prev) => ({ ...prev, status: 'loading', error: null, limitReachedInfo: null }));
+    const { data, error } = await AuthService.loginWithLicense(licenseKey, force);
 
     if (error) {
-      setState((prev) => ({ ...prev, status: 'error', error }));
+      if (typeof error === 'object' && (error as any).code === 'LIMIT_REACHED') {
+        setState((prev) => ({ 
+          ...prev, 
+          status: 'error', 
+          error: (error as any).message,
+          limitReachedInfo: { active: (error as any).active, max: (error as any).max }
+        }));
+      } else {
+        setState((prev) => ({ ...prev, status: 'error', error: typeof error === 'string' ? error : 'Error desconocido' }));
+      }
       return;
     }
 
@@ -171,7 +193,8 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
           license: data.license,
           token: data.token,
           session_id: data.session_id,
-          error: null
+          error: null,
+          limitReachedInfo: null
         });
         socketService.connect(WS_URL, data.token, data.session_id);
       } else {
@@ -181,23 +204,33 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
           license: data.license,
           token: data.token,
           session_id: data.session_id,
-          error: null
+          error: null,
+          limitReachedInfo: null
         });
       }
     }
   };
 
-  const handleLinkLicense = async (licenseKey: string, email: string, pass: string, fullName: string) => {
-    setState((prev) => ({ ...prev, status: 'loading', error: null }));
-    const { data, error } = await AuthService.linkLicense({ licenseKey, email, password: pass, fullName });
+  const handleLinkLicense = async (licenseKey: string, email: string, pass: string, fullName: string, force: boolean = false) => {
+    setState((prev) => ({ ...prev, status: 'loading', error: null, limitReachedInfo: null }));
+    const { data, error } = await AuthService.linkLicense({ licenseKey, email, password: pass, fullName, force });
 
     if (error) {
-      setState((prev) => ({ ...prev, status: 'needs_license', error }));
+      if (typeof error === 'object' && (error as any).code === 'LIMIT_REACHED') {
+        setState((prev) => ({ 
+          ...prev, 
+          status: 'error', 
+          error: (error as any).message,
+          limitReachedInfo: { active: (error as any).active, max: (error as any).max }
+        }));
+      } else {
+        setState((prev) => ({ ...prev, status: 'needs_license', error: typeof error === 'string' ? error : 'Error desconocido' }));
+      }
     } else if (data) {
       await storage.setItem('local:token', data.token);
       await storage.setItem('local:license', data.license);
       await storage.setItem('local:session_id', data.session_id);
-      setState({ ...state, status: 'authenticated', license: data.license, token: data.token, session_id: data.session_id, error: null });
+      setState({ ...state, status: 'authenticated', license: data.license, token: data.token, session_id: data.session_id, error: null, limitReachedInfo: null });
       socketService.connect(WS_URL, data.token, data.session_id || undefined);
     }
   };
@@ -229,6 +262,17 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setState({ status: 'idle', user: null, license: null, token: null, session_id: null, error: null });
   };
 
+  const logoutAll = async () => {
+    setState((prev) => ({ ...prev, status: 'loading' }));
+    try {
+      await AuthService.logoutAll();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      await logout();
+    }
+  };
+
   const clearError = () => {
     setState((prev) => ({ ...prev, error: null, status: prev.status === 'error' ? 'idle' : prev.status }));
   };
@@ -241,6 +285,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       handleLinkLicense,
       handleCreateAdmin,
       logout,
+      logoutAll,
       clearError
     }}>
       {children}

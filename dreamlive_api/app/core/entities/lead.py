@@ -13,6 +13,7 @@ class LeadStatus(str, Enum):
     AVAILABLE = "disponible"
     CONTACTED = "contactado"
     COLLECTED = "recopilado"
+    DISCARDED = "descartado"
 
 
 @dataclass

@@ -43,8 +43,29 @@ export const KeywordsService = {
    * Obtiene la palabra clave activa.
    */
   async getActiveKeyword(): Promise<string> {
-    const res = await browser.storage.local.get('activeKeyword');
-    return (res.activeKeyword as string) || 'gaming';
+    const res = await browser.storage.local.get(['activeKeyword', 'keywords']) as any;
+    
+    // Validamos que sea un string y no esté vacío
+    if (typeof res.activeKeyword === 'string' && res.activeKeyword.trim().length > 0) {
+      return res.activeKeyword;
+    }
+    
+    // Si no hay activa, intentamos usar la primera de la lista cacheada
+    if (res.keywords && Array.isArray(res.keywords) && res.keywords.length > 0) {
+      const first = res.keywords[0];
+      await browser.storage.local.set({ activeKeyword: first });
+      return first;
+    }
+    
+    // Si ni siquiera hay keywords en cache, intentamos traerlas de la API
+    const fresh = await this.getKeywords();
+    if (fresh.length > 0) {
+      const first = fresh[0];
+      await browser.storage.local.set({ activeKeyword: first });
+      return first;
+    }
+
+    return 'gaming';
   },
 
   /**

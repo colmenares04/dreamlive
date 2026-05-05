@@ -81,33 +81,32 @@ class ExtensionCORSMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http":
+        if scope["type"] not in ("http", "websocket"):
             return await self.app(scope, receive, send)
 
         method = scope.get("method", "")
         path = scope.get("path", "")
         
         origin = ""
+        request_headers = {}
         for k, v in scope.get("headers", []):
-            if k.lower() == b"origin":
+            k_lower = k.lower()
+            request_headers[k_lower] = v.decode()
+            if k_lower == b"origin":
                 origin = v.decode()
-                break
 
         is_extension = origin.startswith("chrome-extension://") or "tiktok.com" in origin
 
-        if settings.DEBUG_LOGS:
-            print(f"DEBUG [CORS]: {method} {path} | Origin: {origin} | IsExtension: {is_extension}")
-
-        if is_extension and method == "OPTIONS":
-            if settings.DEBUG_LOGS:
-                print(f"DEBUG [CORS]: Handling Preflight (OPTIONS) for Extension")
+        if is_extension and scope["type"] == "http" and method == "OPTIONS":
             from starlette.responses import Response
+            # Preflight needs all CORS headers
+            requested_headers = request_headers.get(b"access-control-request-headers", "*")
             response = Response(
                 status_code=204,
                 headers={
                     "Access-Control-Allow-Origin": origin if origin else "*",
-                    "Access-Control-Allow-Methods": "*",
-                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                    "Access-Control-Allow-Headers": requested_headers,
                     "Access-Control-Allow-Credentials": "true",
                 }
             )
@@ -117,11 +116,21 @@ class ExtensionCORSMiddleware:
         async def send_wrapper(message: Message) -> None:
             if is_extension and message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
-                # Eliminar cabeceras CORS duplicadas si las hay
-                headers = [h for h in headers if h[0].lower() not in [b"access-control-allow-origin", b"access-control-allow-credentials"]]
                 
-                headers.append((b"access-control-allow-origin", (origin if origin else "*").encode()))
-                headers.append((b"access-control-allow-credentials", b"true"))
+                # Definir cabeceras a inyectar/sobrescribir
+                cors_headers = [
+                    (b"access-control-allow-origin", (origin if origin else "*").encode()),
+                    (b"access-control-allow-credentials", b"true"),
+                    (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS, PATCH"),
+                    (b"access-control-allow-headers", b"*"),
+                ]
+                
+                # Filtrar cabeceras existentes para evitar duplicados
+                keys_to_remove = {h[0].lower() for h in cors_headers}
+                headers = [h for h in headers if h[0].lower() not in keys_to_remove]
+                
+                # Añadir las nuevas
+                headers.extend(cors_headers)
                 message["headers"] = headers
             await send(message)
 
@@ -133,13 +142,7 @@ fastapi_app.add_middleware(RateLimitMiddleware)
 fastapi_app.add_middleware(SecurityHeadersMiddleware)
 
 # Orígenes controlados para la web
-allowed_origins = [
-    "https://dreamlive.app",
-    "https://api.dreamlive.app",
-    "http://localhost",
-    "http://localhost:5173",
-    "http://localhost:3000"
-]
+allowed_origins = settings.ALLOWED_ORIGINS
 
 fastapi_app.add_middleware(
     CORSMiddleware,

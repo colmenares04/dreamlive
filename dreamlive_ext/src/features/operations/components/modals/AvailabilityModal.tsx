@@ -29,8 +29,9 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
     browser.storage.local.get(['availability_position', 'cachedCounts']).then((res: any) => {
       const pos = res?.availability_position as { x: number; y: number } | undefined;
       if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') setPosition(pos);
-      if (res?.cachedCounts && typeof res.cachedCounts.DISPONIBILIDAD === 'number') {
-        setProgress(prev => ({ ...prev, total: res.cachedCounts.DISPONIBILIDAD }));
+      // Para disponibilidad, el total de la operación es el número de leads RECOPILADOS
+      if (res?.cachedCounts && typeof res.cachedCounts.RECOPILAR === 'number') {
+        setProgress(prev => ({ ...prev, total: res.cachedCounts.RECOPILAR }));
       }
     });
 
@@ -150,6 +151,7 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
             <div className="dreamlive-header-actions">
               <button
                 onClick={() => setShowConsole(!showConsole)}
+                title="Mostrar/Ocultar consola de depuración"
                 className="dreamlive-icon-btn"
                 style={{ background: showConsole ? 'var(--color-blue)' : 'var(--apple-btn-secondary)', color: showConsole ? '#FFF' : 'var(--apple-text-main)' }}
               >

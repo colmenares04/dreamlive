@@ -13,6 +13,7 @@ from typing import List, Optional
 from app.core.entities.agency import Agency
 from app.core.entities.license import License
 from app.core.entities.app_version import AppVersion
+from app.core.entities.lead import LeadStatus
 from app.core.ports.unit_of_work import IUnitOfWork
 from app.core.ports.security import IPasswordHasher
 from app.core.domain.exceptions import (
@@ -160,15 +161,15 @@ class GetAgencyStatsUseCase:
 
         # 1. Total Agency Stats
         counts = await self._uow.leads.count_by_status_bulk(lic_ids)
-        contacted = counts.get("contactado", 0)
-        available = counts.get("disponible", 0)
-        collected = counts.get("recopilado", 0)
+        contacted = counts.get(LeadStatus.CONTACTED, 0)
+        available = counts.get(LeadStatus.AVAILABLE, 0)
+        collected = counts.get(LeadStatus.COLLECTED, 0)
         total = sum(counts.values())
 
         # 2. Today's stats
         today_midnight = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         today_counts = await self._uow.leads.count_under_date(lic_ids, today_midnight)
-        today_contacted = today_counts.get("contactado", 0)
+        today_contacted = today_counts.get(LeadStatus.CONTACTED, 0)
         today_collected = sum(today_counts.values())
 
         # 3. Grouped stats per license
@@ -178,9 +179,9 @@ class GetAgencyStatsUseCase:
         for lic in licenses:
             lid = str(lic.id)
             lc = grouped_counts.get(lid, {})
-            l_contacted = lc.get("contactado", 0)
-            l_available = lc.get("disponible", 0)
-            l_collected = lc.get("recopilado", 0)
+            l_contacted = lc.get(LeadStatus.CONTACTED, 0)
+            l_available = lc.get(LeadStatus.AVAILABLE, 0)
+            l_collected = lc.get(LeadStatus.COLLECTED, 0)
             l_total = sum(lc.values())
 
             license_details.append({

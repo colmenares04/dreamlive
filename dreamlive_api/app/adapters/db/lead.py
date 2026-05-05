@@ -13,7 +13,7 @@ class LeadORM(Base):
     username = Column(String(200), nullable=False, index=True)
     license_id = Column(String(36), ForeignKey("licenses.id"), nullable=False)
     agency_id = Column(String(36), ForeignKey("agencies.id"), nullable=False)
-    status = Column(Enum(LeadStatus), default=LeadStatus.AVAILABLE, nullable=False, index=True)
+    status = Column(Enum(LeadStatus, name="leadstatus"), default=LeadStatus.AVAILABLE, nullable=False, index=True)
     followers = Column(BigInteger, default=0)
     following = Column(BigInteger, default=0)
     keywords = Column(ARRAY(String), default=list)

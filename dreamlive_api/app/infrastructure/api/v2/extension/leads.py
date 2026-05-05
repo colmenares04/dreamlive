@@ -8,6 +8,7 @@ import random
 from app.infrastructure.api.deps import get_uow
 from app.infrastructure.api.v2.shared import get_current_v2_agency, get_current_v2_license
 from app.adapters.db.models import LeadORM
+from app.core.entities.lead import LeadStatus
 
 router = APIRouter(prefix="/leads", tags=["Leads V2"])
 
@@ -39,14 +40,14 @@ async def process_batch_leads(
         await uow.session.execute(
             update(LeadORM)
             .where(LeadORM.username.in_(body.availables), LeadORM.license_id == str(license.id))
-            .values(status="available")
+            .values(status=LeadStatus.AVAILABLE)
         )
         
     if body.discarded:
         await uow.session.execute(
             update(LeadORM)
             .where(LeadORM.username.in_(body.discarded), LeadORM.license_id == str(license.id))
-            .values(status="discarded")
+            .values(status=LeadStatus.DISCARDED)
         )
         
     await uow.session.commit()
@@ -178,7 +179,7 @@ async def purge_leads(
     from sqlalchemy import delete
     stmt = delete(LeadORM).where(LeadORM.agency_id == str(agency.id))
     if status and status != 'all':
-        stmt = stmt.where(LeadORM.status == status)
+        stmt = stmt.where(LeadORM.status == LeadStatus(status))
     if license_id:
         stmt = stmt.where(LeadORM.license_id == str(license_id))
         
@@ -202,9 +203,16 @@ async def bulk_update_status(
     stmt = update(LeadORM).where(
         LeadORM.username.in_(body.usernames),
         LeadORM.license_id == str(license.id)
-    ).values(status=body.status)
+    ).values(status=LeadStatus(body.status))
     
     await uow.session.execute(stmt)
+    
+    if body.status == 'contactado':
+        from datetime import datetime, timezone
+        license.daily_contact_count = (license.daily_contact_count or 0) + len(body.usernames)
+        license.last_contact_date = datetime.now(timezone.utc)
+        uow.session.add(license)
+
     await uow.session.commit()
     return {"status": "ok"}
 
@@ -230,7 +238,7 @@ async def update_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
         
-    lead.status = body.status
+    lead.status = LeadStatus(body.status)
     await uow.session.commit()
     return {"status": "ok"}
 

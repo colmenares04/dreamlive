@@ -17,12 +17,18 @@ const ROUTES = {
   RECOPILAR: 'tiktok.com/search/live',
   DISPONIBILIDAD: 'live-backstage.tiktok.com/portal/anchor/relation',
   CONTACTAR: 'live-backstage.tiktok.com/portal/anchor/instant-messages',
+  HISTORY_RECOPILAR: 'tiktok.com',
+  HISTORY_DISPONIBILIDAD: 'live-backstage.tiktok.com',
+  HISTORY_CONTACTAR: 'live-backstage.tiktok.com',
 };
 
 const URLS = {
   RECOPILAR: 'https://www.tiktok.com/search/live?q=live',
   DISPONIBILIDAD: 'https://live-backstage.tiktok.com/portal/anchor/relation',
   CONTACTAR: 'https://live-backstage.tiktok.com/portal/anchor/instant-messages',
+  HISTORY_RECOPILAR: 'https://www.tiktok.com/search/live?q=live',
+  HISTORY_DISPONIBILIDAD: 'https://live-backstage.tiktok.com/portal/anchor/relation',
+  HISTORY_CONTACTAR: 'https://live-backstage.tiktok.com/portal/anchor/instant-messages',
 };
 
 export const OperationsConsole: React.FC = () => {
@@ -96,8 +102,10 @@ export const OperationsConsole: React.FC = () => {
         con += data[lid].contacted || 0;
       }
 
-      // El badge de disponibilidad muestra cuántos leads están disponibles.
-      // El badge de contactar muestra cuántos leads han sido contactados.
+      // Lógica de contadores orientada a "Pendientes":
+      // - RECOPILAR: Muestra cuántos leads hemos capturado (collected).
+      // - DISPONIBILIDAD: Muestra cuántos leads están esperando ser verificados (collected).
+      // - CONTACTAR: Muestra cuántos leads ya son 'disponibles' y esperan el mensaje (available).
       const newCounts = {
         RECOPILAR: col,
         DISPONIBILIDAD: av,
@@ -169,7 +177,28 @@ export const OperationsConsole: React.FC = () => {
       }
     };
     browser.storage.onChanged.addListener(handleStorageChange);
-    return () => browser.storage.onChanged.removeListener(handleStorageChange);
+
+    const handleMessage = (msg: any) => {
+      // Sincronización en vivo de los contadores cuando se completa una acción
+      if (msg.type === 'LEAD_CONTACTED_SUCCESS' || msg.type === 'MARK_CONTACTED') {
+        setCounts(prev => ({
+          ...prev,
+          CONTACTAR: prev.CONTACTAR + 1
+        }));
+      }
+      if (msg.type === 'LEAD_SAVED_CONFIRMATION') {
+        setCounts(prev => ({
+          ...prev,
+          RECOPILAR: prev.RECOPILAR + 1
+        }));
+      }
+    };
+    browser.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+      browser.runtime.onMessage.removeListener(handleMessage);
+    };
   }, []);
 
   const isCurrentRouteValid = async (id: ModalType): Promise<boolean> => {
@@ -239,7 +268,7 @@ export const OperationsConsole: React.FC = () => {
 
       let targetUrl = URLS[id as keyof typeof URLS];
 
-      if (id === 'RECOPILAR') {
+      if (id === 'RECOPILAR' || id === 'HISTORY_RECOPILAR') {
         const res = await browser.storage.local.get(['keywords', 'activeKeyword']);
         const keywords = (res.keywords as string[]) || [];
         const activeKeyword = res.activeKeyword as string | undefined;
@@ -345,6 +374,7 @@ export const OperationsConsole: React.FC = () => {
             >
               <button
                 onClick={() => handleToggleModal(btn.id)}
+                title={`Abrir panel de ${btn.title}`}
                 className="w-full flex items-center gap-3 p-3.5 text-left"
               >
                 <div className="shrink-0">
@@ -388,6 +418,7 @@ export const OperationsConsole: React.FC = () => {
                     e.stopPropagation();
                     handleToggleModal(btn.historyId);
                   }}
+                  title={`Ver historial de ${btn.title}`}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-[10px] text-[10px] font-bold transition-all
                     ${isHistoryActive
                       ? 'bg-[#007AFF] text-white shadow-md'

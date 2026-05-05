@@ -21,7 +21,8 @@ async def get_limits(
     # Calcular tiempo para reinicio
     reset_in = 0
     if license.last_contact_date:
-        next_reset = license.last_contact_date + timedelta(hours=24)
+        refresh_m = license.refresh_minutes or 1440
+        next_reset = license.last_contact_date + timedelta(minutes=refresh_m)
         now = datetime.now(timezone.utc)
         if next_reset > now:
             reset_in = int((next_reset - now).total_seconds())

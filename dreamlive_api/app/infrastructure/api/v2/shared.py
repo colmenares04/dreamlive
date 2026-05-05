@@ -70,6 +70,19 @@ async def get_current_v2_license(
         res_lic = await uow.session.execute(select(LicenseORM).where(LicenseORM.id == subject_id))
         lic = res_lic.scalar_one_or_none()
         if lic:
+            # Lógica de reseteo diario
+            from datetime import datetime, timezone, timedelta
+            now = datetime.now(timezone.utc)
+            
+            # Si hay una fecha de contacto y ha pasado más de 24 horas O es un día diferente
+            # Aquí usaremos la lógica de refresh_minutes
+            if lic.last_contact_date:
+                refresh_m = lic.refresh_minutes or 1440
+                if now > (lic.last_contact_date + timedelta(minutes=refresh_m)):
+                    lic.daily_contact_count = 0
+                    uow.session.add(lic)
+                    await uow.session.flush()
+            
             return lic
                 
         raise HTTPException(status_code=401, detail="El token no corresponde a una licencia válida.")
