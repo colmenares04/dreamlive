@@ -174,7 +174,7 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
       style={{
         position: 'fixed', zIndex: 2147483646,
         top: `${position.y}px`, left: `${position.x}px`,
-        pointerEvents: 'auto', width: showTemplates ? '440px' : '360px',
+        pointerEvents: 'auto', width: showTemplates ? '440px' : '340px',
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
@@ -191,27 +191,42 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-0.3px' }}>
-                Contactar
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: isValidRoute ? 'var(--color-purple)' : 'var(--apple-text-sub)', marginTop: '1px' }}>
+              <span className="dreamlive-title-main">Contactar</span>
+              <span style={{ 
+                fontSize: '11px', 
+                fontWeight: '800', 
+                color: isValidRoute ? 'var(--color-primary)' : 'var(--color-red)', 
+                marginTop: '2px',
+                letterSpacing: '0.5px'
+              }}>
                 {isValidRoute ? 'MENSAJERÍA LISTA' : 'ESPERANDO CHAT...'}
               </span>
             </div>
-            <div className="dreamlive-header-actions" style={{ gap: '8px' }}>
+            <div className="dreamlive-header-actions" style={{ gap: '10px' }}>
               <button 
                 onClick={toggleConsole}
                 className="dreamlive-icon-btn" 
-                style={{ background: showConsole ? 'var(--color-purple)' : 'var(--apple-btn-secondary)', color: showConsole ? '#FFF' : 'var(--apple-text-main)' }}
+                title="Terminal: Abre la consola técnica para ver el progreso detallado de los envíos en tiempo real"
+                style={{ 
+                  background: showConsole ? 'var(--color-primary)' : 'var(--apple-btn-secondary)', 
+                  color: showConsole ? '#FFF' : 'var(--apple-text-main)',
+                  boxShadow: showConsole ? '0 0 12px rgba(255, 99, 155, 0.3)' : 'none'
+                }}
               >
                 <Terminal size={14} />
               </button>
-              <button onClick={onClose} className="dreamlive-icon-btn"><X size={16} /></button>
+              <button 
+                onClick={onClose} 
+                className="dreamlive-icon-btn"
+                title="Cerrar ventana"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
 
           {/* Body */}
-          <div className="dreamlive-modal-body" style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="dreamlive-modal-body" style={{ padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {showTemplates ? (
               <TemplateManager 
                 templates={templates} 
@@ -221,31 +236,29 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
               />
             ) : (
               <>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
                   <div 
+                    className="dreamlive-circle-main"
                     style={{ 
-                      width: '80px', height: '80px', borderRadius: '50%', 
-                      border: `4px solid ${isRunning ? 'var(--color-purple)' : 'var(--apple-btn-secondary)'}`,
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.3s ease',
-                      boxShadow: isRunning ? '0 0 15px rgba(175, 82, 222, 0.2)' : 'none'
+                      borderColor: isRunning ? 'var(--color-primary)' : 'var(--apple-border)',
+                      boxShadow: isRunning ? '0 0 20px rgba(255, 99, 155, 0.2)' : 'var(--apple-shadow)'
                     }}
                   >
-                    <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)', lineHeight: '1.2' }}>{count}</span>
-                    <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)' }}>/ {total || '-'}</span>
+                    <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-1px' }}>{count}</span>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)', marginTop: '-2px' }}>/ {total || '-'}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px', marginTop: '-4px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase' }}>Límite Diario</span>
-                    <span style={{ fontSize: '14px', fontWeight: '800', color: dailyUsed >= requestLimit ? '#FF3B30' : 'var(--apple-text-main)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Límite Diario</span>
+                    <span className="dreamlive-badge badge-active" style={{ fontSize: '12px', padding: '3px 12px' }}>
                       {dailyUsed} / {requestLimit}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase' }}>Reinicio</span>
-                    <span style={{ fontSize: '14px', fontVariantNumeric: 'tabular-nums', fontWeight: '800', color: resetIn > 0 ? '#AF52DE' : 'var(--apple-text-main)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Reinicio</span>
+                    <span style={{ fontSize: '14px', fontVariantNumeric: 'tabular-nums', fontWeight: '800', color: resetIn > 0 ? 'var(--color-primary)' : 'var(--apple-text-main)' }}>
                       {resetIn > 0 ? (
                         `${Math.floor(resetIn / 60)}:${(resetIn % 60).toString().padStart(2, '0')}`
                       ) : (
@@ -255,18 +268,19 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--apple-bg-secondary)', padding: '12px', borderRadius: '12px', marginBottom: '4px', border: '1px solid var(--apple-border)' }}>
+                <div style={{ background: 'var(--apple-bg-secondary)', padding: '10px', borderRadius: '14px', border: '1px solid var(--apple-border)' }}>
                   <p style={{ fontSize: '11px', fontWeight: '600', color: 'var(--apple-text-sub)', textAlign: 'center', lineHeight: '1.4' }}>
-                    Inicia el envío automático de mensajes a tus leads capturados desde la sección de chat.
+                    Inicia el envío automático de mensajes a tus leads capturados. Asegúrate de estar en la pestaña de chat.
                   </p>
                 </div>
               </>
             )}
 
-            <div className="dreamlive-button-group" style={{ gap: '10px' }}>
+            <div className="dreamlive-button-group" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {!showTemplates && (
                 <button 
                   disabled={!isValidRoute}
+                  title={!isValidRoute ? "Debes estar en la página de mensajes de TikTok Backstage para iniciar" : isRunning ? "Detener proceso de envío masivo" : "Iniciar envío automático de mensajes a leads disponibles"}
                   onClick={async () => {
                     const chatService = ChatAutomationService.getInstance();
                     if (isRunning) {
@@ -285,42 +299,44 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
                       }
                     }
                   }}
-                  className="dreamlive-btn"
+                  className="dreamlive-btn dreamlive-btn-primary"
                   style={{ 
-                    background: !isValidRoute ? 'var(--apple-btn-disabled)' : isRunning ? '#FF3B30' : 'var(--color-purple)', 
-                    color: !isValidRoute ? 'var(--apple-text-disabled)' : '#FFFFFF',
-                    height: '42px',
-                    cursor: !isValidRoute ? 'not-allowed' : 'pointer'
+                    background: !isValidRoute ? 'var(--apple-btn-disabled)' : isRunning ? 'var(--color-red)' : 'var(--color-primary-gradient)', 
+                    height: '38px',
+                    opacity: !isValidRoute ? 0.5 : 1
                   }}
                 >
-                  <Send size={16} fill="currentColor" />
-                  <span>{isRunning ? 'Detener Envío' : 'Iniciar Envío Masivo'}</span>
+                  <Send size={20} fill="currentColor" />
+                  <span style={{ letterSpacing: '-0.3px' }}>{isRunning ? 'Detener Envío' : 'Iniciar Envío Masivo'}</span>
                 </button>
               )}
               
               <button 
                 onClick={() => setShowTemplates(!showTemplates)}
                 className="dreamlive-btn" 
+                title="Configuración: Administra tus plantillas de mensajes y etiquetas de invitación"
                 style={{ 
-                  background: showTemplates ? 'var(--color-purple)' : 'var(--apple-btn-secondary)', 
+                  background: showTemplates ? 'var(--color-primary-gradient)' : 'var(--apple-btn-secondary)', 
                   color: showTemplates ? '#FFFFFF' : 'var(--apple-text-main)', 
-                  height: '42px' 
+                  height: '38px' 
                 }}
               >
-                <Settings size={16} />
+                <Settings size={18} />
                 <span>{showTemplates ? 'Volver a Envío' : 'Configuración de Mensaje'}</span>
               </button>
 
               {!showTemplates && (
                 <button
                   onClick={async () => {
+                    ChatAutomationService.getInstance().abort();
                     await browser.storage.local.set({ activeOperationsModal: 'HISTORY_CONTACTAR' });
                   }}
+                  title="Historial: Revisa los leads que ya han sido contactados anteriormente"
                   className="dreamlive-btn"
-                  style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '42px', marginTop: '4px' }}
+                  style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '36px' }}
                 >
-                  <Database size={16} />
-                  <span>Historial</span>
+                  <Database size={18} />
+                  <span>Historial de Contacto</span>
                 </button>
               )}
             </div>
@@ -331,8 +347,8 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
             <div style={{ 
               borderTop: '1px solid var(--apple-border)',
               background: '#000',
-              padding: '12px',
-              maxHeight: '120px',
+              padding: '10px',
+              maxHeight: '80px',
               overflowY: 'auto'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>

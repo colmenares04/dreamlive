@@ -141,6 +141,7 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
   };
 
   const handleOpenHistory = async () => {
+    tiktokScraper.stop();
     await browser.storage.local.set({ activeOperationsModal: 'HISTORY_RECOPILAR' });
   };
 
@@ -155,14 +156,12 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
       <div className="dreamlive-modal-container">
         <div className="dreamlive-modal-card">
           {/* Header */}
-          <div onMouseDown={handleMouseDown} className="dreamlive-modal-header" style={{ padding: '16px 18px', cursor: isDragging ? 'grabbing' : 'grab' }}>
+          <div onMouseDown={handleMouseDown} className="dreamlive-modal-header" style={{ padding: '12px 14px', cursor: isDragging ? 'grabbing' : 'grab' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-0.3px' }}>
-                  Recopilar Leads
-                </span>
-                <span style={{ fontSize: '10px', fontWeight: '800', color: isRunning ? 'var(--color-blue)' : 'var(--apple-text-sub)', textTransform: 'uppercase' }}>
-                  {isRunning ? 'En ejecución' : 'Presiona aquí para agregar o cambiar palabras.'}
+                <span className="dreamlive-title-main">Recopilar Leads</span>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: isRunning ? 'var(--color-primary)' : 'var(--apple-text-sub)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                  {isRunning ? 'MOTOR ACTIVO' : 'SISTEMA LISTO'}
                 </span>
               </div>
 
@@ -172,33 +171,40 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
                 title="Cambiar nicho de búsqueda"
                 style={{
                   alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '4px 10px', borderRadius: '20px', background: 'var(--apple-bg-secondary)',
-                  border: '1px solid var(--apple-border)', cursor: 'pointer', transition: 'all 0.2s',
-                  boxShadow: showKeywordMenu ? '0 0 10px rgba(0, 122, 255, 0.2)' : 'none'
+                  padding: '4px 12px', borderRadius: '20px', background: 'var(--apple-bg-secondary)',
+                  border: '1px solid var(--apple-border)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: showKeywordMenu ? '0 0 12px rgba(255, 99, 155, 0.15)' : 'none'
                 }}
               >
-                <Hash size={10} color="var(--color-blue)" />
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--apple-text-main)' }}>{activeKeyword}</span>
-                <Plus size={10} style={{ opacity: 0.5, transform: showKeywordMenu ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
-                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: isRunning ? 'var(--color-green)' : 'var(--apple-border)', marginLeft: '2px' }} />
+                <Hash size={11} color="var(--color-primary)" />
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--apple-text-main)' }}>{activeKeyword}</span>
+                <Plus size={11} style={{ opacity: 0.6, transform: showKeywordMenu ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s' }} />
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isRunning ? 'var(--color-primary)' : 'var(--apple-border)', marginLeft: '2px', boxShadow: isRunning ? '0 0 8px var(--color-primary)' : 'none' }} />
               </button>
             </div>
 
             <div className="dreamlive-header-actions" style={{ gap: '8px' }}>
-              <button onClick={() => setShowConsole(!showConsole)} className="dreamlive-icon-btn" style={{ background: showConsole ? 'var(--color-blue)' : 'var(--apple-btn-secondary)', color: showConsole ? '#FFF' : 'var(--apple-text-main)' }}><Terminal size={14} /></button>
+              <button 
+                onClick={() => setShowConsole(!showConsole)} 
+                className="dreamlive-icon-btn" 
+                style={{ 
+                  background: showConsole ? 'var(--color-primary)' : 'var(--apple-btn-secondary)', 
+                  color: showConsole ? '#FFF' : 'var(--apple-text-main)',
+                  boxShadow: showConsole ? '0 0 12px rgba(255, 99, 155, 0.3)' : 'none'
+                }}
+              >
+                <Terminal size={14} />
+              </button>
               <button onClick={onClose} className="dreamlive-icon-btn"><X size={16} /></button>
             </div>
           </div>
 
           {/* Quick Keyword Menu (Apple Style) */}
           {showKeywordMenu && (
-            <div style={{ padding: '0 18px 12px 18px', borderBottom: '1px solid var(--apple-border)', animation: 'fadeIn 0.2s ease' }}>
-              <div style={{ background: 'var(--apple-bg-secondary)', borderRadius: '14px', border: '1px solid var(--apple-border)', padding: '12px', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase' }}>Palabras Clave Activas</span>
-                  <span style={{ fontSize: '9px', fontWeight: '700', color: 'var(--color-blue)', background: 'var(--color-blue-light)', padding: '2px 6px', borderRadius: '4px' }}>
-                    Haz clic para alternar
-                  </span>
+            <div style={{ padding: '0 18px 12px 18px', borderBottom: '1px solid var(--apple-border)', animation: 'fadeIn 0.3s ease' }}>
+              <div style={{ background: 'var(--apple-bg-secondary)', borderRadius: '16px', border: '1px solid var(--apple-border)', padding: '14px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Palabras Clave Activas</span>
                 </div>
                 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
@@ -209,39 +215,40 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
                         key={k} 
                         onClick={() => handleSelectKeyword(k)}
                         style={{
-                          padding: '6px 12px', borderRadius: '12px', 
-                          background: isActive ? 'var(--color-blue)' : 'var(--apple-bg)',
-                          border: `1.5px solid ${isActive ? 'var(--color-blue)' : 'var(--apple-border)'}`, 
+                          padding: '7px 14px', borderRadius: '14px', 
+                          background: isActive ? 'var(--color-primary-gradient)' : 'var(--apple-bg)',
+                          border: `1px solid ${isActive ? 'transparent' : 'var(--apple-border)'}`, 
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          boxShadow: isActive ? '0 2px 8px rgba(0, 122, 255, 0.3)' : 'none',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: isActive ? '0 4px 12px rgba(255, 99, 155, 0.25)' : 'none',
                           transform: isActive ? 'scale(1.05)' : 'scale(1)'
                         }}
                       >
                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isActive ? '#FFF' : 'var(--apple-border)' }} />
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: isActive ? '#FFF' : 'var(--apple-text-main)' }}>{k}</span>
+                        <span style={{ fontSize: '12px', fontWeight: '800', color: isActive ? '#FFF' : 'var(--apple-text-main)' }}>{k}</span>
                         <button 
                           onClick={(e) => handleRemoveKeyword(e, k)} 
                           style={{ 
                             background: 'none', border: 'none', padding: '2px', marginLeft: '2px',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             color: isActive ? '#FFF' : 'var(--apple-text-sub)',
-                            opacity: 0.7
+                            opacity: 0.8
                           }}
                         >
-                          <X size={12} strokeWidth={2.5} />
+                          <Trash2 size={12} strokeWidth={2.5} />
                         </button>
                       </div>
                     );
                   })}
                 </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text" placeholder="Añadir nicho..." value={newKeyword} onChange={e => setNewKeyword(e.target.value)}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--apple-border)', background: 'var(--apple-bg)', fontSize: '11px', color: 'var(--apple-text-main)', outline: 'none' }}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddKeyword()}
+                    style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--apple-border)', background: 'var(--apple-bg)', fontSize: '12px', color: 'var(--apple-text-main)', outline: 'none', transition: 'border-color 0.3s' }}
                   />
-                  <button onClick={handleAddKeyword} style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-blue)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
-                    <Plus size={16} />
+                  <button onClick={handleAddKeyword} style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--color-primary)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', boxShadow: '0 4px 10px rgba(255, 99, 155, 0.2)' }}>
+                    <Plus size={20} strokeWidth={3} />
                   </button>
                 </div>
               </div>
@@ -249,54 +256,52 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
           )}
 
           {/* Main Body */}
-          <div className="dreamlive-modal-body" style={{ padding: '20px 18px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
+          <div className="dreamlive-modal-body" style={{ padding: '16px 14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
               <div
                 style={{
-                  width: '90px', height: '90px', borderRadius: '50%', border: `5px solid ${isRunning ? 'var(--color-blue)' : 'var(--apple-btn-secondary)'}`,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', 
-                  boxShadow: isRunning ? '0 0 20px rgba(0, 122, 255, 0.3)' : 'none',
+                  width: '80px', height: '80px', borderRadius: '50%', border: `3px solid ${isRunning ? 'var(--color-primary)' : 'var(--apple-btn-secondary)'}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)', 
+                  boxShadow: isRunning ? '0 0 20px rgba(255, 99, 155, 0.3)' : 'none',
                   position: 'relative',
                   background: 'var(--apple-bg)'
                 }}
               >
-                <span style={{ fontSize: '28px', fontWeight: '800', color: 'var(--apple-text-main)', lineHeight: '1.2' }}>{count}</span>
-                <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)' }}>SESIÓN</span>
+                <span style={{ fontSize: '24px', fontVariantNumeric: 'tabular-nums', fontWeight: '900', color: 'var(--apple-text-main)', lineHeight: '1.1' }}>{count}</span>
+                <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--apple-text-sub)', letterSpacing: '0.5px' }}>SESIÓN</span>
                 
-                {/* Tooltip flotante */}
                 {!isRunning && count === 0 && (
                    <div style={{
-                     position: 'absolute', bottom: '-28px', whiteSpace: 'nowrap',
-                     background: '#007AFF', color: '#fff', padding: '4px 10px',
-                     borderRadius: '8px', fontSize: '10px', fontWeight: '700', 
-                     boxShadow: '0 4px 12px rgba(0,122,255,0.3)',
+                     position: 'absolute', bottom: '-32px', whiteSpace: 'nowrap',
+                     background: 'var(--color-primary-gradient)', color: '#fff', padding: '5px 12px',
+                     borderRadius: '10px', fontSize: '11px', fontWeight: '800', 
+                     boxShadow: '0 4px 12px rgba(255, 99, 155, 0.3)',
                      animation: 'bounce 2s infinite',
                      zIndex: 10
                    }}>
                      Presiona Iniciar para comenzar
-                     <div style={{ position: 'absolute', top: '-4px', left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: '8px', height: '8px', background: '#007AFF' }} />
+                     <div style={{ position: 'absolute', top: '-4px', left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: '8px', height: '8px', background: '#FF639B' }} />
                    </div>
                 )}
               </div>
               
-              <div style={{ marginTop: '35px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--apple-text-sub)' }}>
-                  Total en base de datos
+              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--apple-text-sub)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  Total Recopilado
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-blue)' }} />
-                   <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--apple-text-main)' }}>{globalTotal} leads</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--apple-bg-secondary)', padding: '4px 12px', borderRadius: '10px', border: '1px solid var(--apple-border)' }}>
+                   <div className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-[#34C759] animate-pulse' : 'bg-gray-400'}`} />
+                   <span style={{ fontSize: '14px', fontVariantNumeric: 'tabular-nums', fontWeight: '900', color: 'var(--apple-text-main)' }}>{globalTotal} leads</span>
                 </div>
               </div>
             </div>
 
-            <div className="dreamlive-button-group" style={{ gap: '10px' }}>
+            <div className="dreamlive-button-group" style={{ gap: '12px' }}>
               <button
                 onClick={async () => {
                   if (isRunning) {
                     tiktokScraper.stop();
                   } else {
-                    // Verificar si estamos en la ruta correcta antes de iniciar
                     const currentUrl = window.location.href;
                     const expectedPart = `q=${encodeURIComponent(activeKeyword)}`;
 
@@ -304,7 +309,6 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
                       tiktokScraper.log(`Navegando a la búsqueda de "${activeKeyword}"...`);
                       const { url, inline } = await KeywordsService.setActiveKeyword(activeKeyword);
                       if (!inline) window.location.href = url;
-                      // Esperar un poco a que cargue si fue inline
                       if (inline) await new Promise(r => setTimeout(r, 2000));
                     }
 
@@ -314,19 +318,29 @@ export const RecopilarModal: React.FC<Props> = ({ onClose }) => {
                     tiktokScraper.start();
                   }
                 }}
-                className="dreamlive-btn" style={{ background: isRunning ? '#FF3B30' : 'var(--color-blue)', color: '#FFFFFF', height: '42px' }}
+                className="dreamlive-btn" 
+                style={{ 
+                  background: isRunning ? '#FF3B30' : 'var(--color-primary-gradient)', 
+                  color: '#FFFFFF', 
+                  height: '40px',
+                  boxShadow: isRunning ? '0 4px 15px rgba(255, 59, 48, 0.2)' : '0 4px 15px rgba(255, 99, 155, 0.25)'
+                }}
               >
-                {isRunning ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
-                <span>{isRunning ? 'Detener Servicio' : 'Iniciar Extracción'}</span>
+                {isRunning ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+                <span style={{ fontWeight: '800' }}>{isRunning ? 'Detener Servicio' : 'Iniciar Extracción'}</span>
               </button>
 
-              <button onClick={handleOpenHistory} className="dreamlive-btn" style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '42px' }}>
-                <UserPlus size={16} />
-                <span>Ver Leads</span>
+              <button 
+                onClick={handleOpenHistory} 
+                className="dreamlive-btn" 
+                style={{ background: 'var(--apple-btn-secondary)', color: 'var(--apple-text-main)', height: '40px', border: '1px solid var(--apple-border)' }}
+              >
+                <ArrowRight size={18} strokeWidth={2.5} />
+                <span style={{ fontWeight: '800' }}>Ver Leads</span>
               </button>
             </div>
           </div>
-
+          
           {/* Console */}
           {showConsole && (
             <div style={{ borderTop: '1px solid var(--apple-border)', background: '#000', padding: '12px', maxHeight: '100px', overflowY: 'auto' }}>

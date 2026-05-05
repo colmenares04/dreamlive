@@ -175,19 +175,25 @@ export const Dashboard: React.FC = () => {
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'AD';
 
   return (
-    <div className="w-full min-h-full flex flex-col bg-[#F5F5F7] dark:bg-[#000000] text-gray-900 dark:text-gray-100 transition-colors duration-300 animate-in fade-in">
+    <div className="w-full min-h-full flex flex-col bg-white dark:bg-[#18181A] text-gray-900 dark:text-gray-100 transition-colors duration-300 relative overflow-hidden">
+      {/* Mesh Gradient Background */}
+      <div className="absolute inset-0 pointer-events-none opacity-50 dark:opacity-5 transition-opacity"
+           style={{ 
+             background: 'radial-gradient(at 0% 0%, rgba(103, 212, 154, 0.2) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255, 99, 155, 0.2) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(107, 202, 242, 0.2) 0px, transparent 50%)' 
+           }}>
+      </div>
 
       {/* Header */}
-      <header className="px-6 py-5 flex items-center justify-between relative bg-white dark:bg-[#1C1C1E] border-b border-black/5 dark:border-white/5 shadow-sm mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[var(--color-apple-green)] to-[#A2F0B3] flex items-center justify-center text-white text-lg font-medium shadow-sm">
+      <header className="px-6 py-5 flex items-center justify-between relative bg-white/40 dark:bg-[#18181A]/40 backdrop-blur-md border-b border-black/5 dark:border-white/5 shadow-sm mb-4 z-10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#FF639B] to-[#FF9EAF] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-pink-500/20">
             {initials}
           </div>
           <div className="flex flex-col">
-            <h1 className="text-[16px] font-semibold tracking-tight text-gray-900 dark:text-white leading-tight">
+            <h1 className="text-[18px] font-extrabold tracking-tight text-[#18181A] dark:text-white leading-tight">
               {user?.username || 'Administrador'}
             </h1>
-            <p className="text-[12px] text-gray-500 dark:text-gray-400">
+            <p className="text-[12px] font-semibold text-[#71717A] dark:text-gray-400">
               {user?.email || 'Sesión Activa'}
             </p>
           </div>
@@ -197,7 +203,7 @@ export const Dashboard: React.FC = () => {
           <button
             onClick={() => window.open(WEB_URL, '_blank')}
             className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-gray-500 dark:text-gray-400"
-            title="Ir a la web"
+            title="Ir a la web: Abre el panel de administración completo en tu navegador"
           >
             <ExternalLink size={16} strokeWidth={1.5} />
           </button>
@@ -207,7 +213,7 @@ export const Dashboard: React.FC = () => {
             <button
               onClick={() => setShowNotifs(prev => !prev)}
               className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-gray-500 dark:text-gray-400 relative"
-              title="Notificaciones"
+              title="Notificaciones: Revisa las últimas alertas y mensajes del sistema"
             >
               <Bell size={16} strokeWidth={1.5} />
               {unreadCount > 0 && (
@@ -273,14 +279,14 @@ export const Dashboard: React.FC = () => {
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-gray-500 dark:text-gray-400"
-            title="Tema"
+            title={theme === 'light' ? "Cambiar a Modo Oscuro" : "Cambiar a Modo Claro"}
           >
             {theme === 'light' ? <Moon size={16} strokeWidth={1.5} /> : <Sun size={16} strokeWidth={1.5} />}
           </button>
           <button
             onClick={logout}
             className="p-2 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all text-gray-500 dark:text-gray-400 hover:text-red-500"
-            title="Cerrar Sesión"
+            title="Cerrar Sesión: Salir de tu cuenta de DreamLive"
           >
             <LogOut size={16} strokeWidth={1.5} />
           </button>
@@ -289,21 +295,23 @@ export const Dashboard: React.FC = () => {
 
       {/* Segmented Control */}
       <div className="px-4 pb-2">
-        <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-[10px]">
+        <div className="flex p-1 bg-gray-100/80 dark:bg-[#2A2A2C]/50 backdrop-blur-xl rounded-full">
           <button
             onClick={() => setActiveTab('ops')}
-            className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${activeTab === 'ops'
-              ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            title="Operaciones: Panel principal para la automatización de envíos y captación"
+            className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${activeTab === 'ops'
+              ? 'bg-[#FF639B] text-white shadow-lg shadow-pink-500/20'
+              : 'text-[#71717A] hover:text-gray-900 dark:hover:text-white'
               }`}
           >
             Operaciones
           </button>
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex-1 py-1.5 text-[13px] font-medium rounded-[7px] transition-all duration-200 ${activeTab === 'profile'
-              ? 'bg-white dark:bg-[#1C1C1E] text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            title="Suscripción: Revisa los detalles de tu licencia y cuenta"
+            className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${activeTab === 'profile'
+              ? 'bg-[#FF639B] text-white shadow-lg shadow-pink-500/20'
+              : 'text-[#71717A] hover:text-gray-900 dark:hover:text-white'
               }`}
           >
             Suscripción
@@ -361,7 +369,7 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="absolute top-2 right-2 flex gap-1">
-                      <div className={`w-1.5 h-1.5 rounded-full ${((dailyUsage?.active_sessions || 1) >= (dailyUsage?.max_sessions || 5)) ? 'bg-amber-500 animate-pulse' : 'bg-[var(--color-apple-green)]'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${((dailyUsage?.active_sessions || 1) >= (dailyUsage?.max_sessions || 5)) ? 'bg-amber-500 animate-pulse' : 'bg-[#FF639B]'}`} />
                     </div>
                   </div>
                 </div>
@@ -373,7 +381,7 @@ export const Dashboard: React.FC = () => {
                         logoutAll();
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#F2F2F7] dark:bg-white/[0.05] hover:bg-red-50 dark:hover:bg-red-500/10 text-[#007AFF] dark:text-[#0A84FF] hover:text-red-500 dark:hover:text-red-400 rounded-2xl transition-all duration-300 text-[13px] font-semibold group shadow-sm active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100/50 dark:bg-white/[0.05] hover:bg-red-50 dark:hover:bg-red-500/10 text-[#FF639B] dark:text-[#FF639B] hover:text-red-500 dark:hover:text-red-400 rounded-2xl transition-all duration-300 text-[13px] font-semibold group shadow-sm active:scale-[0.98]"
                   >
                     <MonitorOff size={18} strokeWidth={2} className="group-hover:rotate-12 transition-transform" />
                     Desconectar sesiones activas
@@ -393,7 +401,7 @@ export const Dashboard: React.FC = () => {
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">Capacidad de envíos por licencia</span>
                 </div>
                 <div className="text-right">
-                  <span className={`text-[16px] font-bold ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'text-red-500' : 'text-[var(--color-apple-green)]'}`}>
+                  <span className={`text-[16px] font-bold ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'text-red-500' : 'text-[#FF639B]'}`}>
                     {dailyUsage ? `${dailyUsage.usados_hoy} / ${dailyUsage.limite_diario}` : '0 / 60'}
                   </span>
                 </div>
@@ -403,14 +411,14 @@ export const Dashboard: React.FC = () => {
                 <div
                   className={`h-full transition-all duration-1000 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario 
                     ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' 
-                    : 'bg-gradient-to-r from-[var(--color-apple-green)] to-[#A2F0B3]'}`}
+                    : 'bg-gradient-to-r from-[#FF639B] to-[#FF9EAF]'}`}
                   style={{ width: `${Math.min(100, (dailyUsage?.usados_hoy || 0) / (dailyUsage?.limite_diario || 60) * 100)}%` }}
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <div className={`w-2 h-2 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'bg-red-500 animate-pulse' : 'bg-[var(--color-apple-green)]'}`} />
+                  <div className={`w-2 h-2 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'bg-red-500 animate-pulse' : 'bg-[#FF639B]'}`} />
                   <span className="text-[12px] font-medium text-gray-600 dark:text-gray-300">
                     {dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'Límite alcanzado' : 'Disponible para envíos'}
                   </span>
@@ -435,12 +443,12 @@ export const Dashboard: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="px-6 py-3 flex items-center justify-between text-[11px] font-medium text-gray-400 dark:text-gray-500 bg-[#F5F5F7] dark:bg-[#000000]">
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-apple-green)]" />
-          DreamLive Enterprise
+      <footer className="px-6 py-4 flex items-center justify-between text-[11px] font-bold text-[#71717A] bg-gray-50 dark:bg-[#18181A] border-t border-black/[0.02] dark:border-white/[0.02]">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-[#FF639B]" />
+          DREAMLIVE ENTERPRISE 2025
         </div>
-        <span>v1.2.0</span>
+        <span className="opacity-50">v1.2.0</span>
       </footer>
     </div>
   );

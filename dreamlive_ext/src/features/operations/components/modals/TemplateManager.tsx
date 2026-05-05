@@ -91,19 +91,20 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       style={{
         display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px',
         borderRadius: '16px', transition: 'all 0.5s ease',
-        background: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+        background: isDarkMode ? 'var(--apple-bg-secondary)' : '#FFFFFF',
+        border: '1px solid var(--apple-border)',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <h3 style={{ 
-          margin: 0, fontSize: '16px', fontWeight: '800', letterSpacing: '-0.5px',
-          color: isDarkMode ? '#FFFFFF' : '#000000'
+          margin: 0, fontSize: '15px', fontWeight: '900', letterSpacing: '-0.3px',
+          color: 'var(--apple-text-main)'
         }}>
           Configuración
         </h3>
         <p style={{ 
-          margin: 0, fontSize: '12px', fontWeight: '500', 
-          color: isDarkMode ? '#8E8E93' : '#636366' 
+          margin: 0, fontSize: '11px', fontWeight: '600', 
+          color: 'var(--apple-text-sub)', letterSpacing: '0.2px'
         }}>
           Personaliza tus invitaciones y mensajes automáticos
         </p>
@@ -114,14 +115,14 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <label style={{ 
-            fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px',
-            color: isDarkMode ? '#8E8E93' : '#8E8E93' 
+            fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px',
+            color: 'var(--apple-text-sub)' 
           }}>
             Nuevo Mensaje
           </label>
           <span style={{ 
-            fontSize: '10px', fontWeight: '800', 
-            color: templates.length >= 5 ? '#FF453A' : '#AF52DE' 
+            fontSize: '10px', fontWeight: '900', 
+            color: templates.length >= 5 ? '#FF453A' : 'var(--color-primary)' 
           }}>
             {templates.length}/5
           </span>
@@ -129,9 +130,10 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
 
         {templates.length < 5 ? (
           <div style={{ 
-            display: 'flex', flexDirection: 'column', padding: '14px', borderRadius: '14px',
-            background: isDarkMode ? '#2C2C2E' : '#F2F2F7',
-            border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)'
+            display: 'flex', flexDirection: 'column', padding: '14px', borderRadius: '16px',
+            background: 'var(--apple-bg)',
+            border: '1px solid var(--apple-border)',
+            transition: 'all 0.3s ease'
           }}>
             <textarea
               ref={addTextareaRef}
@@ -141,26 +143,27 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
               onChange={(e) => setNewTemplateText(e.target.value)}
               style={{
                 width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                fontSize: '14px', fontWeight: '500', lineHeight: '1.4', resize: 'none',
-                color: isDarkMode ? '#FFFFFF' : '#000000', padding: 0
+                fontSize: '13px', fontWeight: '600', lineHeight: '1.5', resize: 'none',
+                color: 'var(--apple-text-main)', padding: 0
               }}
             />
             <div style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-              marginTop: '10px', paddingTop: '10px', 
-              borderTop: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)' 
+              marginTop: '12px', paddingTop: '10px', 
+              borderTop: '1px solid var(--apple-border)' 
             }}>
               <button
                 type="button"
                 onClick={() => insertVariable("{username}", false)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '4px', 
-                  padding: '6px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: '700',
-                  background: isDarkMode ? 'rgba(175, 82, 222, 0.15)' : 'rgba(175, 82, 222, 0.1)',
-                  color: '#AF52DE', border: 'none', cursor: 'pointer'
+                  display: 'flex', alignItems: 'center', gap: '5px', 
+                  padding: '6px 14px', borderRadius: '100px', fontSize: '11px', fontWeight: '800',
+                  background: 'rgba(255, 99, 155, 0.1)',
+                  color: 'var(--color-primary)', border: 'none', cursor: 'pointer',
+                  transition: 'all 0.2s'
                 }}
               >
-                <Plus size={12} />
+                <Plus size={12} strokeWidth={3} />
                 {`{username}`}
               </button>
               <button
@@ -168,11 +171,12 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                 onClick={handleAddTemplate}
                 disabled={!newTemplateText.trim()}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                  padding: '8px 16px', borderRadius: '100px', fontSize: '12px', fontWeight: '700',
-                  background: newTemplateText.trim() ? '#AF52DE' : (isDarkMode ? '#3A3A3C' : '#D1D1D6'),
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '8px 18px', borderRadius: '100px', fontSize: '11px', fontWeight: '900',
+                  background: newTemplateText.trim() ? 'var(--color-primary-gradient)' : 'var(--apple-btn-disabled)',
                   color: '#FFFFFF',
                   border: 'none', cursor: newTemplateText.trim() ? 'pointer' : 'not-allowed',
+                  boxShadow: newTemplateText.trim() ? '0 4px 10px rgba(255, 99, 155, 0.2)' : 'none'
                 }}
               >
                 Guardar
@@ -182,11 +186,11 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
         ) : (
           <div style={{ 
             display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', 
-            borderRadius: '14px', background: 'rgba(255, 69, 58, 0.1)', 
-            border: '1px solid rgba(255, 69, 58, 0.2)', color: '#FF453A'
+            borderRadius: '16px', background: 'rgba(255, 69, 58, 0.05)', 
+            border: '1px solid rgba(255, 69, 58, 0.1)', color: '#FF453A'
           }}>
             <AlertCircle size={16} />
-            <span style={{ fontSize: '12px', fontWeight: '700' }}>Límite alcanzado</span>
+            <span style={{ fontSize: '12px', fontWeight: '800' }}>Límite de plantillas alcanzado</span>
           </div>
         )}
       </div>
@@ -195,27 +199,27 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       {templates.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <label style={{ 
-            fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px',
-            color: isDarkMode ? '#8E8E93' : '#8E8E93' 
+            fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px',
+            color: 'var(--apple-text-sub)' 
           }}>
             Tus Plantillas
           </label>
           <div style={{ 
-            display: 'flex', flexDirection: 'column', gap: '8px', 
-            maxHeight: '160px', overflowY: 'auto' 
+            display: 'flex', flexDirection: 'column', gap: '10px', 
+            maxHeight: '200px', overflowY: 'auto' 
           }} className="custom-scrollbar">
             {templates.map((template, idx) => (
               <div
                 key={idx}
                 style={{
-                  display: 'flex', flexDirection: 'column', padding: '12px', 
-                  borderRadius: '14px', transition: 'all 0.3s ease',
-                  background: editingIndex === idx ? 'rgba(175, 82, 222, 0.1)' : (isDarkMode ? '#2C2C2E' : '#F2F2F7'),
-                  border: editingIndex === idx ? '1px solid rgba(175, 82, 222, 0.3)' : '1px solid transparent'
+                  display: 'flex', flexDirection: 'column', padding: '14px', 
+                  borderRadius: '16px', transition: 'all 0.3s ease',
+                  background: editingIndex === idx ? 'rgba(255, 99, 155, 0.05)' : 'var(--apple-bg)',
+                  border: editingIndex === idx ? '1px solid var(--color-primary)' : '1px solid var(--apple-border)'
                 }}
               >
                 {editingIndex === idx ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <textarea
                       ref={editTextareaRef}
                       rows={2}
@@ -223,29 +227,29 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                       onChange={(e) => setEditingText(e.target.value)}
                       style={{
                         width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                        fontSize: '14px', fontWeight: '500', lineHeight: '1.4', resize: 'none',
-                        color: isDarkMode ? '#FFFFFF' : '#000000', padding: 0
+                        fontSize: '13px', fontWeight: '600', lineHeight: '1.5', resize: 'none',
+                        color: 'var(--apple-text-main)', padding: 0
                       }}
                     />
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--apple-border)', paddingTop: '10px' }}>
                       <button
                         type="button"
                         onClick={() => insertVariable("{username}", true)}
-                        style={{ background: 'none', border: 'none', color: '#AF52DE', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}
                       >
                         + {`{username}`}
                       </button>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <button onClick={() => setEditingIndex(null)} style={{ background: 'none', border: 'none', color: isDarkMode ? '#8E8E93' : '#636366', cursor: 'pointer' }}><X size={16} /></button>
-                        <button onClick={() => handleSaveEdit(idx)} style={{ background: 'none', border: 'none', color: '#34C759', cursor: 'pointer' }}><Check size={16} /></button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button onClick={() => setEditingIndex(null)} style={{ background: 'none', border: 'none', color: 'var(--apple-text-sub)', cursor: 'pointer' }}><X size={18} /></button>
+                        <button onClick={() => handleSaveEdit(idx)} style={{ background: 'none', border: 'none', color: '#34C759', cursor: 'pointer' }}><Check size={18} strokeWidth={3} /></button>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                     <p style={{ 
-                      margin: 0, fontSize: '13px', fontWeight: '500', lineHeight: '1.4', 
-                      color: isDarkMode ? '#FFFFFF' : '#1C1C1E',
+                      margin: 0, fontSize: '13px', fontWeight: '600', lineHeight: '1.5', 
+                      color: 'var(--apple-text-main)',
                       flex: 1
                     }}>
                       {template}
@@ -254,8 +258,8 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                       <button
                         onClick={() => handleStartEditing(idx)}
                         style={{ 
-                          padding: '6px', borderRadius: '100px', background: 'none', border: 'none',
-                          color: isDarkMode ? '#8E8E93' : '#636366',
+                          padding: '6px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)',
+                          color: 'var(--apple-text-sub)',
                           cursor: 'pointer'
                         }}
                       >
@@ -264,8 +268,8 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                       <button
                         onClick={() => handleDeleteTemplate(idx)}
                         style={{ 
-                          padding: '6px', borderRadius: '100px', background: 'none', border: 'none',
-                          color: '#FF453A', cursor: 'pointer', opacity: 0.8
+                          padding: '6px', borderRadius: '10px', background: 'rgba(255, 69, 58, 0.05)', border: '1px solid rgba(255, 69, 58, 0.1)',
+                          color: '#FF453A', cursor: 'pointer'
                         }}
                       >
                         <Trash2 size={14} />

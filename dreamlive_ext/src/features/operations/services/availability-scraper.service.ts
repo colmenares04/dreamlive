@@ -97,9 +97,11 @@ export class AvailabilityScraperService {
 
       const users = response.users as string[];
       
-      // Capturar el total esperado SOLO la primera vez para que sea estático
-      if (this.totalExpected === 0) {
-        this.totalExpected = response.totalInDb || 0;
+      // Capturar el total esperado. Lo actualizamos si el totalInDb es mayor al actual 
+      // para evitar inconsistencias visuales (como 108 / 85)
+      const totalInDb = response.totalInDb || 0;
+      if (this.totalExpected === 0 || totalInDb > this.totalExpected) {
+        this.totalExpected = totalInDb;
       }
 
       this.log(`🚀 Procesando lote de ${users.length} usuarios...`, "info");

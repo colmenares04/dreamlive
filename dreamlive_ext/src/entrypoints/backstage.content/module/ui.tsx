@@ -48,7 +48,8 @@ function injectTailwindProperties() {
     /* Variables CSS heredables — estas SÍ cruzan el Shadow Boundary */
     :root {
       --color-apple-green:  #34C759;
-      --color-apple-blue:   #007AFF;
+      --color-primary:      #FF639B;
+      --color-apple-blue:   #FF639B;
       --color-apple-purple: #AF52DE;
     }
   `;

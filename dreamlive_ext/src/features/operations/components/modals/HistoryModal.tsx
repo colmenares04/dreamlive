@@ -192,23 +192,23 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
       style={{
         position: 'fixed', zIndex: 2147483645,
         top: `${position.y}px`, left: `${position.x}px`,
-        pointerEvents: 'auto', width: '420px'
+        pointerEvents: 'auto', width: '380px'
       }}
     >
       <div className="dreamlive-modal-container">
         <div className="dreamlive-modal-card">
           {/* Header */}
-          <div onMouseDown={handleMouseDown} className="dreamlive-modal-header" style={{ padding: '16px 18px', cursor: isDragging ? 'grabbing' : 'grab' }}>
+          <div onMouseDown={handleMouseDown} className="dreamlive-modal-header" style={{ padding: '10px 14px', cursor: isDragging ? 'grabbing' : 'grab' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-0.3px' }}>
+              <span className="dreamlive-title-main">
                 {activeModal === 'HISTORY_DISPONIBILIDAD' ? 'Historial Disponibles' : activeModal === 'HISTORY_CONTACTAR' ? 'Historial Contactados' : 'Explorador de Leads'}
               </span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-blue)', marginTop: '1px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--color-primary)', marginTop: '2px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 FILTRADO INTELIGENTE
               </span>
             </div>
             <div className="dreamlive-header-actions" style={{ gap: '8px' }}>
-              <button onClick={handleGoToOperation} className="dreamlive-icon-btn" title="Ir al Panel Operativo" style={{ color: 'var(--color-blue)' }}>
+              <button onClick={handleGoToOperation} className="dreamlive-icon-btn" title="Ir al Panel Operativo" style={{ color: 'var(--color-primary)' }}>
                 <Play size={14} fill="currentColor" />
               </button>
               <button onClick={handlePurgeLeads} className="dreamlive-icon-btn" title="Limpiar todo" style={{ color: '#FF3B30' }}><Trash2 size={14} /></button>
@@ -218,46 +218,49 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
           </div>
 
           {/* Search Area */}
-          <div style={{ padding: '0 16px 12px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ padding: '0 14px 10px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', gap: '8px' }}>
               <div style={{ position: 'relative', flex: 2, display: 'flex', alignItems: 'center' }}>
-                <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--apple-text-sub)' }} />
+                <Search size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-sub)' }} />
                 <input 
-                  type="text" placeholder="Usuario..."
+                  type="text" placeholder="Buscar usuario..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
-                    width: '100%', padding: '8px 10px 8px 32px', borderRadius: '10px',
-                    background: 'var(--apple-btn-secondary)', border: 'none',
-                    fontSize: '12px', fontWeight: '500', color: 'var(--apple-text-main)', outline: 'none'
+                    width: '100%', padding: '8px 12px 8px 36px', borderRadius: '12px',
+                    background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)',
+                    fontSize: '12px', fontWeight: '600', color: 'var(--apple-text-main)', outline: 'none', transition: 'border-color 0.3s'
                   }}
                 />
               </div>
               <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
-                <Hash size={14} style={{ position: 'absolute', left: '10px', color: 'var(--apple-text-sub)' }} />
+                <Hash size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-sub)' }} />
                 <input 
                   type="number" placeholder="Min."
                   value={minQuantity}
                   onChange={(e) => setMinQuantity(e.target.value === '' ? '' : Number(e.target.value))}
                   style={{
-                    width: '100%', padding: '8px 10px 8px 30px', borderRadius: '10px',
-                    background: 'var(--apple-btn-secondary)', border: 'none',
-                    fontSize: '12px', fontWeight: '500', color: 'var(--apple-text-main)', outline: 'none'
+                    width: '100%', padding: '8px 12px 8px 34px', borderRadius: '12px',
+                    background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)',
+                    fontSize: '12px', fontWeight: '600', color: 'var(--apple-text-main)', outline: 'none', transition: 'border-color 0.3s'
                   }}
                 />
               </div>
             </div>
 
             {/* Filter Tabs */}
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               {(['viewers', 'likes', 'all'] as FilterType[]).map((f) => (
                 <button
                   key={f} onClick={() => setActiveFilter(f)}
                   style={{
-                    padding: '6px 14px', borderRadius: '10px', fontSize: '10px', fontWeight: '700',
-                    textTransform: 'uppercase', transition: 'all 0.2s',
-                    background: activeFilter === f ? 'var(--color-blue)' : 'var(--apple-btn-secondary)',
-                    color: activeFilter === f ? '#FFFFFF' : 'var(--apple-text-sub)', border: 'none', cursor: 'pointer'
+                    padding: '6px 12px', borderRadius: '12px', fontSize: '10px', fontWeight: '800',
+                    textTransform: 'uppercase', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    background: activeFilter === f ? 'var(--color-primary-gradient)' : 'var(--apple-bg-secondary)',
+                    color: activeFilter === f ? '#FFFFFF' : 'var(--apple-text-sub)', 
+                    border: activeFilter === f ? 'none' : '1px solid var(--apple-border)',
+                    cursor: 'pointer',
+                    boxShadow: activeFilter === f ? '0 4px 10px rgba(255, 99, 155, 0.2)' : 'none'
                   }}
                 >
                   {f === 'viewers' ? 'Espectadores' : f === 'likes' ? 'Likes' : 'Todos'}
@@ -267,70 +270,71 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
           </div>
 
           {/* Body */}
-          <div className="dreamlive-modal-body" style={{ padding: '0 12px 20px 12px' }}>
+          <div className="dreamlive-modal-body" style={{ padding: '0 12px 24px 12px' }}>
             {!isValidPage ? (
               <div style={{ height: '240px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px', gap: '16px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(255, 59, 48, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '24px', backgroundColor: 'rgba(255, 59, 48, 0.05)', border: '1px solid rgba(255, 59, 48, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <AlertCircle size={32} color="#FF3B30" />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '14px', fontWeight: '800', marginBottom: '4px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '900', marginBottom: '6px' }}>
                     Página no válida
                   </h3>
-                  <p style={{ fontSize: '12px', color: 'var(--apple-text-sub)', maxWidth: '240px' }}>
+                  <p style={{ fontSize: '12px', color: 'var(--apple-text-sub)', maxWidth: '240px', lineHeight: '1.4' }}>
                     Para visualizar el historial, debes estar en TikTok o el Backstage.
                   </p>
                 </div>
               </div>
             ) : isLoading && leads.length === 0 ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-                <div className="animate-spin" style={{ width: '24px', height: '24px', border: '3px solid var(--color-blue)', borderTopColor: 'transparent', borderRadius: '50%' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>
+                <div className="animate-spin" style={{ width: '28px', height: '28px', border: '3px solid var(--color-primary)', borderTopColor: 'transparent', borderRadius: '50%' }} />
               </div>
             ) : error ? (
               <div style={{ textAlign: 'center', padding: '40px', color: '#FF3B30' }}>
-                <AlertCircle size={32} style={{ margin: '0 auto 12px', opacity: 0.8 }} />
-                <p style={{ fontSize: '12px', fontWeight: '700' }}>{error}</p>
+                <AlertCircle size={36} style={{ margin: '0 auto 16px', opacity: 0.8 }} />
+                <p style={{ fontSize: '13px', fontWeight: '800' }}>{error}</p>
               </div>
             ) : filteredLeads.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '50px', opacity: 0.5 }}>
-                <Search size={32} style={{ margin: '0 auto 12px', color: 'var(--apple-text-sub)' }} />
-                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--apple-text-sub)' }}>Sin resultados encontrados</p>
+              <div style={{ textAlign: 'center', padding: '60px', opacity: 0.6 }}>
+                <Search size={40} style={{ margin: '0 auto 16px', color: 'var(--apple-text-sub)' }} />
+                <p style={{ fontSize: '13px', fontWeight: '750', color: 'var(--apple-text-sub)' }}>Sin resultados encontrados</p>
               </div>
             ) : (
-              <div className="dreamlive-history-list" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
+              <div className="dreamlive-history-list" style={{ maxHeight: '280px', overflowY: 'auto', paddingRight: '6px' }}>
                 {filteredLeads.map((lead) => {
                   const hasViewers = (lead.viewer_count || 0) > 0;
                   const value = hasViewers ? lead.viewer_count : (lead.likes_count || 0);
                   return (
                     <div key={lead.id} className="dreamlive-history-item" style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 14px', borderRadius: '14px', background: 'var(--apple-bg-secondary)',
-                      marginBottom: '8px', border: '1px solid var(--apple-border)',
+                      padding: '8px 12px', borderRadius: '16px', background: 'var(--apple-bg-secondary)',
+                      marginBottom: '6px', border: '1px solid var(--apple-border)',
+                      transition: 'transform 0.2s, background 0.2s',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--apple-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--apple-border)' }}>
-                          <User size={16} color="var(--color-blue)" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--apple-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--apple-border)' }}>
+                          <User size={18} color="var(--color-primary)" />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--apple-text-main)' }}>@{lead.username.replace('@', '')}</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--apple-text-sub)' }}>
-                              <Clock size={11} />
-                              <span style={{ fontSize: '10px', fontWeight: '600' }}>{formatDate(lead.created_at)}</span>
+                          <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--apple-text-main)' }}>@{lead.username.replace('@', '')}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--apple-text-sub)' }}>
+                              <Clock size={12} />
+                              <span style={{ fontSize: '11px', fontWeight: '700' }}>{formatDate(lead.created_at)}</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: hasViewers ? 'var(--color-blue)' : '#FF2D55' }}>
-                              {hasViewers ? <Users size={11} /> : <Heart size={11} fill="currentColor" />}
-                              <span style={{ fontSize: '11px', fontWeight: '800' }}>{value.toLocaleString()}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: hasViewers ? 'var(--color-primary)' : '#FF2D55' }}>
+                              {hasViewers ? <Users size={12} /> : <Heart size={12} fill="currentColor" />}
+                              <span style={{ fontSize: '12px', fontVariantNumeric: 'tabular-nums', fontWeight: '900' }}>{value.toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => handleDeleteLead(lead.id)} className="dreamlive-icon-btn" style={{ width: '30px', height: '30px', background: 'var(--apple-bg)' }} title="Borrar lead">
-                          <Trash2 size={14} color="#FF3B30" />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleDeleteLead(lead.id)} className="dreamlive-icon-btn" style={{ width: '32px', height: '32px', background: 'var(--apple-bg)' }} title="Borrar lead">
+                          <Trash2 size={16} color="#FF3B30" />
                         </button>
-                        <button onClick={() => openTikTokProfile(lead.username)} className="dreamlive-icon-btn" style={{ width: '30px', height: '30px', background: 'var(--apple-bg)' }} title="Ver perfil">
-                          <ExternalLink size={14} color="var(--apple-text-main)" />
+                        <button onClick={() => openTikTokProfile(lead.username)} className="dreamlive-icon-btn" style={{ width: '32px', height: '32px', background: 'var(--apple-bg)' }} title="Ver perfil">
+                          <ExternalLink size={16} color="var(--apple-text-main)" />
                         </button>
                       </div>
                     </div>
@@ -338,9 +342,9 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
                 })}
               </div>
             )}
-            <div style={{ textAlign: 'center', marginTop: '12px' }}>
-              <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--apple-text-sub)', opacity: 0.6, textTransform: 'uppercase' }}>
-                {filteredLeads.length} leads coinciden
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--apple-text-sub)', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                {filteredLeads.length} leads encontrados
               </span>
             </div>
           </div>

@@ -1,6 +1,5 @@
 /* ============================================================
-   DREAMLIVE — APPLE DESIGN SYSTEM (SOLID UI)
-   Refinado para Máximo Contraste en Modo Oscuro
+   DREAMLIVE — MODERN 2025 DESIGN SYSTEM (STAYWISE STYLE)
    ============================================================ */
 
 @import "tailwindcss";
@@ -17,37 +16,53 @@
   pointer-events: none !important;
 }
 
-/* --- THEME TOKENS --- */
+/* --- THEME TOKENS (STAYWISE PALETTE) --- */
 .dreamlive-scope {
-  --apple-bg: #FFFFFF;
+  /* Fondos */
+  --apple-bg: rgba(255, 255, 255, 0.95);
+  --apple-bg-solid: #FFFFFF;
   --apple-bg-secondary: #F5F5F7;
-  --apple-text-main: #1D1D1F;
-  --apple-text-sub: #636366; /* Gris más oscuro para modo claro */
-  --apple-border: #D1D1D6;
-  --apple-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  --apple-btn-secondary: #E8E8ED;
-  --apple-btn-secondary-hover: #D1D1D6;
   
-  --color-blue: #007AFF;
-  --color-blue-hover: #0062CC;
-  --color-green: #28CD41;
-  --color-purple: #AF52DE;
+  /* Textos */
+  --apple-text-main: #18181A;
+  --apple-text-sub: #71717A;
   
-  --apple-btn-disabled: #F2F2F7;
-  --apple-text-disabled: #A1A1A6;
+  /* Acento (StayWise Pink) */
+  --color-primary: #FF639B;
+  --color-primary-soft: rgba(255, 99, 155, 0.1);
+  --color-primary-gradient: linear-gradient(135deg, #FF639B 0%, #FF4D80 100%);
+  
+  /* Estados */
+  --color-blue-pastel: #6BCAF2;
+  --color-green-mint: #67D49A;
+  --color-red: #FF3B30;
+  
+  /* UI Elements */
+  --apple-border: #E4E4E7;
+  --apple-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --apple-glass: saturate(180%) blur(15px);
+  
+  --apple-btn-secondary: #F4F4F5;
+  --apple-btn-secondary-hover: #E4E4E7;
+  
+  /* Mesh Gradient Background */
+  --mesh-gradient: radial-gradient(at 0% 0%, rgba(103, 212, 154, 0.15) 0px, transparent 50%),
+                   radial-gradient(at 100% 0%, rgba(255, 99, 155, 0.15) 0px, transparent 50%),
+                   radial-gradient(at 100% 100%, rgba(107, 202, 242, 0.15) 0px, transparent 50%),
+                   radial-gradient(at 0% 100%, rgba(255, 200, 150, 0.15) 0px, transparent 50%);
 }
 
 .dreamlive-scope[data-theme="dark"] {
-  --apple-bg: #1C1C1E;
-  --apple-bg-secondary: #2C2C2E;
+  --apple-bg: rgba(24, 24, 26, 0.95);
+  --apple-bg-solid: #18181A;
+  --apple-bg-secondary: #2A2A2C;
   --apple-text-main: #FFFFFF;
-  --apple-text-sub: #A1A1A6; /* MUCHO MÁS CLARO para legibilidad */
-  --apple-border: #48484A; /* Más visible */
-  --apple-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-  --apple-btn-secondary: #3A3A3C;
-  --apple-btn-secondary-hover: #48484A;
-  --apple-btn-disabled: #2C2C2E;
-  --apple-text-disabled: #636366;
+  --apple-text-sub: #A1A1A6;
+  --apple-border: #2A2A2C;
+  --apple-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  
+  --apple-btn-secondary: #2A2A2C;
+  --apple-btn-secondary-hover: #3F3F46;
 }
 
 /* --- Base Resets --- */
@@ -57,51 +72,44 @@
   box-sizing: border-box !important;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   -webkit-font-smoothing: antialiased;
 }
 
-/* --- Theme Toggle Widget --- */
-.dreamlive-theme-btn {
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 50% !important;
-  background: var(--apple-bg) !important;
-  border: 1px solid var(--apple-border) !important;
-  box-shadow: var(--apple-shadow) !important;
-  color: var(--apple-text-main) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  transition: transform 0.2s, background 0.2s !important;
+/* --- Container & Cards --- */
+.dreamlive-modal-container {
+  pointer-events: auto !important;
 }
 
-/* --- Card Modals --- */
 .dreamlive-modal-card {
   display: flex !important;
   flex-direction: column !important;
-  background: var(--apple-bg) !important;
-  border-radius: 20px !important;
+  background: var(--apple-bg-solid) !important;
+  background-image: var(--mesh-gradient) !important;
+  border-radius: 24px !important;
   border: 1px solid var(--apple-border) !important;
   box-shadow: var(--apple-shadow) !important;
   overflow: hidden !important;
+  transition: all 0.3s ease !important;
 }
 
 .dreamlive-modal-header {
-  padding: 16px 20px 12px 20px !important;
+  padding: 12px 18px !important;
   display: flex !important;
-  align-items: flex-start !important;
+  align-items: center !important;
   justify-content: space-between !important;
-  cursor: grab !important;
 }
 
-.dreamlive-title-main { color: var(--apple-text-main) !important; font-size: 15px !important; font-weight: 700 !important; }
-.dreamlive-title-sub { font-size: 10px !important; font-weight: 700 !important; opacity: 0.8 !important; }
+.dreamlive-header-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
 
 .dreamlive-icon-btn {
-  width: 28px !important;
-  height: 28px !important;
+  width: 30px !important;
+  height: 30px !important;
   border-radius: 50% !important;
   background: var(--apple-btn-secondary) !important;
   border: none !important;
@@ -109,71 +117,102 @@
   align-items: center !important;
   justify-content: center !important;
   color: var(--apple-text-main) !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
 }
 
-.dreamlive-header-actions {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 8px !important;
+.dreamlive-icon-btn:hover {
+  background: var(--apple-btn-secondary-hover) !important;
 }
 
-/* --- Circle Progress --- */
+/* --- Typography --- */
+.dreamlive-title-main { 
+  color: var(--apple-text-main) !important; 
+  font-size: 18px !important; 
+  font-weight: 800 !important; 
+  letter-spacing: -0.5px !important;
+}
+
+.dreamlive-title-sub { 
+  font-size: 12px !important; 
+  font-weight: 600 !important; 
+  color: var(--apple-text-sub) !important;
+}
+
+/* --- Progress Elements --- */
 .dreamlive-circle-main {
   position: relative !important;
-  width: 64px !important;
-  height: 64px !important;
+  width: 70px !important;
+  height: 70px !important;
   border-radius: 50% !important;
-  border: 3px solid var(--apple-btn-secondary) !important;
+  background: var(--apple-bg-solid) !important;
+  border: 1px solid var(--apple-border) !important;
+  box-shadow: var(--apple-shadow) !important;
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
 }
 
-.dreamlive-circle-value {
-  color: var(--apple-text-main) !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-}
-
-/* --- Body --- */
-.dreamlive-info-text {
-  color: var(--apple-text-sub) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  line-height: 1.4 !important;
-}
-
-/* --- Buttons --- */
+/* --- Buttons (StayWise Pill) --- */
 .dreamlive-btn {
   width: 100% !important;
-  border-radius: 12px !important;
+  border-radius: 999px !important; /* Estilo Pill */
   border: none !important;
-  padding: 10px 16px !important;
+  padding: 8px 18px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
+  gap: 12px !important;
   cursor: pointer !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
 }
 
-.dreamlive-btn-primary { background: var(--color-blue) !important; color: #FFFFFF !important; }
-.dreamlive-btn-secondary { background: var(--apple-btn-secondary) !important; color: var(--apple-text-main) !important; }
+.dreamlive-btn-primary { 
+  background: var(--color-primary-gradient) !important; 
+  color: #FFFFFF !important; 
+  box-shadow: 0 4px 15px rgba(255, 99, 155, 0.3) !important;
+}
+
+.dreamlive-btn-primary:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(255, 99, 155, 0.4) !important;
+}
+
+.dreamlive-btn-secondary { 
+  background: var(--apple-btn-secondary) !important; 
+  color: var(--apple-text-main) !important; 
+}
+
+.dreamlive-btn:active {
+  transform: scale(0.97) !important;
+}
+
+/* Badge Styles */
+.dreamlive-badge {
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.badge-pending { background: #E0F2FE !important; color: var(--color-blue-pastel) !important; }
+.badge-upcoming { background: #ECFDF5 !important; color: var(--color-green-mint) !important; }
+.badge-active { background: var(--color-primary-soft) !important; color: var(--color-primary) !important; }
 
 /* Console */
-.dreamlive-console {
-  background: var(--apple-bg-secondary) !important;
-  border: 1px solid var(--apple-border) !important;
-  border-radius: 10px !important;
-  padding: 10px !important;
-  font-family: ui-monospace, monospace !important;
-  font-size: 10px !important;
-  color: var(--apple-text-main) !important;
+.dreamlive-console-area {
+  background: #18181A !important;
+  padding: 16px !important;
+  border-top: 1px solid var(--apple-border) !important;
 }
 
-/* Utils */
-.text-blue { color: var(--color-blue) !important; }
-.text-red { color: #FF3B30 !important; }
-.bg-blue { background: var(--color-blue) !important; }
+.dreamlive-log-entry {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  color: #71717A !important;
+  margin-bottom: 6px !important;
+}

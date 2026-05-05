@@ -11,6 +11,7 @@ export default defineBackground(() => {
 
   // Cola de usuarios (leads) en memoria para el modelo PULL
   let leadsQueue: any[] = [];
+  let inFlightLeads: Set<string> = new Set();
   let totalRemainingInDb = 0;
   let isFetchingLeads = false;
 
@@ -59,18 +60,21 @@ export default defineBackground(() => {
         (async () => {
           try {
             // Si la cola está vacía y no estamos buscando, buscamos
-            if (leadsQueue.length === 0 && !isFetchingLeads) {
-              isFetchingLeads = true;
-              console.log('[Background] Cola de leads vacía. Auto-poblando desde la API...');
-              const res = await apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100');
-              if (res && res.data && res.data.items) {
-                const fetchedLeads = res.data.items.map((item: any) => item.username);
-                leadsQueue = [...fetchedLeads];
-                totalRemainingInDb = res.data.total || 0;
-                console.log(`[Background] Auto-población completa con ${leadsQueue.length} leads desde la API. Total en DB: ${totalRemainingInDb}`);
+              if (leadsQueue.length === 0 && !isFetchingLeads) {
+                isFetchingLeads = true;
+                console.log('[Background] Cola de leads vacía. Auto-poblando desde la API...');
+                const res = await apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100');
+                if (res && res.data && res.data.items) {
+                  const fetchedLeads = res.data.items
+                    .map((item: any) => item.username)
+                    .filter((u: string) => !inFlightLeads.has(u));
+                  
+                  leadsQueue = [...fetchedLeads];
+                  totalRemainingInDb = res.data.total || 0;
+                  console.log(`[Background] Auto-población completa con ${leadsQueue.length} leads desde la API. Total en DB: ${totalRemainingInDb}`);
+                }
+                isFetchingLeads = false;
               }
-              isFetchingLeads = false;
-            }
 
             if (leadsQueue.length > 0) {
               const batchSize = (msg as any).batchSize || SCRAPER_BATCH_SIZE;
@@ -81,8 +85,10 @@ export default defineBackground(() => {
                 isFetchingLeads = true;
                 apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100').then(res => {
                   if (res && res.data && res.data.items) {
-                    const fetchedLeads = res.data.items.map((item: any) => item.username)
-                      .filter((u: string) => !batch.includes(u)); // Evitar duplicados inmediatos
+                    const fetchedLeads = res.data.items
+                      .map((item: any) => item.username)
+                      .filter((u: string) => !batch.includes(u) && !leadsQueue.includes(u) && !inFlightLeads.has(u)); 
+                    
                     leadsQueue = [...leadsQueue, ...fetchedLeads];
                     totalRemainingInDb = res.data.total || 0;
                     console.log(`[Background] Pre-fetch completado. Nueva cola: ${leadsQueue.length}. Total DB: ${totalRemainingInDb}`);
@@ -93,6 +99,8 @@ export default defineBackground(() => {
                   isFetchingLeads = false;
                 });
               }
+
+              batch.forEach(u => inFlightLeads.add(u));
 
               console.log(`[Background] GET_BATCH_TO_CHECK enviando ${batch.length} leads. Quedan ${leadsQueue.length} en cola local. DB dice total: ${totalRemainingInDb}`);
               sendResponse({ 
@@ -204,6 +212,9 @@ export default defineBackground(() => {
       case 'BATCH_PROCESSED':
         // El content script de backstage terminó de procesar un lote
         if ('disponibles' in message && 'procesados' in message) {
+          const procesados = message.procesados as string[];
+          procesados.forEach(u => inFlightLeads.delete(u));
+
           BackstageService.updateBatchResults(message.procesados, message.disponibles)
             .then(() => {
               console.log('✅ Batch actualizado en API.');
@@ -313,7 +324,8 @@ export default defineBackground(() => {
 
       case 'ABORT_CHECKING_FLOW':
         leadsQueue = [];
-        console.log('[Background] ABORT_CHECKING_FLOW recibido. Se ha vaciado la cola de leads.');
+        inFlightLeads.clear();
+        console.log('[Background] ABORT_CHECKING_FLOW recibido. Se ha vaciado la cola de leads y el set in-flight.');
         sendResponse({ success: true });
         return true;
 

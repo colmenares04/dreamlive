@@ -307,7 +307,7 @@ export const OperationsConsole: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col h-full rounded-[20px] border border-black/5 dark:border-white/10 overflow-hidden shadow-sm animate-in fade-in relative"
+      className="flex flex-col h-full rounded-[24px] border border-black/[0.03] dark:border-white/10 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.04)] animate-in fade-in relative"
       style={{
         background: 'var(--apple-bg)',
         minHeight: '400px'
@@ -316,117 +316,100 @@ export const OperationsConsole: React.FC = () => {
 
       {/* Header Info */}
       <div
-        className="px-4 py-4 border-b border-black/5 dark:border-white/10"
+        className="px-5 py-5 border-b border-black/[0.03] dark:border-white/10"
       >
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <div className="flex items-center gap-2">
-            <Activity size={16} strokeWidth={2.5} className="text-[#007AFF]" />
-            <h2 className="text-[14px] font-bold text-gray-900 dark:text-white tracking-tight">Operaciones</h2>
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#FF639B]/10 flex items-center justify-center">
+              <Activity size={18} strokeWidth={2.5} className="text-[#FF639B]" />
+            </div>
+            <h2 className="text-[15px] font-extrabold text-gray-900 dark:text-white tracking-tight">Operaciones</h2>
           </div>
-          {/* Close Button fallback for better UX */}
           <button
             onClick={async () => {
               await browser.storage.local.set({ isOperationsConsoleOpen: false });
               await browser.storage.local.set({ activeOperationsModal: null });
             }}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-gray-400"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-all text-gray-400 active:scale-90"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
-        <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+        <p className="text-[12px] font-medium text-gray-500 dark:text-gray-400 pl-10.5">
           Selecciona una secuencia para iniciar.
         </p>
       </div>
 
       {/* Control Center Items */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
         {buttons.map(btn => {
           const isActive = activeModal === btn.id;
           const isHistoryActive = activeModal === btn.historyId;
 
-          const urlStr = window.location.href.toLowerCase();
-          let isOnCorrectRoute = false;
-          if (btn.id === 'RECOPILAR') {
-            isOnCorrectRoute = urlStr.includes('tiktok.com/search') || urlStr.includes('tiktok.com/live') || urlStr.includes('/search/live') || urlStr.includes('search');
-          } else if (btn.id === 'DISPONIBILIDAD') {
-            isOnCorrectRoute = urlStr.includes('relation') || urlStr.includes('relation-management') || urlStr.includes('portal/anchor/relation');
-          } else if (btn.id === 'CONTACTAR') {
-            isOnCorrectRoute = urlStr.includes('instant-messages') || urlStr.includes('messaging') || urlStr.includes('messages') || urlStr.includes('anchor/instant-messages');
-          }
-
-          if (isActive) {
-            console.info(`[OperationsConsole DEBUG] Modal Activo: ${btn.id}`);
-            console.info(`[OperationsConsole DEBUG] URL Actual del matching: "${urlStr}"`);
-            console.info(`[OperationsConsole DEBUG] ¿Está en la ruta correcta?: ${isOnCorrectRoute}`);
-          }
-
           return (
             <div
               key={btn.id!}
-              className={`flex flex-col rounded-[16px] border transition-all duration-300
+              className={`flex flex-col rounded-[20px] border transition-all duration-300 group
                 ${isActive || isHistoryActive
-                  ? 'border-black/5 dark:border-white/10'
-                  : 'border-transparent hover:bg-[#F5F5F7] dark:hover:bg-white/5'}`}
+                  ? 'border-[#FF639B]/20 dark:border-[#FF639B]/30'
+                  : 'border-black/[0.02] dark:border-white/5 hover:border-[#FF639B]/10 dark:hover:border-[#FF639B]/20'}`}
               style={{
-                background: isActive || isHistoryActive ? 'var(--apple-bg-secondary)' : 'transparent'
+                background: isActive || isHistoryActive ? 'var(--apple-bg-secondary)' : 'transparent',
+                boxShadow: isActive || isHistoryActive ? '0 4px 12px rgba(255, 99, 155, 0.04)' : 'none'
               }}
             >
               <button
                 onClick={() => handleToggleModal(btn.id)}
                 title={`Abrir panel de ${btn.title}`}
-                className="w-full flex items-center gap-3 p-3.5 text-left"
+                className="w-full flex items-center gap-3.5 p-4 text-left"
               >
                 <div className="shrink-0">
-                  <div className={`w-2.5 h-2.5 rounded-full transition-all
+                  <div className={`w-3 h-3 rounded-full transition-all duration-500
                     ${isActive
-                      ? 'bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.4)]'
-                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
+                      ? 'bg-[#FF639B] shadow-[0_0_12px_rgba(255,99,155,0.6)]'
+                      : 'bg-gray-200 dark:bg-gray-800'}`}
                   />
                 </div>
 
                 <div className="flex flex-col flex-1 overflow-hidden">
-                  <div className="flex items-center justify-between gap-1.5 pr-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[13px] font-bold tracking-tight
-                        ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {btn.title}
-                      </span>
-                    </div>
-                    {/* Contadores cargados desde la API o Local Storage en tiempo real */}
-                    <span className="text-[11px] font-bold bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/10 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
+                  <div className="flex items-center justify-between gap-1.5 pr-2 mb-0.5">
+                    <span className={`text-[14px] font-bold tracking-tight transition-colors
+                      ${isActive ? 'text-[#FF639B]' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
+                      {btn.title}
+                    </span>
+                    <span className="text-[11px] font-extrabold tabular-nums bg-gray-100 dark:bg-white/5 border border-black/[0.03] dark:border-white/10 px-2.5 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
                       {counts[btn.id as keyof typeof counts] ?? 0}
                     </span>
                   </div>
-                  <span className={`text-[11px] font-medium truncate
+                  <span className={`text-[11px] font-medium truncate opacity-70
                     ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {btn.desc}
                   </span>
                 </div>
 
-                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all
+                <div className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500
                   ${isActive
-                    ? 'bg-[#007AFF] text-white'
-                    : 'bg-white dark:bg-white/10 text-gray-400 border border-black/5 dark:border-white/5 shadow-sm'}`}>
+                    ? 'bg-gradient-to-br from-[#FF639B] to-[#FF4D80] text-white shadow-lg shadow-[#FF639B]/20 scale-110'
+                    : 'bg-white dark:bg-white/[0.03] text-gray-400 border border-black/[0.03] dark:border-white/5 group-hover:scale-105 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>
                   {btn.icon}
                 </div>
               </button>
 
-              <div className="px-3.5 pb-3.5 pt-0 flex gap-2">
+              <div className="px-4 pb-4 pt-0">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleToggleModal(btn.historyId);
                   }}
                   title={`Ver historial de ${btn.title}`}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-[10px] text-[10px] font-bold transition-all
+                  className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold transition-all duration-300
                     ${isHistoryActive
-                      ? 'bg-[#007AFF] text-white shadow-md'
-                      : 'bg-white dark:bg-white/10 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/5 hover:bg-gray-50'}`}
+                      ? 'bg-[#FF639B] text-white shadow-md'
+                      : 'bg-gray-50 dark:bg-white/[0.02] text-gray-600 dark:text-gray-400 border border-black/[0.02] dark:border-white/5 hover:bg-white dark:hover:bg-white/5 hover:border-[#FF639B]/20 dark:hover:border-[#FF639B]/30 hover:text-[#FF639B] shadow-sm'}`}
                 >
-                  <Eye size={12} />
-                  <span>Historial</span>
-                  {isHistoryActive && <div className="w-1 h-1 rounded-full bg-white animate-pulse" />}
+                  <Eye size={14} strokeWidth={2.5} />
+                  <span>Ver Historial</span>
+                  {isHistoryActive && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                 </button>
               </div>
             </div>

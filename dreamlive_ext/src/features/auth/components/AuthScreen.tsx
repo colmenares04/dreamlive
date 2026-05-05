@@ -18,18 +18,18 @@ import {
 
 const VaultIcon = () => {
   const { theme } = useTheme();
-  const mainColor = theme === 'dark' ? '#2ea043' : '#102f5e';
-  const secondaryColor = theme === 'dark' ? '#238636' : '#00c9e8';
+  const mainColor = '#FF639B';
+  const secondaryColor = '#FF9EAF';
 
   return (
-    <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4">
-      <rect x="20" y="30" width="60" height="45" rx="6" stroke={mainColor} strokeWidth="2" fill="transparent" className="fill-white dark:fill-[#161b22] transition-colors" />
-      <path d="M22 36 C 40 30, 60 30, 78 36" stroke={secondaryColor} strokeWidth="1.5" fill="none" />
-      <circle cx="50" cy="53" r="12" stroke={mainColor} strokeWidth="2" fill="none" />
-      <circle cx="50" cy="53" r="8" stroke={secondaryColor} strokeWidth="1" fill="none" />
-      <path d="M50 36 V 41 M50 65 V 70 M33 53 H 38 M62 53 H 67 M38 41 L 41.5 44.5 M58.5 61.5 L 62 65 M38 65 L 41.5 61.5 M58.5 44.5 L 62 41" stroke={mainColor} strokeWidth="2" strokeLinecap="round" />
-      <rect x="28" y="75" width="8" height="5" rx="2" fill={mainColor} />
-      <rect x="64" y="75" width="8" height="5" rx="2" fill={mainColor} />
+    <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4 drop-shadow-xl">
+      <rect x="20" y="30" width="60" height="45" rx="10" stroke={mainColor} strokeWidth="2.5" fill="transparent" className="fill-white dark:fill-[#18181A] transition-colors" />
+      <path d="M22 36 C 40 30, 60 30, 78 36" stroke={secondaryColor} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <circle cx="50" cy="53" r="14" stroke={mainColor} strokeWidth="2.5" fill="none" />
+      <circle cx="50" cy="53" r="9" stroke={secondaryColor} strokeWidth="1.5" fill="none" />
+      <path d="M50 36 V 41 M50 65 V 70 M33 53 H 38 M62 53 H 67" stroke={mainColor} strokeWidth="2.5" strokeLinecap="round" />
+      <rect x="30" y="75" width="10" height="6" rx="3" fill={mainColor} />
+      <rect x="60" y="75" width="10" height="6" rx="3" fill={mainColor} />
     </svg>
   );
 };
@@ -87,19 +87,14 @@ export const AuthScreen: React.FC = () => {
 
   const header = (
     <div className="flex justify-between items-center mb-10 w-full px-1">
-      <div className="flex items-center gap-1.5">
-        <Shield size={22} className="text-[#175DDC] dark:text-[#238636]" fill="currentColor" stroke="white" strokeWidth={1.5} />
-        <span className="text-[#175DDC] dark:text-[#238636] font-medium text-xl tracking-tight">dreamlive</span>
+      <div className="flex items-center gap-2">
+        <Shield size={24} className="text-[#FF639B]" fill="#FF639B" fillOpacity={0.1} strokeWidth={2} />
+        <span className="text-[#FF639B] font-extrabold text-2xl tracking-tighter">dreamlive</span>
       </div>
-      <div className="flex items-center gap-3">
-        <button onClick={toggleTheme} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Cambiar tema">
+      <div className="flex items-center gap-4">
+        <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-[#FF639B] transition-all" title="Cambiar tema">
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
-        <ExternalLink
-          onClick={() => window.open(import.meta.env.WXT_WEB_DOMAIN ? `https://${import.meta.env.WXT_WEB_DOMAIN}` : 'https://dreamlive.app', '_blank')}
-          size={20}
-          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors"
-        />
       </div>
     </div>
   );
