@@ -151,10 +151,10 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                 onClick={() => setShowConsole(!showConsole)}
                 title="Mostrar/Ocultar consola"
                 className="dreamlive-icon-btn"
-                style={{ 
-                  background: showConsole ? 'var(--color-primary)' : 'var(--apple-btn-secondary)', 
+                style={{
+                  background: showConsole ? 'var(--color-primary)' : 'var(--apple-btn-secondary)',
                   color: showConsole ? '#FFF' : 'var(--apple-text-main)',
-                  boxShadow: showConsole ? '0 0 12px rgba(255, 99, 155, 0.3)' : 'none'
+                  boxShadow: showConsole ? '0 0 12px rgba(20, 115, 116, 0.3)' : 'none'
                 }}
               >
                 <Terminal size={14} />
@@ -183,7 +183,7 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                     color: isSelected ? '#FFF' : 'var(--apple-text-main)',
                     opacity: isRunning && !isSelected ? 0.5 : 1,
                     transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                    boxShadow: isSelected ? '0 4px 10px rgba(255, 99, 155, 0.2)' : 'none'
+                    boxShadow: isSelected ? '0 4px 10px rgba(20, 115, 116, 0.2)' : 'none'
                   }}
                 >
                   {tag}
@@ -202,7 +202,7 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                   border: `3px solid ${isRunning ? 'var(--color-primary)' : 'var(--apple-btn-secondary)'}`,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: isRunning ? '0 0 20px rgba(255, 99, 155, 0.3)' : 'none',
+                  boxShadow: isRunning ? '0 0 20px rgba(20, 115, 116, 0.3)' : 'none',
                   background: 'var(--apple-bg)'
                 }}
               >
@@ -245,7 +245,7 @@ export const AvailabilityModal: React.FC<Props> = ({ onClose }) => {
                   background: isRunning ? '#FF3B30' : isValidRoute ? 'var(--color-primary-gradient)' : 'var(--apple-btn-disabled)',
                   color: '#FFFFFF',
                   height: '40px',
-                  boxShadow: isRunning ? '0 4px 15px rgba(255, 59, 48, 0.2)' : (isValidRoute ? '0 4px 15px rgba(255, 99, 155, 0.25)' : 'none')
+                  boxShadow: isRunning ? '0 4px 15px rgba(255, 59, 48, 0.2)' : (isValidRoute ? '0 4px 15px rgba(20, 115, 116, 0.25)' : 'none')
                 }}
               >
                 <Search size={18} strokeWidth={2.5} />

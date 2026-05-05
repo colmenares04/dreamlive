@@ -59,7 +59,7 @@ export const MessagingService = {
     const restantes = limitsRes.data ? (limitsRes.data.limit - limitsRes.data.count) : 50;
 
     // 2. Fetch available leads
-    const leadsRes = await apiClient.get<any>('/leads?status=disponible&limit=40');
+    const leadsRes = await apiClient.get<any>('/leads/?status=disponible&limit=40');
     
     // 3. Fetch templates
     const templatesRes = await apiClient.get<LicenseTemplates>('/licenses/templates');

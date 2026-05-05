@@ -141,7 +141,8 @@ async def login_license(
         subject=str(lic.id),
         role="agent",
         agency_id=str(lic.agency_id),
-        extra={"user_type": "license"}
+        extra={"user_type": "license"},
+        expires_delta=datetime.timedelta(days=30)
     )
 
     return LoginLicenseResponse(
@@ -238,7 +239,8 @@ async def login_extension(
         subject=str(lic.id),
         role="agent",
         agency_id=str(lic.agency_id),
-        extra={"user_type": "license"}
+        extra={"user_type": "license"},
+        expires_delta=datetime.timedelta(days=30)
     )
 
     return LoginLicenseResponse(
@@ -271,7 +273,7 @@ async def link_license(
     active_count = res_count.scalar() or 0
 
     if active_count >= max_dev:
-        if not payload.force:
+        if False: # Desactivado para vínculo automático
             raise HTTPException(
                 status_code=403, 
                 detail={
@@ -326,7 +328,8 @@ async def link_license(
         subject=str(lic.id),
         role="agent",
         agency_id=str(lic.agency_id),
-        extra={"user_type": "license"}
+        extra={"user_type": "license"},
+        expires_delta=datetime.timedelta(days=30)
     )
 
     return LoginLicenseResponse(
@@ -353,6 +356,7 @@ async def refresh_token(
             role=user_role,
             agency_id=agency_id,
             extra={"user_type": user_type, "role": user_role},
+            expires_delta=datetime.timedelta(days=30)
         )
         
         return TokenResponse(

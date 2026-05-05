@@ -26,7 +26,7 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates, setTemplates] = useState<string[]>([]);
   const [invitationTypes, setInvitationTypes] = useState<string[]>(["Normal", "Elite", "Popular", "Premium"]);
-  
+
   const isValidRoute = location.href.includes('/instant-messages');
 
   const fetchLimits = useCallback(async () => {
@@ -128,7 +128,7 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
   const handleConfigChange = async (newTemplates: string[], newInvitationTypes: string[]) => {
     setTemplates(newTemplates);
     setInvitationTypes(newInvitationTypes);
-    await browser.storage.local.set({ 
+    await browser.storage.local.set({
       messageTemplates: newTemplates,
       invitationTypes: newInvitationTypes
     });
@@ -181,10 +181,10 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
       <div className="dreamlive-modal-container">
         <div className="dreamlive-modal-card">
           {/* Header */}
-          <div 
-            onMouseDown={handleMouseDown} 
-            className="dreamlive-modal-header" 
-            style={{ 
+          <div
+            onMouseDown={handleMouseDown}
+            className="dreamlive-modal-header"
+            style={{
               padding: '16px 18px',
               cursor: isDragging ? 'grabbing' : 'grab',
               borderBottom: showConsole ? '1px solid var(--apple-border)' : 'none'
@@ -192,10 +192,10 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
           >
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="dreamlive-title-main">Contactar</span>
-              <span style={{ 
-                fontSize: '11px', 
-                fontWeight: '800', 
-                color: isValidRoute ? 'var(--color-primary)' : 'var(--color-red)', 
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '800',
+                color: isValidRoute ? 'var(--color-primary)' : 'var(--color-red)',
                 marginTop: '2px',
                 letterSpacing: '0.5px'
               }}>
@@ -203,20 +203,20 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
               </span>
             </div>
             <div className="dreamlive-header-actions" style={{ gap: '10px' }}>
-              <button 
+              <button
                 onClick={toggleConsole}
-                className="dreamlive-icon-btn" 
+                className="dreamlive-icon-btn"
                 title="Terminal: Abre la consola técnica para ver el progreso detallado de los envíos en tiempo real"
-                style={{ 
-                  background: showConsole ? 'var(--color-primary)' : 'var(--apple-btn-secondary)', 
+                style={{
+                  background: showConsole ? 'var(--color-primary)' : 'var(--apple-btn-secondary)',
                   color: showConsole ? '#FFF' : 'var(--apple-text-main)',
-                  boxShadow: showConsole ? '0 0 12px rgba(255, 99, 155, 0.3)' : 'none'
+                  boxShadow: showConsole ? '0 0 12px rgba(20, 115, 116, 0.3)' : 'none'
                 }}
               >
                 <Terminal size={14} />
               </button>
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 className="dreamlive-icon-btn"
                 title="Cerrar ventana"
               >
@@ -228,20 +228,20 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
           {/* Body */}
           <div className="dreamlive-modal-body" style={{ padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {showTemplates ? (
-              <TemplateManager 
-                templates={templates} 
+              <TemplateManager
+                templates={templates}
                 invitationTypes={invitationTypes}
                 onConfigChange={handleConfigChange}
-                isDarkMode={isDarkMode} 
+                isDarkMode={isDarkMode}
               />
             ) : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
-                  <div 
+                  <div
                     className="dreamlive-circle-main"
-                    style={{ 
+                    style={{
                       borderColor: isRunning ? 'var(--color-primary)' : 'var(--apple-border)',
-                      boxShadow: isRunning ? '0 0 20px rgba(255, 99, 155, 0.2)' : 'var(--apple-shadow)'
+                      boxShadow: isRunning ? '0 0 20px rgba(20, 115, 116, 0.2)' : 'var(--apple-shadow)'
                     }}
                   >
                     <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--apple-text-main)', letterSpacing: '-1px' }}>{count}</span>
@@ -278,7 +278,7 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
 
             <div className="dreamlive-button-group" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {!showTemplates && (
-                <button 
+                <button
                   disabled={!isValidRoute}
                   title={!isValidRoute ? "Debes estar en la página de mensajes de TikTok Backstage para iniciar" : isRunning ? "Detener proceso de envío masivo" : "Iniciar envío automático de mensajes a leads disponibles"}
                   onClick={async () => {
@@ -300,8 +300,8 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
                     }
                   }}
                   className="dreamlive-btn dreamlive-btn-primary"
-                  style={{ 
-                    background: !isValidRoute ? 'var(--apple-btn-disabled)' : isRunning ? 'var(--color-red)' : 'var(--color-primary-gradient)', 
+                  style={{
+                    background: !isValidRoute ? 'var(--apple-btn-disabled)' : isRunning ? 'var(--color-red)' : 'var(--color-primary-gradient)',
                     height: '38px',
                     opacity: !isValidRoute ? 0.5 : 1
                   }}
@@ -310,15 +310,15 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
                   <span style={{ letterSpacing: '-0.3px' }}>{isRunning ? 'Detener Envío' : 'Iniciar Envío Masivo'}</span>
                 </button>
               )}
-              
-              <button 
+
+              <button
                 onClick={() => setShowTemplates(!showTemplates)}
-                className="dreamlive-btn" 
+                className="dreamlive-btn"
                 title="Configuración: Administra tus plantillas de mensajes y etiquetas de invitación"
-                style={{ 
-                  background: showTemplates ? 'var(--color-primary-gradient)' : 'var(--apple-btn-secondary)', 
-                  color: showTemplates ? '#FFFFFF' : 'var(--apple-text-main)', 
-                  height: '38px' 
+                style={{
+                  background: showTemplates ? 'var(--color-primary-gradient)' : 'var(--apple-btn-secondary)',
+                  color: showTemplates ? '#FFFFFF' : 'var(--apple-text-main)',
+                  height: '38px'
                 }}
               >
                 <Settings size={18} />
@@ -344,7 +344,7 @@ export const ContactModal: React.FC<Props> = ({ onClose, isDarkMode = false }) =
 
           {/* Console Area */}
           {showConsole && (
-            <div style={{ 
+            <div style={{
               borderTop: '1px solid var(--apple-border)',
               background: '#000',
               padding: '10px',

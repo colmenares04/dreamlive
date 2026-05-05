@@ -96,14 +96,14 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <h3 style={{ 
+        <h3 style={{
           margin: 0, fontSize: '15px', fontWeight: '900', letterSpacing: '-0.3px',
           color: 'var(--apple-text-main)'
         }}>
           Configuración
         </h3>
-        <p style={{ 
-          margin: 0, fontSize: '11px', fontWeight: '600', 
+        <p style={{
+          margin: 0, fontSize: '11px', fontWeight: '600',
           color: 'var(--apple-text-sub)', letterSpacing: '0.2px'
         }}>
           Personaliza tus invitaciones y mensajes automáticos
@@ -114,22 +114,22 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       {/* Formulario de Nueva Plantilla */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <label style={{ 
+          <label style={{
             fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px',
-            color: 'var(--apple-text-sub)' 
+            color: 'var(--apple-text-sub)'
           }}>
             Nuevo Mensaje
           </label>
-          <span style={{ 
-            fontSize: '10px', fontWeight: '900', 
-            color: templates.length >= 5 ? '#FF453A' : 'var(--color-primary)' 
+          <span style={{
+            fontSize: '10px', fontWeight: '900',
+            color: templates.length >= 5 ? '#FF453A' : 'var(--color-primary)'
           }}>
             {templates.length}/5
           </span>
         </div>
 
         {templates.length < 5 ? (
-          <div style={{ 
+          <div style={{
             display: 'flex', flexDirection: 'column', padding: '14px', borderRadius: '16px',
             background: 'var(--apple-bg)',
             border: '1px solid var(--apple-border)',
@@ -147,18 +147,18 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                 color: 'var(--apple-text-main)', padding: 0
               }}
             />
-            <div style={{ 
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-              marginTop: '12px', paddingTop: '10px', 
-              borderTop: '1px solid var(--apple-border)' 
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginTop: '12px', paddingTop: '10px',
+              borderTop: '1px solid var(--apple-border)'
             }}>
               <button
                 type="button"
                 onClick={() => insertVariable("{username}", false)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '5px', 
+                  display: 'flex', alignItems: 'center', gap: '5px',
                   padding: '6px 14px', borderRadius: '100px', fontSize: '11px', fontWeight: '800',
-                  background: 'rgba(255, 99, 155, 0.1)',
+                  background: 'rgba(20, 115, 116, 0.1)',
                   color: 'var(--color-primary)', border: 'none', cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
@@ -176,7 +176,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                   background: newTemplateText.trim() ? 'var(--color-primary-gradient)' : 'var(--apple-btn-disabled)',
                   color: '#FFFFFF',
                   border: 'none', cursor: newTemplateText.trim() ? 'pointer' : 'not-allowed',
-                  boxShadow: newTemplateText.trim() ? '0 4px 10px rgba(255, 99, 155, 0.2)' : 'none'
+                  boxShadow: newTemplateText.trim() ? '0 4px 10px rgba(20, 115, 116, 0.2)' : 'none'
                 }}
               >
                 Guardar
@@ -184,9 +184,9 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
             </div>
           </div>
         ) : (
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', 
-            borderRadius: '16px', background: 'rgba(255, 69, 58, 0.05)', 
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px', padding: '14px',
+            borderRadius: '16px', background: 'rgba(255, 69, 58, 0.05)',
             border: '1px solid rgba(255, 69, 58, 0.1)', color: '#FF453A'
           }}>
             <AlertCircle size={16} />
@@ -198,23 +198,23 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       {/* Lista de Plantillas */}
       {templates.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <label style={{ 
+          <label style={{
             fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px',
-            color: 'var(--apple-text-sub)' 
+            color: 'var(--apple-text-sub)'
           }}>
             Tus Plantillas
           </label>
-          <div style={{ 
-            display: 'flex', flexDirection: 'column', gap: '10px', 
-            maxHeight: '200px', overflowY: 'auto' 
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: '10px',
+            maxHeight: '200px', overflowY: 'auto'
           }} className="custom-scrollbar">
             {templates.map((template, idx) => (
               <div
                 key={idx}
                 style={{
-                  display: 'flex', flexDirection: 'column', padding: '14px', 
+                  display: 'flex', flexDirection: 'column', padding: '14px',
                   borderRadius: '16px', transition: 'all 0.3s ease',
-                  background: editingIndex === idx ? 'rgba(255, 99, 155, 0.05)' : 'var(--apple-bg)',
+                  background: editingIndex === idx ? 'rgba(20, 115, 116, 0.05)' : 'var(--apple-bg)',
                   border: editingIndex === idx ? '1px solid var(--color-primary)' : '1px solid var(--apple-border)'
                 }}
               >
@@ -247,8 +247,8 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                    <p style={{ 
-                      margin: 0, fontSize: '13px', fontWeight: '600', lineHeight: '1.5', 
+                    <p style={{
+                      margin: 0, fontSize: '13px', fontWeight: '600', lineHeight: '1.5',
                       color: 'var(--apple-text-main)',
                       flex: 1
                     }}>
@@ -257,7 +257,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <button
                         onClick={() => handleStartEditing(idx)}
-                        style={{ 
+                        style={{
                           padding: '6px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)',
                           color: 'var(--apple-text-sub)',
                           cursor: 'pointer'
@@ -267,7 +267,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                       </button>
                       <button
                         onClick={() => handleDeleteTemplate(idx)}
-                        style={{ 
+                        style={{
                           padding: '6px', borderRadius: '10px', background: 'rgba(255, 69, 58, 0.05)', border: '1px solid rgba(255, 69, 58, 0.1)',
                           color: '#FF453A', cursor: 'pointer'
                         }}

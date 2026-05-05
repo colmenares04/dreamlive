@@ -9,7 +9,7 @@ class AuditLogORM(Base):
 
     id = Column(String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), nullable=True)
-    agency_id = Column(String(36), ForeignKey("agencies.id"), nullable=True)
+    agency_id = Column(String(36), ForeignKey("agencies.id", ondelete="CASCADE"), nullable=True)
     category = Column(String(100), nullable=False)
     action = Column(String(255), nullable=False)
     entity_name = Column(String(100), nullable=True)

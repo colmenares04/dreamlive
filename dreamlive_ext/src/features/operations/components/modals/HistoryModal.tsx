@@ -27,7 +27,7 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
   const [leads, setLeads] = useState<LeadData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [minQuantity, setMinQuantity] = useState<number | ''>('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -79,7 +79,7 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
     }
 
     await browser.storage.local.set({ activeOperationsModal: targetModal });
-    
+
     // Si no estamos en la página correcta, forzamos navegación
     const currentUrl = window.location.href.toLowerCase();
     if (!currentUrl.includes(targetUrl.replace('https://', '').split('/')[0])) {
@@ -222,7 +222,7 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
             <div style={{ display: 'flex', gap: '8px' }}>
               <div style={{ position: 'relative', flex: 2, display: 'flex', alignItems: 'center' }}>
                 <Search size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-sub)' }} />
-                <input 
+                <input
                   type="text" placeholder="Buscar usuario..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -235,7 +235,7 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
               </div>
               <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
                 <Hash size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-sub)' }} />
-                <input 
+                <input
                   type="number" placeholder="Min."
                   value={minQuantity}
                   onChange={(e) => setMinQuantity(e.target.value === '' ? '' : Number(e.target.value))}
@@ -257,10 +257,10 @@ export const HistoryModal: React.FC<Props> = ({ onClose, activeModal }) => {
                     padding: '6px 12px', borderRadius: '12px', fontSize: '10px', fontWeight: '800',
                     textTransform: 'uppercase', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     background: activeFilter === f ? 'var(--color-primary-gradient)' : 'var(--apple-bg-secondary)',
-                    color: activeFilter === f ? '#FFFFFF' : 'var(--apple-text-sub)', 
+                    color: activeFilter === f ? '#FFFFFF' : 'var(--apple-text-sub)',
                     border: activeFilter === f ? 'none' : '1px solid var(--apple-border)',
                     cursor: 'pointer',
-                    boxShadow: activeFilter === f ? '0 4px 10px rgba(255, 99, 155, 0.2)' : 'none'
+                    boxShadow: activeFilter === f ? '0 4px 10px rgba(20, 115, 116, 0.2)' : 'none'
                   }}
                 >
                   {f === 'viewers' ? 'Espectadores' : f === 'likes' ? 'Likes' : 'Todos'}

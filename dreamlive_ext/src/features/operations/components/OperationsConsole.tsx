@@ -320,8 +320,8 @@ export const OperationsConsole: React.FC = () => {
       >
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#FF639B]/10 flex items-center justify-center">
-              <Activity size={18} strokeWidth={2.5} className="text-[#FF639B]" />
+            <div className="w-8 h-8 rounded-xl bg-[#147374]/10 flex items-center justify-center">
+              <Activity size={18} strokeWidth={2.5} className="text-[#147374]" />
             </div>
             <h2 className="text-[15px] font-extrabold text-gray-900 dark:text-white tracking-tight">Operaciones</h2>
           </div>
@@ -351,22 +351,18 @@ export const OperationsConsole: React.FC = () => {
               key={btn.id!}
               className={`flex flex-col rounded-[20px] border transition-all duration-300 group
                 ${isActive || isHistoryActive
-                  ? 'border-[#FF639B]/20 dark:border-[#FF639B]/30'
-                  : 'border-black/[0.02] dark:border-white/5 hover:border-[#FF639B]/10 dark:hover:border-[#FF639B]/20'}`}
+                  ? 'border-[#147374]/20 dark:border-[#147374]/30'
+                  : 'border-black/[0.02] dark:border-white/5 hover:border-[#147374]/10 dark:hover:border-[#147374]/20'}`}
               style={{
                 background: isActive || isHistoryActive ? 'var(--apple-bg-secondary)' : 'transparent',
-                boxShadow: isActive || isHistoryActive ? '0 4px 12px rgba(255, 99, 155, 0.04)' : 'none'
+                boxShadow: isActive || isHistoryActive ? '0 4px 12px rgba(20, 115, 116, 0.04)' : 'none'
               }}
             >
-              <button
-                onClick={() => handleToggleModal(btn.id)}
-                title={`Abrir panel de ${btn.title}`}
-                className="w-full flex items-center gap-3.5 p-4 text-left"
-              >
+              <div className="w-full flex items-center gap-3.5 p-4">
                 <div className="shrink-0">
                   <div className={`w-3 h-3 rounded-full transition-all duration-500
                     ${isActive
-                      ? 'bg-[#FF639B] shadow-[0_0_12px_rgba(255,99,155,0.6)]'
+                      ? 'bg-[#147374] shadow-[0_0_12px_rgba(255,99,155,0.6)]'
                       : 'bg-gray-200 dark:bg-gray-800'}`}
                   />
                 </div>
@@ -374,7 +370,7 @@ export const OperationsConsole: React.FC = () => {
                 <div className="flex flex-col flex-1 overflow-hidden">
                   <div className="flex items-center justify-between gap-1.5 pr-2 mb-0.5">
                     <span className={`text-[14px] font-bold tracking-tight transition-colors
-                      ${isActive ? 'text-[#FF639B]' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
+                      ${isActive ? 'text-[#147374]' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
                       {btn.title}
                     </span>
                     <span className="text-[11px] font-extrabold tabular-nums bg-gray-100 dark:bg-white/5 border border-black/[0.03] dark:border-white/10 px-2.5 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
@@ -387,13 +383,17 @@ export const OperationsConsole: React.FC = () => {
                   </span>
                 </div>
 
-                <div className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500
-                  ${isActive
-                    ? 'bg-gradient-to-br from-[#FF639B] to-[#FF4D80] text-white shadow-lg shadow-[#FF639B]/20 scale-110'
-                    : 'bg-white dark:bg-white/[0.03] text-gray-400 border border-black/[0.03] dark:border-white/5 group-hover:scale-105 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>
+                <button
+                  onClick={() => handleToggleModal(btn.id)}
+                  title={`Abrir panel de ${btn.title}`}
+                  className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 active:scale-95
+                    ${isActive
+                      ? 'bg-gradient-to-br from-[#147374] to-[#0E3B41	] text-white shadow-lg shadow-[#147374]/20 scale-110'
+                      : 'bg-white dark:bg-white/[0.03] text-gray-400 border border-black/[0.03] dark:border-white/5 hover:scale-105 hover:text-gray-600 dark:hover:text-gray-300 hover:border-[#147374]/20'}`}
+                >
                   {btn.icon}
-                </div>
-              </button>
+                </button>
+              </div>
 
               <div className="px-4 pb-4 pt-0">
                 <button
@@ -404,8 +404,8 @@ export const OperationsConsole: React.FC = () => {
                   title={`Ver historial de ${btn.title}`}
                   className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold transition-all duration-300
                     ${isHistoryActive
-                      ? 'bg-[#FF639B] text-white shadow-md'
-                      : 'bg-gray-50 dark:bg-white/[0.02] text-gray-600 dark:text-gray-400 border border-black/[0.02] dark:border-white/5 hover:bg-white dark:hover:bg-white/5 hover:border-[#FF639B]/20 dark:hover:border-[#FF639B]/30 hover:text-[#FF639B] shadow-sm'}`}
+                      ? 'bg-[#147374] text-white shadow-md'
+                      : 'bg-gray-50 dark:bg-white/[0.02] text-gray-600 dark:text-gray-400 border border-black/[0.02] dark:border-white/5 hover:bg-white dark:hover:bg-white/5 hover:border-[#147374]/20 dark:hover:border-[#147374]/30 hover:text-[#147374] shadow-sm'}`}
                 >
                   <Eye size={14} strokeWidth={2.5} />
                   <span>Ver Historial</span>

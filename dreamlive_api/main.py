@@ -137,9 +137,12 @@ class ExtensionCORSMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 # ── Middleware Stack ─────────────────────────────────────────────────────────
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
 fastapi_app.add_middleware(RequestLoggingMiddleware)
 fastapi_app.add_middleware(RateLimitMiddleware) 
 fastapi_app.add_middleware(SecurityHeadersMiddleware)
+fastapi_app.add_middleware(ProxyHeadersMiddleware)
 
 # Orígenes controlados para la web
 allowed_origins = settings.ALLOWED_ORIGINS

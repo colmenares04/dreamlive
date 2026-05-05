@@ -54,10 +54,14 @@ class JWTHandler(ITokenService):
         role: str,
         agency_id: Optional[Any] = None,
         extra: Optional[Dict[str, Any]] = None,
+        expires_delta: Optional[timedelta] = None,
     ) -> str:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+        if expires_delta:
+            expire = datetime.now(timezone.utc) + expires_delta
+        else:
+            expire = datetime.now(timezone.utc) + timedelta(
+                minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+            )
         payload = {
             "sub": str(subject),
             "role": role,
@@ -105,8 +109,8 @@ def hash_password(plain_password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return _pwd_handler.verify(plain_password, hashed_password)
 
-def create_access_token(subject: Any, role: str, agency_id: Optional[Any] = None, extra: Optional[Dict[str, Any]] = None) -> str:
-    return _jwt_handler.create_access_token(subject, role, agency_id, extra)
+def create_access_token(subject: Any, role: str, agency_id: Optional[Any] = None, extra: Optional[Dict[str, Any]] = None, expires_delta: Optional[timedelta] = None) -> str:
+    return _jwt_handler.create_access_token(subject, role, agency_id, extra, expires_delta)
 
 def decode_token_func(token: str) -> Dict[str, Any]:
     return _jwt_handler.decode_token(token)

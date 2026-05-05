@@ -60,26 +60,26 @@ export default defineBackground(() => {
         (async () => {
           try {
             // Si la cola está vacía y no estamos buscando, buscamos
-              if (leadsQueue.length === 0 && !isFetchingLeads) {
-                isFetchingLeads = true;
-                console.log('[Background] Cola de leads vacía. Auto-poblando desde la API...');
-                const res = await apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100');
-                if (res && res.data && res.data.items) {
-                  const fetchedLeads = res.data.items
-                    .map((item: any) => item.username)
-                    .filter((u: string) => !inFlightLeads.has(u));
-                  
-                  leadsQueue = [...fetchedLeads];
-                  totalRemainingInDb = res.data.total || 0;
-                  console.log(`[Background] Auto-población completa con ${leadsQueue.length} leads desde la API. Total en DB: ${totalRemainingInDb}`);
-                }
-                isFetchingLeads = false;
+            if (leadsQueue.length === 0 && !isFetchingLeads) {
+              isFetchingLeads = true;
+              console.log('[Background] Cola de leads vacía. Auto-poblando desde la API...');
+              const res = await apiClient.get<any>('/leads/?status=recopilado&page=1&page_size=100');
+              if (res && res.data && res.data.items) {
+                const fetchedLeads = res.data.items
+                  .map((item: any) => item.username)
+                  .filter((u: string) => !inFlightLeads.has(u));
+
+                leadsQueue = [...fetchedLeads];
+                totalRemainingInDb = res.data.total || 0;
+                console.log(`[Background] Auto-población completa con ${leadsQueue.length} leads desde la API. Total en DB: ${totalRemainingInDb}`);
               }
+              isFetchingLeads = false;
+            }
 
             if (leadsQueue.length > 0) {
               const batchSize = (msg as any).batchSize || SCRAPER_BATCH_SIZE;
               const batch = leadsQueue.splice(0, batchSize);
-              
+
               // Si nos quedan pocos después de este splice, lanzamos un pre-fetch asíncrono para el siguiente
               if (leadsQueue.length < batchSize && !isFetchingLeads) {
                 isFetchingLeads = true;
@@ -87,8 +87,8 @@ export default defineBackground(() => {
                   if (res && res.data && res.data.items) {
                     const fetchedLeads = res.data.items
                       .map((item: any) => item.username)
-                      .filter((u: string) => !batch.includes(u) && !leadsQueue.includes(u) && !inFlightLeads.has(u)); 
-                    
+                      .filter((u: string) => !batch.includes(u) && !leadsQueue.includes(u) && !inFlightLeads.has(u));
+
                     leadsQueue = [...leadsQueue, ...fetchedLeads];
                     totalRemainingInDb = res.data.total || 0;
                     console.log(`[Background] Pre-fetch completado. Nueva cola: ${leadsQueue.length}. Total DB: ${totalRemainingInDb}`);
@@ -103,10 +103,10 @@ export default defineBackground(() => {
               batch.forEach(u => inFlightLeads.add(u));
 
               console.log(`[Background] GET_BATCH_TO_CHECK enviando ${batch.length} leads. Quedan ${leadsQueue.length} en cola local. DB dice total: ${totalRemainingInDb}`);
-              sendResponse({ 
-                users: batch, 
+              sendResponse({
+                users: batch,
                 totalRemaining: leadsQueue.length,
-                totalInDb: totalRemainingInDb 
+                totalInDb: totalRemainingInDb
               });
             } else {
               console.log('[Background] GET_BATCH_TO_CHECK: Cola vacía y nada más en DB.');
@@ -148,7 +148,7 @@ export default defineBackground(() => {
               message_templates: templates,
               invitation_types: invitation_types
             });
-            
+
             if (res.error) {
               throw new Error(`API Error (${res.status}): ${res.error}`);
             }
@@ -234,21 +234,21 @@ export default defineBackground(() => {
           (async () => {
             try {
               const username = message.username.replace('@', '');
-              
+
               // Broadcast interno para actualización en vivo de la UI (Extension context y Content Scripts)
-              const broadcastMsg = { 
-                type: message.type, 
+              const broadcastMsg = {
+                type: message.type,
                 username: username,
-                internalBroadcast: true 
+                internalBroadcast: true
               };
-              
+
               // Enviar a la UI de la extensión (Dashboard)
-              browser.runtime.sendMessage(broadcastMsg).catch(() => {});
-              
+              browser.runtime.sendMessage(broadcastMsg).catch(() => { });
+
               // Enviar a todas las pestañas (ContactModal en TikTok)
               browser.tabs.query({}).then(tabs => {
                 tabs.forEach(tab => {
-                  if (tab.id) browser.tabs.sendMessage(tab.id, broadcastMsg).catch(() => {});
+                  if (tab.id) browser.tabs.sendMessage(tab.id, broadcastMsg).catch(() => { });
                 });
               });
 
@@ -257,7 +257,7 @@ export default defineBackground(() => {
                 usernames: [username],
                 status: 'contactado'
               });
-              
+
               if (res && res.error) {
                 console.error('[Background] Error en PATCH lead status:', res.error, res.status);
                 sendResponse({ success: false, error: res.error, status: res.status });
@@ -335,7 +335,7 @@ export default defineBackground(() => {
             const limitsRes = await apiClient.get<any>('/operations/limits');
             const restantes = limitsRes.data ? (limitsRes.data.limit - limitsRes.data.count) : 50;
 
-            const leadsRes = await apiClient.get<any>('/leads?status=disponible&limit=40');
+            const leadsRes = await apiClient.get<any>('/leads/?status=disponible&limit=40');
             const templatesRes = await apiClient.get<any>('/licenses/templates');
 
             sendResponse({
@@ -357,6 +357,80 @@ export default defineBackground(() => {
       case 'toggleRecopilacion':
       case 'LEAD_SAVED_CONFIRMATION':
       case 'ROTATE_KEYWORD':
+        (async () => {
+          try {
+            // 1. Verificar si realmente debemos seguir recopilando
+            const collectionState = await browser.storage.local.get('isCollecting');
+            if (collectionState.isCollecting !== true) {
+              console.log('[Background] Rotación cancelada: La recopilación está desactivada.');
+              sendResponse({ success: false, error: 'Not collecting' });
+              return;
+            }
+
+            // 2. Sincronizar palabras clave con el servidor antes de rotar
+            console.log('[Background] Sincronizando palabras clave con el servidor...');
+            const configRes = await apiClient.get<any>('/licenses/templates');
+
+            let currentKeywords: string[] = [];
+            let currentActive: string = '';
+
+            if (configRes && configRes.data) {
+              // Parsear keywords del servidor (vienen como string separado por comas o array)
+              const rawKeywords = configRes.data.keywords || "";
+              currentKeywords = typeof rawKeywords === 'string'
+                ? rawKeywords.split(/[,\/]/).map(k => k.trim()).filter(k => k !== "")
+                : rawKeywords;
+
+              // Actualizar storage con lo nuevo del servidor
+              await browser.storage.local.set({
+                keywords: currentKeywords,
+                message_templates: configRes.data.message_templates || [],
+                invitation_types: configRes.data.invitation_types || []
+              });
+              console.log('[Background] Keywords sincronizadas:', currentKeywords);
+            } else {
+              // Fallback a storage local si la API falla
+              const local = await browser.storage.local.get(['keywords', 'activeKeyword']);
+              currentKeywords = (local.keywords as string[]) || [];
+              currentActive = local.activeKeyword as string || '';
+            }
+
+            const activeRes = await browser.storage.local.get('activeKeyword');
+            currentActive = activeRes.activeKeyword as string || '';
+
+            if (currentKeywords.length === 0) {
+              console.warn('[Background] No hay keywords configuradas para rotar.');
+              sendResponse({ success: false, error: 'No keywords' });
+              return;
+            }
+
+            // 2. Encontrar el índice actual y rotar
+            let currentIndex = currentKeywords.indexOf(currentActive || '');
+            if (currentIndex === -1) currentIndex = 0;
+
+            const nextIndex = (currentIndex + 1) % currentKeywords.length;
+            const nextKeyword = currentKeywords[nextIndex];
+
+            console.log(`[Background] Rotando keyword: ${currentActive} -> ${nextKeyword} (Índice ${nextIndex})`);
+
+            // 3. Guardar y Navegar
+            await browser.storage.local.set({ activeKeyword: nextKeyword });
+            browser.runtime.sendMessage({ type: 'KEYWORD_CHANGED', keyword: nextKeyword }).catch(() => { });
+
+            const targetUrl = `https://www.tiktok.com/search/live?q=${encodeURIComponent(nextKeyword)}`;
+            const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+            if (tab?.id) {
+              await browser.tabs.update(tab.id, { url: targetUrl });
+            }
+
+            sendResponse({ success: true, nextKeyword });
+          } catch (e) {
+            console.error('[Background] Error rotando keyword:', e);
+            sendResponse({ success: false });
+          }
+        })();
+        return true;
+
       case 'COLLECTION_STOPPED':
       case 'STOP_CHECKING_UI':
       case 'BACKSTAGE_ALL_DONE':

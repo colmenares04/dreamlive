@@ -14,7 +14,7 @@ export class LicenseAdapter {
     agency_id: string; recruiter_name?: string; days: number;
     quantity?: number; request_limit?: number; refresh_minutes?: number;
   }): Promise<any> {
-    const { data } = await http.post('/licenses', payload);
+    const { data } = await http.post('/licenses/', payload);
     return data;
   }
 

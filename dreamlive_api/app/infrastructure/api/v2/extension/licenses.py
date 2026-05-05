@@ -212,7 +212,7 @@ async def create_license(
         is_active=True,
         expires_at=expires,
         admin_password="",
-        keywords="",
+        keywords="batallas/pk/versus",
     )
     uow.session.add(new_license)
     await uow.session.flush()
@@ -229,6 +229,7 @@ async def get_license_templates(
     return {
         "message_templates": license.message_templates or [],
         "invitation_types": license.invitation_types or [],
+        "keywords": license.keywords or "",
         "request_limit": license.request_limit or 60,
         "refresh_minutes": license.refresh_minutes or 60
     }

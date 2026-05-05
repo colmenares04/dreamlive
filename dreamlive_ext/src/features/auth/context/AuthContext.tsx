@@ -102,7 +102,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
         if (error) {
           console.error('[AUTH] Sesión inválida o expirada definitivamente:', error);
-          handleForceLogout('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
+          handleForceLogout(typeof error === 'string' ? error : ((error as any).message || 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.'));
         } else {
           // Si el token se refrescó exitosamente en la petición anterior,
           // reintentamos conectar el socket con los nuevos datos
@@ -135,12 +135,12 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
           limitReachedInfo: { active: (loginError as any).active, max: (loginError as any).max }
         }));
       } else {
-        const errStr = typeof loginError === 'string' ? loginError : 'Error desconocido';
-        const lowerError = errStr.toLowerCase();
+        const errorMsg = typeof loginError === 'string' ? loginError : ((loginError as any).message || 'Error desconocido');
+        const lowerError = errorMsg.toLowerCase();
         if (lowerError.includes("no encontrada") || lowerError.includes("licensenotfound") || lowerError.includes("no encontrado")) {
           setState((prev) => ({ ...prev, status: 'needs_license', error: null }));
         } else {
-          setState((prev) => ({ ...prev, status: 'error', error: errStr }));
+          setState((prev) => ({ ...prev, status: 'error', error: errorMsg }));
         }
       }
       return;
@@ -151,15 +151,22 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       await storage.setItem('local:license', tokenData.license);
       await storage.setItem('local:session_id', tokenData.session_id);
 
-      setState({
+      // Intentamos recuperar el perfil completo
+      const { data: userData } = await AuthService.getMe();
+      if (userData) {
+        await storage.setItem('local:user', userData);
+      }
+
+      setState((prev) => ({
+        ...prev,
         status: 'authenticated',
-        user: null,
+        user: userData || null,
         license: tokenData.license,
         token: tokenData.token,
         session_id: tokenData.session_id,
         error: null,
         limitReachedInfo: null
-      });
+      }));
       socketService.connect(WS_URL, tokenData.token, tokenData.session_id);
     }
   };
@@ -177,7 +184,8 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
           limitReachedInfo: { active: (error as any).active, max: (error as any).max }
         }));
       } else {
-        setState((prev) => ({ ...prev, status: 'error', error: typeof error === 'string' ? error : 'Error desconocido' }));
+        const errorMsg = typeof error === 'string' ? error : ((error as any).message || 'Error desconocido');
+        setState((prev) => ({ ...prev, status: 'error', error: errorMsg }));
       }
       return;
     }
@@ -187,15 +195,23 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         await storage.setItem('local:token', data.token);
         await storage.setItem('local:license', data.license);
         await storage.setItem('local:session_id', data.session_id);
-        setState({
+
+        // Intentamos recuperar el perfil completo
+        const { data: userData } = await AuthService.getMe();
+        if (userData) {
+          await storage.setItem('local:user', userData);
+        }
+
+        setState((prev) => ({
+          ...prev,
           status: 'authenticated',
-          user: null,
+          user: userData || null,
           license: data.license,
           token: data.token,
           session_id: data.session_id,
           error: null,
           limitReachedInfo: null
-        });
+        }));
         socketService.connect(WS_URL, data.token, data.session_id);
       } else {
         setState({
@@ -224,13 +240,30 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
           limitReachedInfo: { active: (error as any).active, max: (error as any).max }
         }));
       } else {
-        setState((prev) => ({ ...prev, status: 'needs_license', error: typeof error === 'string' ? error : 'Error desconocido' }));
+        const errorMsg = typeof error === 'string' ? error : ((error as any).message || 'Error desconocido');
+        setState((prev) => ({ ...prev, status: 'needs_license', error: errorMsg }));
       }
     } else if (data) {
       await storage.setItem('local:token', data.token);
       await storage.setItem('local:license', data.license);
       await storage.setItem('local:session_id', data.session_id);
-      setState({ ...state, status: 'authenticated', license: data.license, token: data.token, session_id: data.session_id, error: null, limitReachedInfo: null });
+
+      // Intentamos recuperar el perfil completo
+      const { data: userData } = await AuthService.getMe();
+      if (userData) {
+        await storage.setItem('local:user', userData);
+      }
+
+      setState((prev) => ({ 
+        ...prev, 
+        status: 'authenticated', 
+        user: userData || null,
+        license: data.license, 
+        token: data.token, 
+        session_id: data.session_id, 
+        error: null, 
+        limitReachedInfo: null 
+      }));
       socketService.connect(WS_URL, data.token, data.session_id || undefined);
     }
   };
@@ -238,21 +271,40 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const handleCreateAdmin = async (formData: any) => {
     if (!state.license || !state.token) return;
     setState((prev) => ({ ...prev, status: 'loading', error: null }));
+    
     const { data, error } = await AuthService.linkLicense({
       licenseKey: state.license.key,
       email: formData.email,
       password: formData.password,
-      fullName: formData.username
+      fullName: formData.username,
+      force: true // Desconectamos automáticamente cualquier sesión previa al crear/vincular
     });
 
     if (error) {
-      setState((prev) => ({ ...prev, status: 'needs_user_registration', error }));
+      const errorMsg = typeof error === 'string' ? error : ((error as any).message || 'Error al crear cuenta');
+      setState((prev) => ({ ...prev, status: 'needs_user_registration', error: errorMsg }));
     } else if (data) {
+      // Guardamos tokens y datos iniciales
       await storage.setItem('local:token', data.token);
       await storage.setItem('local:license', data.license);
       await storage.setItem('local:session_id', data.session_id);
 
-      setState({ ...state, status: 'authenticated', license: data.license, token: data.token, session_id: data.session_id, error: null });
+      // Intentamos recuperar el perfil completo antes de marcar como autenticado
+      const { data: userData } = await AuthService.getMe();
+      if (userData) {
+        await storage.setItem('local:user', userData);
+      }
+
+      setState((prev) => ({ 
+        ...prev, 
+        status: 'authenticated', 
+        user: userData || null,
+        license: data.license, 
+        token: data.token, 
+        session_id: data.session_id, 
+        error: null 
+      }));
+      
       socketService.connect(WS_URL, data.token, data.session_id || undefined);
     }
   };

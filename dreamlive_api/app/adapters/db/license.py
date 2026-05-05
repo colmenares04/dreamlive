@@ -27,7 +27,7 @@ class LicenseORM(Base):
     keywords = Column(Text, default="batallas/versus/duelo/pk", nullable=True)
     message_templates = Column(JSON, default=list, nullable=True)
     admin_password = Column(String(255), nullable=True)
-    invitation_types = Column(JSON, default=list, nullable=True)
+    invitation_types = Column(JSON, default=lambda: ["Normal", "Elite", "Popular"], nullable=True)
     theme = Column(String(50), default="dark", nullable=True)
     daily_contact_count = Column(Integer, default=0, nullable=False)
     last_contact_date = Column(DateTime(timezone=True), nullable=True)

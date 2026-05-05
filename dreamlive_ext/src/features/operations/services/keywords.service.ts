@@ -15,7 +15,7 @@ export const KeywordsService = {
   },
 
   /**
-   * Obtiene la lista de palabras clave desde la API.
+   * Obtiene la lista de palabras clave desde la API (Sincronizado con templates).
    */
   async getKeywords(): Promise<string[]> {
     const licenseId = await this.getLicenseId();
@@ -24,7 +24,7 @@ export const KeywordsService = {
     try {
       // Limpiar caché antes de pedir la nueva para evitar fantasmas
       await browser.storage.local.remove('keywords');
-      
+
       const res = await apiClient.get<any>(`/leads/keywords?license_id=${licenseId}`);
       if (res.data && res.data.items) {
         await browser.storage.local.set({ keywords: res.data.items });
@@ -44,19 +44,19 @@ export const KeywordsService = {
    */
   async getActiveKeyword(): Promise<string> {
     const res = await browser.storage.local.get(['activeKeyword', 'keywords']) as any;
-    
+
     // Validamos que sea un string y no esté vacío
     if (typeof res.activeKeyword === 'string' && res.activeKeyword.trim().length > 0) {
       return res.activeKeyword;
     }
-    
+
     // Si no hay activa, intentamos usar la primera de la lista cacheada
     if (res.keywords && Array.isArray(res.keywords) && res.keywords.length > 0) {
       const first = res.keywords[0];
       await browser.storage.local.set({ activeKeyword: first });
       return first;
     }
-    
+
     // Si ni siquiera hay keywords en cache, intentamos traerlas de la API
     const fresh = await this.getKeywords();
     if (fresh.length > 0) {
@@ -77,9 +77,9 @@ export const KeywordsService = {
     if (!licenseId || !clean) return this.getKeywords();
 
     try {
-      await apiClient.post('/leads/keywords', { 
-        license_id: licenseId, 
-        term: clean 
+      await apiClient.post('/leads/keywords', {
+        license_id: licenseId,
+        term: clean
       });
       // Forzar recarga desde servidor para asegurar sincronía
       const updated = await this.getKeywords();
@@ -120,14 +120,14 @@ export const KeywordsService = {
 
       if (searchInput) {
         const input = searchInput as HTMLInputElement;
-        
+
         // 1. Establecer valor
         input.value = keyword;
-        
+
         // 2. Disparar eventos para que React se entere
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
-        
+
         // 3. Simular Enter o Submit
         if (searchForm) {
           searchForm.dispatchEvent(new Event('submit', { bubbles: true }));
@@ -138,7 +138,7 @@ export const KeywordsService = {
         } else {
           input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
         }
-        
+
         return true;
       }
     } catch (e) {
@@ -152,13 +152,13 @@ export const KeywordsService = {
    */
   async setActiveKeyword(keyword: string) {
     await browser.storage.local.set({ activeKeyword: keyword });
-    
+
     // Intentar navegación inline primero
     const success = await this.navigateToKeywordInline(keyword);
-    
+
     const searchUrl = `https://www.tiktok.com/search/live?q=${encodeURIComponent(keyword)}`;
     browser.runtime.sendMessage({ type: 'KEYWORD_CHANGED', payload: keyword });
-    
+
     return { url: searchUrl, inline: success };
   }
 };

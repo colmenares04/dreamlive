@@ -178,15 +178,15 @@ export const Dashboard: React.FC = () => {
     <div className="w-full min-h-full flex flex-col bg-white dark:bg-[#18181A] text-gray-900 dark:text-gray-100 transition-colors duration-300 relative overflow-hidden">
       {/* Mesh Gradient Background */}
       <div className="absolute inset-0 pointer-events-none opacity-50 dark:opacity-5 transition-opacity"
-           style={{ 
-             background: 'radial-gradient(at 0% 0%, rgba(103, 212, 154, 0.2) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255, 99, 155, 0.2) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(107, 202, 242, 0.2) 0px, transparent 50%)' 
-           }}>
+        style={{
+          background: 'radial-gradient(at 0% 0%, rgba(103, 212, 154, 0.2) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(20, 115, 116, 0.2) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(107, 202, 242, 0.2) 0px, transparent 50%)'
+        }}>
       </div>
 
       {/* Header */}
       <header className="px-6 py-5 flex items-center justify-between relative bg-white/40 dark:bg-[#18181A]/40 backdrop-blur-md border-b border-black/5 dark:border-white/5 shadow-sm mb-4 z-10">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#FF639B] to-[#FF9EAF] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-pink-500/20">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#147374] to-[#0E3B41] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-[#147374]/20">
             {initials}
           </div>
           <div className="flex flex-col">
@@ -300,7 +300,7 @@ export const Dashboard: React.FC = () => {
             onClick={() => setActiveTab('ops')}
             title="Operaciones: Panel principal para la automatización de envíos y captación"
             className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${activeTab === 'ops'
-              ? 'bg-[#FF639B] text-white shadow-lg shadow-pink-500/20'
+              ? 'bg-[#147374] text-white shadow-lg shadow-[#147374]/20'
               : 'text-[#71717A] hover:text-gray-900 dark:hover:text-white'
               }`}
           >
@@ -310,7 +310,7 @@ export const Dashboard: React.FC = () => {
             onClick={() => setActiveTab('profile')}
             title="Suscripción: Revisa los detalles de tu licencia y cuenta"
             className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${activeTab === 'profile'
-              ? 'bg-[#FF639B] text-white shadow-lg shadow-pink-500/20'
+              ? 'bg-[#147374] text-white shadow-lg shadow-[#147374]/20'
               : 'text-[#71717A] hover:text-gray-900 dark:hover:text-white'
               }`}
           >
@@ -369,7 +369,7 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="absolute top-2 right-2 flex gap-1">
-                      <div className={`w-1.5 h-1.5 rounded-full ${((dailyUsage?.active_sessions || 1) >= (dailyUsage?.max_sessions || 5)) ? 'bg-amber-500 animate-pulse' : 'bg-[#FF639B]'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${((dailyUsage?.active_sessions || 1) >= (dailyUsage?.max_sessions || 5)) ? 'bg-amber-500 animate-pulse' : 'bg-[#147374]'}`} />
                     </div>
                   </div>
                 </div>
@@ -381,7 +381,7 @@ export const Dashboard: React.FC = () => {
                         logoutAll();
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100/50 dark:bg-white/[0.05] hover:bg-red-50 dark:hover:bg-red-500/10 text-[#FF639B] dark:text-[#FF639B] hover:text-red-500 dark:hover:text-red-400 rounded-2xl transition-all duration-300 text-[13px] font-semibold group shadow-sm active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100/50 dark:bg-white/[0.05] hover:bg-red-50 dark:hover:bg-red-500/10 text-[#147374] dark:text-[#147374] hover:text-red-500 dark:hover:text-red-400 rounded-2xl transition-all duration-300 text-[13px] font-semibold group shadow-sm active:scale-[0.98]"
                   >
                     <MonitorOff size={18} strokeWidth={2} className="group-hover:rotate-12 transition-transform" />
                     Desconectar sesiones activas
@@ -401,7 +401,7 @@ export const Dashboard: React.FC = () => {
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">Capacidad de envíos por licencia</span>
                 </div>
                 <div className="text-right">
-                  <span className={`text-[16px] font-bold ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'text-red-500' : 'text-[#FF639B]'}`}>
+                  <span className={`text-[16px] font-bold ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'text-red-500' : 'text-[#147374]'}`}>
                     {dailyUsage ? `${dailyUsage.usados_hoy} / ${dailyUsage.limite_diario}` : '0 / 60'}
                   </span>
                 </div>
@@ -409,21 +409,21 @@ export const Dashboard: React.FC = () => {
 
               <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-3 overflow-hidden mb-4 border border-black/[0.03] dark:border-white/5">
                 <div
-                  className={`h-full transition-all duration-1000 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario 
-                    ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' 
-                    : 'bg-gradient-to-r from-[#FF639B] to-[#FF9EAF]'}`}
+                  className={`h-full transition-all duration-1000 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario
+                    ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                    : 'bg-gradient-to-r from-[#147374] to-[#0E3B41]'}`}
                   style={{ width: `${Math.min(100, (dailyUsage?.usados_hoy || 0) / (dailyUsage?.limite_diario || 60) * 100)}%` }}
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <div className={`w-2 h-2 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'bg-red-500 animate-pulse' : 'bg-[#FF639B]'}`} />
+                  <div className={`w-2 h-2 rounded-full ${dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'bg-red-500 animate-pulse' : 'bg-[#147374]'}`} />
                   <span className="text-[12px] font-medium text-gray-600 dark:text-gray-300">
                     {dailyUsage && dailyUsage.usados_hoy >= dailyUsage.limite_diario ? 'Límite alcanzado' : 'Disponible para envíos'}
                   </span>
                 </div>
-                
+
                 {dailyUsage && dailyUsage.tiempo_para_reinicio > 0 && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-500/10 rounded-full border border-amber-200/50 dark:border-amber-500/20">
                     <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
@@ -445,7 +445,7 @@ export const Dashboard: React.FC = () => {
       {/* Footer */}
       <footer className="px-6 py-4 flex items-center justify-between text-[11px] font-bold text-[#71717A] bg-gray-50 dark:bg-[#18181A] border-t border-black/[0.02] dark:border-white/[0.02]">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#FF639B]" />
+          <div className="w-2 h-2 rounded-full bg-[#147374]" />
           DREAMLIVE ENTERPRISE 2025
         </div>
         <span className="opacity-50">v1.2.0</span>

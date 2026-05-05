@@ -18,8 +18,8 @@ import {
 
 const VaultIcon = () => {
   const { theme } = useTheme();
-  const mainColor = '#FF639B';
-  const secondaryColor = '#FF9EAF';
+  const mainColor = '#147374';
+  const secondaryColor = '#0E3B41';
 
   return (
     <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4 drop-shadow-xl">
@@ -62,7 +62,9 @@ export const AuthScreen: React.FC = () => {
       <div className="flex items-start gap-2">
         <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-[13px] font-medium text-red-800 dark:text-red-300">{error}</p>
+          <p className="text-[13px] font-medium text-red-800 dark:text-red-300">
+            {typeof error === 'string' ? error : (error as any)?.message || JSON.stringify(error)}
+          </p>
           {limitReachedInfo && (
             <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-500/20">
               <p className="text-[11px] text-amber-800 dark:text-amber-400 mb-2.5 font-medium leading-relaxed">
@@ -88,11 +90,11 @@ export const AuthScreen: React.FC = () => {
   const header = (
     <div className="flex justify-between items-center mb-10 w-full px-1">
       <div className="flex items-center gap-2">
-        <Shield size={24} className="text-[#FF639B]" fill="#FF639B" fillOpacity={0.1} strokeWidth={2} />
-        <span className="text-[#FF639B] font-extrabold text-2xl tracking-tighter">dreamlive</span>
+        <Shield size={24} className="text-[#147374]" fill="#147374" fillOpacity={0.1} strokeWidth={2} />
+        <span className="text-[#147374] font-extrabold text-2xl tracking-tighter">dreamlive</span>
       </div>
       <div className="flex items-center gap-4">
-        <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-[#FF639B] transition-all" title="Cambiar tema">
+        <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-[#147374] transition-all" title="Cambiar tema">
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
       </div>
@@ -140,7 +142,7 @@ export const AuthScreen: React.FC = () => {
       ) : status === 'needs_user_registration' ? (
         <div className="animate-fade-in">
           <VaultIcon />
-          <h2 className="text-[17px] font-bold text-center text-[#333333] dark:text-gray-100 mb-6">Crear Administrador</h2>
+          <h2 className="text-[17px] font-bold text-center text-[#333333] dark:text-gray-100 mb-6">Crear Agente</h2>
           {renderError()}
           <div className="space-y-4">
             <Input label="Nombre completo" type="text" value={regName} onChange={(e) => setRegName(e.target.value)} />

@@ -29,10 +29,10 @@ function injectTailwindProperties() {
     @property --tw-translate-y   { syntax: "<length-percentage>"; inherits: false; initial-value: 0; }
     @property --tw-backdrop-blur { syntax: "*"; inherits: false; initial-value: ; }
     :root {
-      --color-apple-green:  #34C759;
-      --color-primary:      #FF639B;
-      --color-apple-blue:   #FF639B;
-      --color-apple-purple: #AF52DE;
+      --color-apple-green:  #67D49A;
+      --color-primary:      #147374;
+      --color-apple-blue:   #147374;
+      --color-apple-purple: #0EA0A2;
     }
   `;
   document.head.appendChild(style);

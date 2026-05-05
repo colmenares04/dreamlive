@@ -59,6 +59,7 @@ async def run_seed():
                 full_name="Superuser Russo",
                 keywords="batallas/pk/versus",
                 message_templates=["Hola!", "Únete a mi agencia"],
+                invitation_types=["Normal", "Elite", "Popular", "Premium"],
                 theme="dark"
             )
             session.add(new_license)

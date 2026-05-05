@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     HOST_PORT: int = 8000
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/dreamlive"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:dreamlive_2026@db:5432/dreamlive"
 
     # ── Seguridad JWT ─────────────────────────────────────────────────────────
     SECRET_KEY: str = secrets.token_urlsafe(64)

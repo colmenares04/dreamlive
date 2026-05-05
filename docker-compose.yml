@@ -4,10 +4,10 @@ services:
     image: postgres:15-alpine
     container_name: dreamlive_db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: dreamlive_2026
       POSTGRES_DB: dreamlive
     networks:
       - dreamlive-net
@@ -68,7 +68,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/dreamlive
+      - DATABASE_URL=postgresql+asyncpg://postgres:dreamlive_2026@db:5432/dreamlive
     volumes:
       - ./dreamlive_api:/app
     networks:

@@ -126,7 +126,7 @@ async def create_license(
             expires_at=datetime.now(timezone.utc) + timedelta(days=payload.days),
             request_limit=payload.request_limit,
             refresh_minutes=payload.refresh_minutes,
-            keywords="",
+            keywords="batallas/pk/versus",
         )
         uow.session.add(new_license)
         created_keys.append({"id": lic_id, "key": lic_key})
