@@ -7,7 +7,9 @@ import datetime
 from app.infrastructure.api.deps import get_uow
 from app.adapters.security.handlers import create_access_token, verify_password, decode_token_func
 from app.adapters.db.models import LicenseORM, LicenseSessionORM
+from app.infrastructure.api.v2.web.audit_helper import create_audit_log
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Request
 
 router = APIRouter(prefix="/auth", tags=["Auth Extension V2"])
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -125,6 +127,16 @@ async def login_license(
     await uow.session.flush()
     await uow.session.commit()
 
+    await create_audit_log(
+        uow=uow,
+        category="AUTH",
+        action=f"Inicio de sesión (Licencia): {lic.key}",
+        entity_name="License",
+        entity_id=str(lic.id),
+        agency_id=str(lic.agency_id)
+    )
+    await uow.session.commit()
+
     token = create_access_token(
         subject=str(lic.id),
         role="agent",
@@ -210,6 +222,16 @@ async def login_extension(
     )
     uow.session.add(new_session)
     await uow.session.flush()
+    await uow.session.commit()
+
+    await create_audit_log(
+        uow=uow,
+        category="AUTH",
+        action=f"Inicio de sesión (Extension): {lic.email}",
+        entity_name="License",
+        entity_id=str(lic.id),
+        agency_id=str(lic.agency_id)
+    )
     await uow.session.commit()
 
     token = create_access_token(

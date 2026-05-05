@@ -27,26 +27,34 @@ async def list_leads(
     search: Optional[str] = None,
     agency_id: Optional[str] = Query(None),
     license_id: Optional[str] = Query(None),
+    min_viewers: Optional[int] = Query(None, alias="minViewers"),
+    min_likes: Optional[int] = Query(None, alias="minLikes"),
     agency: Any = Depends(get_current_v2_agency),
     uow: Any = Depends(get_uow),
 ):
-    from sqlalchemy import select, func
+    from sqlalchemy import select, func, and_
     
     # Security: If not superuser, force filtering by own agency
-    # For now, we assume current agency context is sufficient
     target_agency_id = agency_id if agency_id else str(agency.id)
 
     stmt = select(LeadORM).where(LeadORM.agency_id == target_agency_id)
 
-    if status:
+    if status and status != 'all':
         stmt = stmt.where(LeadORM.status == status)
     if search:
         stmt = stmt.where(LeadORM.username.contains(search))
-    if license_id:
+    if license_id and license_id != 'all':
         stmt = stmt.where(LeadORM.license_id == str(license_id))
+    if min_viewers is not None:
+        stmt = stmt.where(LeadORM.viewer_count >= min_viewers)
+    if min_likes is not None:
+        stmt = stmt.where(LeadORM.likes_count >= min_likes)
         
     res_total = await uow.session.execute(select(func.count()).select_from(stmt.subquery()))
     total = res_total.scalar() or 0
+
+    # Ordenar por fecha de creación descendente por defecto
+    stmt = stmt.order_by(LeadORM.created_at.desc())
 
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
     res_items = await uow.session.execute(stmt)
@@ -56,9 +64,6 @@ async def list_leads(
     for l in items:
         v = l.viewer_count or 0
         lk = l.likes_count or 0
-        if v == 0 and lk == 0:
-            v = random.randint(100, 3000)
-            lk = random.randint(50, 1500)
         out_items.append({
             "id": str(l.id),
             "username": l.username,
@@ -70,6 +75,7 @@ async def list_leads(
             "likes_count": lk,
             "agency_id": str(l.agency_id) if l.agency_id else None,
             "license_id": str(l.license_id) if l.license_id else None,
+            "created_at": l.created_at.isoformat() if hasattr(l.created_at, "isoformat") else str(l.created_at)
         })
 
     return {

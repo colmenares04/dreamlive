@@ -89,7 +89,7 @@ function UserFormModal({
         };
         if (password) payload.password = password;
         await UsersAdapter.update(user.id, payload);
-        success('Usuario actualizado.');
+        success('Acceso web configurado correctamente.');
       } else {
         await UsersAdapter.create({
           username,
@@ -100,11 +100,11 @@ function UserFormModal({
           agency_id: currentUser?.agency_id,
           license_id: selectedLicense
         });
-        success('Usuario creado correctamente.');
+        success('Usuario creado y acceso concedido.');
       }
       onSaved(); onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Error al guardar el usuario.';
+      const msg = err.response?.data?.detail || 'Error al procesar la solicitud.';
       error(msg);
     }
     finally { setSaving(false); }
@@ -115,12 +115,19 @@ function UserFormModal({
       <div className="absolute inset-0 bg-transparent" onClick={onClose} />
       <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg p-0 overflow-hidden z-10 animate-scale-in border-2 border-slate-200 dark:border-slate-800">
         <div className="bg-slate-50 dark:bg-slate-800 px-8 py-7 border-b border-slate-200 dark:border-white/5 flex justify-between items-center">
-          <h2 className="text-2xl font-black text-white tracking-widest uppercase">
-            {isEdit ? 'Modificar Acceso' : 'Cifrar Nueva Cuenta'}
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-widest uppercase">
+            {isEdit ? 'Configurar Acceso Web' : 'Cifrar Nueva Cuenta'}
           </h2>
-          <button type="button" onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all flex items-center justify-center active:scale-90">
+          <button type="button" onClick={onClose} className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-white/10 text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white transition-all flex items-center justify-center active:scale-90">
             <i className="fas fa-times text-xl" />
           </button>
+        </div>
+
+        <div className="px-8 pt-6">
+          <p className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest animate-pulse">
+            <i className="fas fa-info-circle mr-2" />
+            Termina de rellenar este formulario para que este usuario pueda loguearse
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-7 bg-white dark:bg-slate-900">
@@ -255,15 +262,8 @@ export function ProfilesView() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleDelete = async (user: ProfileUser) => {
-    if (!window.confirm(`¿Estás seguro de eliminar a ${user.username}? Esta acción es irreversible.`)) return;
-    try {
-      await UsersAdapter.remove(user.id);
-      load();
-    } catch {
-      error('Error al eliminar el usuario.');
-    }
-  };
+  // Delete functionality removed as it deletes the whole license
+  // const handleDelete = ...
 
   return (
     <div className="space-y-8 animate-fade-in p-2">
@@ -361,15 +361,9 @@ export function ProfilesView() {
                           </Button>
                         )}
 
-                        {/* 
-                          RESTRICTIONS:
-                          1. Cannot delete yourself.
-                          2. Agency Admins can ONLY delete Agents (not other admins).
-                          3. Superusers can delete anyone (except themselves).
-                        */}
-                        {u.id !== currentUser?.id && (myRole === 'superuser' || (myRole === 'agency_admin' && u.role === 'agent')) && (
-                          <Button size="sm" variant="danger" onClick={() => handleDelete(u)} className="!rounded-xl shadow-lg shadow-rose-500/10">
-                            <i className="fas fa-trash text-[10px]" />
+                        {u.id !== currentUser?.id && (!u.email || u.status !== 'active') && (myRole === 'superuser' || (myRole === 'agency_admin' && u.role === 'agent')) && (
+                          <Button size="sm" variant="outline" onClick={() => { setSelected(u); setShowForm(true); }} className="!rounded-xl border-indigo-500/30 hover:bg-indigo-50 text-indigo-600 dark:text-indigo-400 font-bold whitespace-nowrap">
+                            <i className="fas fa-key mr-2 text-[10px]" /> Conceder acceso a web
                           </Button>
                         )}
                       </div>

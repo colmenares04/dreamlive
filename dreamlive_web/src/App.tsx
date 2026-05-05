@@ -41,12 +41,26 @@ import { NotificationsView } from './presentation/dashboard/views/NotificationsV
 function RoleRedirect() {
   const { isAuthenticated, role } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  // Dependiendo del rol inicial, lanzamos al lugar correcto
-  if (role?.toLowerCase() === 'superuser') return <Navigate to="/dashboard/admin/overview" replace />;
-  if (role?.toLowerCase() === 'agency_admin') return <Navigate to="/dashboard/agency/overview" replace />;
+  
+  const r = role?.toLowerCase();
+  
+  // Superuser -> Panel Global
+  if (r === 'superuser') return <Navigate to="/dashboard/admin/overview" replace />;
+  
+  // Agency Admin / Session -> Panel de Agencia (Overview)
+  if (r === 'agency_admin' || r === 'agency_session') return <Navigate to="/dashboard/agency/overview" replace />;
+  
+  // Agentes -> Panel de Leads (My Leads)
+  if (r === 'agent' || r === 'recruiter') return <Navigate to="/dashboard/agency/my-leads" replace />;
 
-  // Failsafe genérico al dash de agencia (luego se pueden meter mas roles)
-  return <Navigate to="/dashboard/agency/overview" replace />;
+  // Failsafe: Si no se reconoce el rol pero está autenticado, mandamos a leads de agencia
+  return <Navigate to="/dashboard/agency/my-leads" replace />;
+}
+
+function AgencyIndexRedirect() {
+  const { role } = useAuth();
+  if (role?.toLowerCase() === 'agent') return <Navigate to="my-leads" replace />;
+  return <Navigate to="overview" replace />;
 }
 
 function AppRoutes() {
@@ -97,11 +111,11 @@ function AppRoutes() {
         }>
           <Route path="overview" element={<AgencyDashboardView />} />
           <Route path="leads" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><GlobalLeadsView /></ProtectedRoute>} />
-          <Route path="my-leads" element={<ProtectedRoute roles={['agent']}><MyLeadsView /></ProtectedRoute>} />
+          <Route path="my-leads" element={<ProtectedRoute roles={['agent', 'agency_admin', 'superuser']}><MyLeadsView /></ProtectedRoute>} />
           <Route path="team" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><TeamManagerView /></ProtectedRoute>} />
           <Route path="licenses" element={<ProtectedRoute roles={['agency_admin', 'superuser']}><AgencyLicensesView /></ProtectedRoute>} />
           <Route path="notifications" element={<NotificationsView />} />
-          <Route index element={<Navigate to="overview" replace />} />
+          <Route index element={<AgencyIndexRedirect />} />
         </Route>
 
         {/* ── SECCIÓN CONFIGURACIÓN (compartida por roles) ── */}

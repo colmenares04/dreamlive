@@ -21,4 +21,4 @@ class AgencyORM(Base):
     role_permissions = Column(JSON, default=dict, nullable=True)
 
     # Relaciones
-    licenses = relationship("LicenseORM", back_populates="agency", lazy="select")
+    licenses = relationship("LicenseORM", back_populates="agency", cascade="all, delete-orphan", lazy="select")

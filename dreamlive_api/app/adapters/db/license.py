@@ -26,7 +26,7 @@ class LicenseORM(Base):
     full_name = Column(String(255), nullable=True)
     keywords = Column(Text, default="batallas/versus/duelo/pk", nullable=True)
     message_templates = Column(JSON, default=list, nullable=True)
-    admin_password = Column(String(255), default="admin123", nullable=True)
+    admin_password = Column(String(255), nullable=True)
     invitation_types = Column(JSON, default=list, nullable=True)
     theme = Column(String(50), default="dark", nullable=True)
     daily_contact_count = Column(Integer, default=0, nullable=False)
@@ -35,7 +35,8 @@ class LicenseORM(Base):
 
     # Relaciones
     agency = relationship("AgencyORM", back_populates="licenses")
-    leads = relationship("LeadORM", back_populates="license", lazy="select")
+    leads = relationship("LeadORM", back_populates="license", cascade="all, delete-orphan", lazy="select")
+    sessions = relationship("LicenseSessionORM", backref="license", cascade="all, delete-orphan")
 
 
 class LicenseSessionORM(Base):

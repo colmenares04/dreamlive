@@ -10,7 +10,7 @@ export class UsersAdapter {
     return data;
   }
 
-  static async update(userId: string, payload: Partial<Pick<ProfileUser, 'username' | 'full_name' | 'role'>> & { password?: string; agency_id?: string | null }): Promise<ProfileUser> {
+  static async update(userId: string, payload: Partial<Pick<ProfileUser, 'username' | 'full_name' | 'role' | 'email'>> & { password?: string; current_password?: string; agency_id?: string | null }): Promise<ProfileUser> {
     const { data } = await http.patch<ProfileUser>(`/users/${userId}`, payload);
     return data;
   }

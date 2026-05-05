@@ -16,6 +16,7 @@ export interface User {
   status: UserStatus;
   agency_id: string | null;
   license_id?: string | null;
+  license_key?: string | null;
 }
 
 export interface RolePermissions {

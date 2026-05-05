@@ -11,9 +11,9 @@ export class LicenseAdapter {
   }
 
   static async create(payload: {
-    agency_id: string; recruiter_name: string; days: number;
-    request_limit?: number; refresh_minutes?: number;
-  }): Promise<{ id: string; key: string; expires_at: string }> {
+    agency_id: string; recruiter_name?: string; days: number;
+    quantity?: number; request_limit?: number; refresh_minutes?: number;
+  }): Promise<any> {
     const { data } = await http.post('/licenses', payload);
     return data;
   }

@@ -275,7 +275,7 @@ export function LoginPage() {
         .then(setProfiles)
         .catch(() => {
           // Agency token is invalid or expired — clear it and show error
-          TokenStorage.clear();
+          logout();
           setError('La sesión de agencia expiró. Inicia sesión nuevamente.');
         })
         .finally(() => setLoading(false));
@@ -475,7 +475,6 @@ export function LoginPage() {
                   placeholder="••••••"
                   value={profilePassword}
                   onChange={e => setProfilePassword(e.target.value)}
-                  required
                   autoFocus
                 />
                 {error && (

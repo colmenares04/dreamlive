@@ -33,53 +33,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Purge modal ─────────────────────────────────────────────────────────────
-interface PurgeModalProps {
-  open: boolean;
-  onClose: () => void;
-  onPurge: (type: LeadStatus | 'all') => Promise<void>;
-  licenses: { id: string; recruiter_name: string }[];
-}
-
-function PurgeModal({ open, onClose, onPurge }: PurgeModalProps) {
-  const [busy, setBusy] = useState(false);
-
-  const handle = async (type: LeadStatus | 'all') => {
-    setBusy(true);
-    await onPurge(type);
-    setBusy(false);
-    onClose();
-  };
-
-  const options: { type: LeadStatus | 'all'; icon: string; label: string; desc: string; color: string }[] = [
-    { type: 'recopilado', icon: 'fa-filter',        label: 'Solo Recopilados',  desc: 'Sin procesar',            color: 'text-amber-500' },
-    { type: 'disponible', icon: 'fa-circle-check',  label: 'Solo Disponibles',  desc: 'Listos para contactar',   color: 'text-emerald-500' },
-    { type: 'contactado', icon: 'fa-paper-plane',   label: 'Solo Contactados',  desc: 'Mensajes enviados',       color: 'text-indigo-500' },
-    { type: 'all',        icon: 'fa-bomb',           label: 'Eliminar TODO',     desc: 'Irreversible',            color: 'text-red-500' },
-  ];
-
-  return (
-    <Modal open={open} onClose={onClose} title="Limpieza de Datos" size="md">
-      <p className="text-xs text-slate-500 mb-5">Selecciona qué deseas eliminar de la agencia.</p>
-      <div className="grid grid-cols-2 gap-3">
-        {options.map(o => (
-          <button
-            key={o.type}
-            disabled={busy}
-            onClick={() => handle(o.type)}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900
-              hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all text-center disabled:opacity-50 ${
-                o.type === 'all' ? 'border-red-200 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/20' : ''
-              }`}>
-            <i className={`fas ${o.icon} text-xl ${o.color}`} />
-            <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{o.label}</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">{o.desc}</span>
-          </button>
-        ))}
-      </div>
-    </Modal>
-  );
-}
+import { PurgeModal } from '../components/PurgeModal';
 
 // ─── Vista principal ──────────────────────────────────────────────────────────
 export function MyLeadsView() {
@@ -89,20 +43,21 @@ export function MyLeadsView() {
     filters,
     resetAndLoadLeads, loadMoreLeads,
     updateFilters, exportLeads, purgeLeads, deleteLead,
+    teamLicenses
   } = useAgencyData();
+
+  const activeLicense = teamLicenses.find(l => l.id === currentUser?.license_id);
 
   const bottomRef  = useRef<HTMLDivElement>(null);
   const [purgeOpen, setPurgeOpen] = useState(false);
   const [search, setSearch] = useState(filters.search);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
-  // Cargar al montar
+  // Cargar al montar - Filtro estricto por licencia del perfil
   useEffect(() => { 
-    if (currentUser?.license_id) {
-      updateFilters({ license_id: currentUser.license_id || 'all' });
-    }
-    resetAndLoadLeads(); 
-  }, [currentUser, updateFilters, resetAndLoadLeads]); 
+    const targetLicense = currentUser?.license_id || 'none';
+    updateFilters({ license_id: targetLicense });
+  }, [currentUser?.license_id]); // Solo re-reacciona si cambia el ID de licencia o el usuario
 
   // Debounced search
   const handleSearch = useCallback((val: string) => {
@@ -126,7 +81,7 @@ export function MyLeadsView() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Panel de Leads"
-        subtitle="Tus prospectos asignados"
+        subtitle={activeLicense ? `Sincronizado con Licencia: ${activeLicense.key}` : "Tus prospectos asignados"}
         actions={
           <div className="flex gap-2">
             <Button variant="danger" onClick={() => setPurgeOpen(true)}>
@@ -279,7 +234,6 @@ export function MyLeadsView() {
         open={purgeOpen}
         onClose={() => setPurgeOpen(false)}
         onPurge={type => purgeLeads(type, currentUser?.license_id || undefined)}
-        licenses={[]}
       />
     </div>
   );

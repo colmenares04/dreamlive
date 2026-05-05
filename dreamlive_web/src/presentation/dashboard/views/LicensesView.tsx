@@ -46,7 +46,7 @@ function CreateLicenseForm({ agencies, onCreate, onSuccess }: {
   onSuccess: () => void;
 }) {
   const [agencyId, setAgencyId] = useState(agencies[0]?.id ?? '');
-  const [recruiter, setRecruiter] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const [duration, setDuration] = useState('30');
   const [customDays, setCustomDays] = useState(30);
   const [loading, setLoading] = useState(false);
@@ -54,10 +54,15 @@ function CreateLicenseForm({ agencies, onCreate, onSuccess }: {
   const days = duration === 'custom' ? customDays : parseInt(duration);
 
   const handleSubmit = async () => {
-    if (!agencyId || !recruiter.trim()) return;
+    if (!agencyId || quantity < 1) return;
     setLoading(true);
     try {
-      await onCreate({ agency_id: agencyId, recruiter_name: recruiter, days });
+      await onCreate({ 
+        agency_id: agencyId, 
+        recruiter_name: "Agente", 
+        days,
+        quantity: quantity 
+      });
       onSuccess();
     } finally {
       setLoading(false);
@@ -74,8 +79,16 @@ function CreateLicenseForm({ agencies, onCreate, onSuccess }: {
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombre del Reclutador</label>
-          <input type="text" value={recruiter} onChange={e => setRecruiter(e.target.value)} placeholder="Ej: Agente Regional" className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" />
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Cantidad a Generar (Pool)</label>
+          <input 
+            type="number" 
+            min="1"
+            max="100"
+            value={quantity} 
+            onChange={e => setQuantity(parseInt(e.target.value) || 1)} 
+            placeholder="Ej: 5" 
+            className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" 
+          />
         </div>
       </div>
       <div>
@@ -96,7 +109,7 @@ function CreateLicenseForm({ agencies, onCreate, onSuccess }: {
           />
         )}
       </div>
-      <Button variant="primary" loading={loading} onClick={handleSubmit} full className="py-4">Generar Nueva Licencia</Button>
+      <Button variant="primary" loading={loading} onClick={handleSubmit} full className="py-4">Generar Pool de Licencias</Button>
     </div>
   );
 }
@@ -277,7 +290,7 @@ type TabFilter = 'all' | 'active' | 'inactive';
 
 export function LicensesView() {
   const {
-    licenses, agencies, loadingDeps, metrics,
+    licenses, agencies, loadingDeps, metrics, loadDeps,
     extendLicense, toggleLicense, createLicense, deleteLicense, updateLicenseDate
   } = useAdminData();
 
@@ -361,6 +374,22 @@ export function LicensesView() {
           </div>
         );
       },
+    },
+    {
+      key: 'expires_at' as const,
+      header: 'Vencimiento',
+      render: (l: License) => (
+        <div className="space-y-1">
+          <p className="text-xs font-black text-slate-700 dark:text-white tabular-nums">
+            {l.expires_at ? formatDate(l.expires_at) : 'Permanente'}
+          </p>
+          {l.expires_at && (
+            <p className={clsx("text-[9px] font-black uppercase tracking-widest", (l.days_remaining ?? 0) <= 5 ? "text-rose-500" : "text-slate-400")}>
+              {(l.days_remaining ?? 0) > 0 ? `Quedan ${l.days_remaining} días` : 'Expirada'}
+            </p>
+          )}
+        </div>
+      ),
     },
     {
       key: 'today_leads' as const,
@@ -454,7 +483,11 @@ export function LicensesView() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <select 
                   value={selectedAgencyId} 
-                  onChange={e => setSelectedAgencyId(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSelectedAgencyId(val);
+                    loadDeps(val);
+                  }}
                   className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all w-full sm:w-48 font-bold"
                 >
                   <option value="">Todas las Agencias</option>

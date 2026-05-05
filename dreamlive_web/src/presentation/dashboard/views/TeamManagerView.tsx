@@ -28,6 +28,7 @@ function EditableCell({
   const [val, setVal]         = useState(String(value));
   const [saving, setSaving]   = useState(false);
   const [status, setStatus]   = useState<'idle' | 'saved' | 'error'>('idle');
+  const [peek, setPeek] = useState(false);
 
   const handleBlur = async () => {
     if (val === String(value)) { setEditing(false); return; }
@@ -48,25 +49,37 @@ function EditableCell({
   if (!editing) {
     return (
       <div 
-        onClick={() => setEditing(true)}
         className={clsx(
-          "group relative cursor-pointer p-3 rounded-2xl border transition-all h-full min-h-[50px] flex flex-col justify-center",
+          "group relative p-3 rounded-2xl border transition-all h-full min-h-[50px] flex flex-col justify-center",
           status === 'saved' ? "border-emerald-500/30 bg-emerald-500/5" :
           status === 'error' ? "border-rose-500/30 bg-rose-500/5" :
           "border-transparent hover:border-indigo-500/20 hover:bg-slate-50 dark:hover:bg-white/5"
         )}
       >
-        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
           {label}
         </span>
-        <span className={clsx(
-          "text-sm font-bold tracking-tight",
-          status === 'saved' ? "text-emerald-500" :
-          status === 'error' ? "text-rose-500" :
-          "text-slate-700 dark:text-slate-300"
-        )}>
-          {type === 'password' ? '••••••••' : val || <span className="text-slate-300 italic font-normal">Vacío</span>}
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span 
+            onClick={() => setEditing(true)}
+            className={clsx(
+              "text-sm font-bold tracking-tight cursor-pointer flex-1",
+              status === 'saved' ? "text-emerald-500" :
+              status === 'error' ? "text-rose-500" :
+              "text-slate-700 dark:text-slate-300"
+            )}>
+            {type === 'password' && !peek ? '••••••••' : val || <span className="text-slate-300 italic font-normal">Vacío</span>}
+          </span>
+          {type === 'password' && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setPeek(!peek); }}
+              className="text-slate-400 hover:text-indigo-500 transition-colors p-1"
+              title={peek ? "Ocultar" : "Mostrar"}
+            >
+              <i className={`fas ${peek ? 'fa-eye-slash' : 'fa-eye'} text-xs`} />
+            </button>
+          )}
+        </div>
         {status === 'saved' && <i className="fas fa-check-circle absolute top-2 right-2 text-[10px] text-emerald-500 animate-bounce" />}
       </div>
     );
@@ -130,54 +143,10 @@ function LicenseRow({ license, onSave }: { license: License; onSave: (field: str
   );
 }
 
-// ─── Modal sincronizar claves ─────────────────────────────────────────────────
-function SyncModal({ open, onClose, onSync }: { open: boolean; onClose: () => void; onSync: (password: string) => Promise<void> }) {
-  const [pass, setPass] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const handle = async () => {
-    if (!pass.trim()) return;
-    setBusy(true);
-    try {
-      await onSync(pass);
-      setPass('');
-      onClose();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title="Sincronizar Equipo" size="sm">
-      <div className="space-y-6 pt-2 pb-4">
-        <div className="bg-indigo-50 dark:bg-indigo-500/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-500/10">
-          <p className="text-xs text-indigo-700 dark:text-indigo-400 font-bold leading-relaxed">
-            Esta acción asignará la misma contraseña a <span className="font-black underline">todos</span> los reclutadores de tu agencia.
-          </p>
-        </div>
-        <div>
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nueva Contraseña Global</label>
-          <input
-            type="text"
-            value={pass}
-            onChange={e => setPass(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handle()}
-            placeholder="Ej: Dream2026!#"
-            className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
-          />
-        </div>
-        <Button variant="primary" loading={busy} onClick={handle} full className="py-4 shadow-xl shadow-indigo-500/20">
-          <i className="fas fa-key mr-2" />Sincronizar Credenciales
-        </Button>
-      </div>
-    </Modal>
-  );
-}
 
 // ─── Vista principal ──────────────────────────────────────────────────────────
 export function TeamManagerView() {
-  const { teamLicenses, loadingTeam, loadTeam, updateLicenseField, syncAllPasswords } = useAgencyData();
-  const [syncOpen, setSyncOpen] = useState(false);
+  const { teamLicenses, loadingTeam, loadTeam, updateLicenseField } = useAgencyData();
   const [search, setSearch] = useState('');
 
   // Pagination
@@ -203,15 +172,6 @@ export function TeamManagerView() {
       <PageHeader
         title="Gestión de Reclutadores"
         subtitle="Administra credenciales, límites y ciclos de refresco de tu equipo en tiempo real."
-        actions={
-          <Button 
-            variant="primary" 
-            onClick={() => setSyncOpen(true)} 
-            className="!rounded-2xl py-3 px-6 shadow-xl shadow-indigo-500/20 hover:scale-105 transition-transform"
-          >
-            <i className="fas fa-sync-alt mr-3" />Sincronizar Claves
-          </Button>
-        }
       />
 
       <div className="glass-card rounded-[2.5rem] border border-slate-100 dark:border-white/5 overflow-hidden shadow-sm">
@@ -277,7 +237,6 @@ export function TeamManagerView() {
         </div>
       </div>
 
-      <SyncModal open={syncOpen} onClose={() => setSyncOpen(false)} onSync={syncAllPasswords} />
     </div>
   );
 }

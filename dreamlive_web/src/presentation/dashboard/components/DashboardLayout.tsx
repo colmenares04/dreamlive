@@ -21,7 +21,7 @@ import { UserPermissions } from '../../../core/entities';
  * @returns {JSX.Element}
  */
 export function DashboardLayout() {
-  const { user, role: rawRole, logout } = useAuth();
+  const { user, role: rawRole, logout, logoutProfile } = useAuth();
   const role = rawRole?.toLowerCase();
   const { isDark, toggleTheme } = useTheme();
   const { permissions } = useAgencyPermissions();
@@ -34,6 +34,11 @@ export function DashboardLayout() {
    */
   const handleLogout = () => {
     logout();
+    navigate('/login');
+  };
+
+  const handleSwitchProfile = () => {
+    logoutProfile();
     navigate('/login');
   };
 
@@ -88,10 +93,11 @@ export function DashboardLayout() {
             <div className="text-[10px] uppercase font-black text-indigo-400 mb-1 tracking-widest">Sesión Activa</div>
             <div className="font-bold text-white text-base truncate tracking-tight">{user?.username}</div>
             <div className="flex items-center gap-2 mt-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
-              <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest leading-none">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 {role?.toLowerCase() === 'superuser' ? 'ADMINISTRADOR' : role?.toLowerCase() === 'agency_admin' ? 'GERENTE' : role?.toLowerCase() === 'agent' || role?.toLowerCase() === 'recruiter' ? 'AGENTE' : String(role).toUpperCase()}
-              </span>
+                {user?.license_key ? ` • ${user.license_key}` : ''}
+              </div>
             </div>
           </div>
         </div>
@@ -124,9 +130,9 @@ export function DashboardLayout() {
                 Agencia
               </div>
               <div className="space-y-1">
-                {(canViewMetrics || role === 'agent') && <MenuLink to="/dashboard/agency/overview" icon="fa-chart-line" text="Dashboard Agencia" onClick={() => setSidebarOpen(false)} />}
+                {canViewMetrics && <MenuLink to="/dashboard/agency/overview" icon="fa-chart-line" text="Dashboard Agencia" onClick={() => setSidebarOpen(false)} />}
                 {role !== 'agent' && <MenuLink to="/dashboard/agency/leads" icon="fa-address-book" text="Global Leads" onClick={() => setSidebarOpen(false)} />}
-                {role === 'agent' && <MenuLink to="/dashboard/agency/my-leads" icon="fa-address-card" text="Panel de Leads" onClick={() => setSidebarOpen(false)} />}
+                <MenuLink to="/dashboard/agency/my-leads" icon="fa-address-card" text="Panel de Leads" onClick={() => setSidebarOpen(false)} />
                 {canManageTeam && <MenuLink to="/dashboard/agency/team" icon="fa-users-cog" text="Team Manager" onClick={() => setSidebarOpen(false)} />}
                 {canManageLicenses && <MenuLink to="/dashboard/agency/licenses" icon="fa-key" text="Mis Licencias" onClick={() => setSidebarOpen(false)} />}
                 <MenuLink to="/dashboard/agency/notifications" icon="fa-bell" text="Notificaciones" onClick={() => setSidebarOpen(false)} />
@@ -169,6 +175,13 @@ export function DashboardLayout() {
                 <i className={clsx("fas text-[6px] text-slate-900 flex items-center justify-center h-full", isDark ? 'fa-moon' : 'fa-sun')}></i>
               </div>
             </div>
+          </button>
+
+          <button 
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[10px] font-black bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-all duration-300 mb-2 border border-transparent hover:border-white/5" 
+            onClick={handleSwitchProfile}
+          >
+            <i className="fas fa-user-friends mr-1"></i> Cambiar de Perfil
           </button>
 
           <button 

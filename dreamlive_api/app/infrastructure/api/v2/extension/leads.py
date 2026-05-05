@@ -177,9 +177,14 @@ async def purge_leads(
     uow: Any = Depends(get_uow),
 ):
     from sqlalchemy import delete
+    # Si no se especifica nada, por seguridad solo purgamos los 'recopilado'
+    target_status = status if status else 'recopilado'
+    
     stmt = delete(LeadORM).where(LeadORM.agency_id == str(agency.id))
-    if status and status != 'all':
-        stmt = stmt.where(LeadORM.status == LeadStatus(status))
+    
+    if target_status != 'all':
+        stmt = stmt.where(LeadORM.status == LeadStatus(target_status))
+        
     if license_id:
         stmt = stmt.where(LeadORM.license_id == str(license_id))
         

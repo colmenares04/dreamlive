@@ -126,12 +126,12 @@ export function useAdminData() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const createLicense = useCallback(async (payload: {
-    agency_id: string; recruiter_name: string; days: number;
-    request_limit?: number; refresh_minutes?: number;
+    agency_id: string; recruiter_name?: string; days: number;
+    quantity?: number; request_limit?: number; refresh_minutes?: number;
   }) => {
     try {
       await LicenseAdapter.create(payload);
-      success('Licencia creada correctamente.');
+      success(`${payload.quantity || 1} licencia(s) creada(s) correctamente.`);
       DataCache.invalidate(CACHE_LICENSES);
       DataCache.invalidate(CACHE_OVERVIEW);
       await loadDeps(true);
@@ -199,7 +199,7 @@ export function useAdminData() {
     );
     if (!ok) return;
     try {
-      const res = await LeadAdapter.purge();
+      const res = await LeadAdapter.purge({ status: 'recopilado' });
       success(`${res.deleted} leads eliminados.`);
       DataCache.invalidate(CACHE_OVERVIEW);
       await loadOverview(true);
@@ -246,20 +246,31 @@ export function useAdminData() {
   }, [confirm, success, showError, loadDeps]);
 
   const deleteLicense = useCallback(async (licenseId: string, password?: string) => {
-    if (!password) {
-      showError('Se requiere contraseña administrativa.');
-      return;
+    if (!password && role === 'superuser') {
+       // Si es superuser, confirmamos con un prompt simple si no se pasó pass, 
+       // o podemos requerir pass. Por ahora validamos que el backend lo permita.
     }
+    const ok = await confirm('¿Eliminar esta licencia permanentemente? Todos sus leads se conservarán en la agencia pero la clave dejará de funcionar.');
+    if (!ok) return;
+    
     try {
-      // Usamos el AgencyAdapter.remove logic como referencia para validación de pass si fuera necesario, 
-      // pero aquí LicenseAdapter.remove no recibe password en el body actualmente en el backend.
-      // Así que simplemente validamos que la haya ingresado en el UI (el backend ya protege con require_admin).
       await LicenseAdapter.remove(licenseId);
       success('Licencia eliminada.');
       DataCache.invalidate(CACHE_LICENSES);
       await loadDeps(true);
     } catch {
       showError('Error al eliminar la licencia.');
+    }
+  }, [confirm, success, showError, loadDeps, role]);
+
+  const updateLicenseConfig = useCallback(async (licenseId: string, payload: any) => {
+    try {
+      await LicenseAdapter.updateConfig(licenseId, payload);
+      success('Configuración de licencia actualizada.');
+      DataCache.invalidate(CACHE_LICENSES);
+      await loadDeps(true);
+    } catch {
+      showError('Error al actualizar la configuración.');
     }
   }, [success, showError, loadDeps]);
 
@@ -307,6 +318,7 @@ export function useAdminData() {
     extendLicense,
     toggleLicense,
     deleteLicense,
+    updateLicenseConfig,
     updateLicenseDate,
     createAgency,
     deleteAgency,

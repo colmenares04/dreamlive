@@ -79,12 +79,13 @@ function AgencyDetailModal({
   onClose,
   onRefresh
 }: { agency: Agency | null; onClose: () => void; onRefresh: () => void }) {
-  const { deleteAgency } = useAdminData();
+  const { deleteAgency, extendLicense, toggleLicense, deleteLicense, updateLicenseConfig } = useAdminData();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showDeletePrompt, setShowDeletePrompt] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [editingLicense, setEditingLicense] = useState<any>(null);
 
   useEffect(() => {
     if (agency) {
@@ -217,16 +218,47 @@ function AgencyDetailModal({
                           </td>
                           <td className="px-8 py-5">
                             <div className="flex justify-end items-center gap-1">
-                              <button className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white transition-all duration-300" title="Auditoría">
-                                <i className="fas fa-microscope text-xs" />
+                              <button 
+                                onClick={async () => {
+                                  await extendLicense(lic.id);
+                                  const updated = await AgencyAdapter.getStats(agency.id!);
+                                  setStats(updated);
+                                }}
+                                className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white transition-all duration-300" 
+                                title="Extender 30 días"
+                              >
+                                <i className="fas fa-calendar-plus text-xs" />
                               </button>
-                              <button className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-500 hover:bg-purple-500 hover:text-white transition-all duration-300" title="Editar">
+                              <button 
+                                onClick={() => setEditingLicense(lic)}
+                                className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-500 hover:bg-purple-500 hover:text-white transition-all duration-300" 
+                                title="Editar Configuración"
+                              >
                                 <i className="fas fa-edit text-xs" />
                               </button>
-                              <button className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all duration-300" title="Activar/Desactivar">
+                              <button 
+                                onClick={async () => {
+                                  await toggleLicense(lic.id);
+                                  const updated = await AgencyAdapter.getStats(agency.id!);
+                                  setStats(updated);
+                                }}
+                                className={clsx(
+                                  "w-9 h-9 rounded-xl transition-all duration-300",
+                                  lic.is_active ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white" : "bg-slate-500/10 text-slate-500 hover:bg-slate-500 hover:text-white"
+                                )}
+                                title={lic.is_active ? "Desactivar" : "Activar"}
+                              >
                                 <i className="fas fa-power-off text-xs" />
                               </button>
-                              <button className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300" title="Eliminar">
+                              <button 
+                                onClick={async () => {
+                                  await deleteLicense(lic.id);
+                                  const updated = await AgencyAdapter.getStats(agency.id!);
+                                  setStats(updated);
+                                }}
+                                className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300" 
+                                title="Eliminar"
+                              >
                                 <i className="fas fa-trash-alt text-xs" />
                               </button>
                             </div>
@@ -274,6 +306,18 @@ function AgencyDetailModal({
           </>
         )}
       </div>
+
+      <EditLicenseModal
+        license={editingLicense}
+        onClose={() => setEditingLicense(null)}
+        onUpdate={async (id, payload) => {
+          await updateLicenseConfig(id, payload);
+          // Refresh agency stats to show updated names if needed
+          if (agency) {
+            AgencyAdapter.getStats(agency.id!).then(setStats);
+          }
+        }}
+      />
     </Modal>
   );
 }
@@ -410,6 +454,85 @@ function CreateAgencyModal({
 
         <Button variant="primary" loading={saving} type="submit" className="w-full !rounded-2xl py-4 font-black tracking-widest text-xs uppercase shadow-xl shadow-indigo-500/20 mt-2">
           Confirmar Registro
+        </Button>
+      </form>
+    </Modal>
+  );
+}
+
+function EditLicenseModal({
+  license,
+  onClose,
+  onUpdate
+}: {
+  license: any;
+  onClose: () => void;
+  onUpdate: (id: string, payload: any) => Promise<void>;
+}) {
+  const [name, setName] = useState(license?.recruiter_name || '');
+  const [limit, setLimit] = useState(license?.limit_requests || 60);
+  const [refresh, setRefresh] = useState(license?.refresh_minutes || 60);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (license) {
+      setName(license.recruiter_name);
+      setLimit(license.limit_requests);
+      setRefresh(license.refresh_minutes);
+    }
+  }, [license]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onUpdate(license.id, {
+        recruiter_name: name,
+        request_limit: Number(limit),
+        refresh_minutes: Number(refresh)
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={!!license} onClose={onClose} title="Editar Recrutador" maxWidth="max-w-md">
+      <form onSubmit={handleSubmit} className="space-y-6 py-2">
+        <div>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nombre del Reclutador</label>
+          <input
+            required
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Límite Reqs</label>
+            <input
+              required
+              type="number"
+              value={limit}
+              onChange={e => setLimit(Number(e.target.value))}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Refresh (min)</label>
+            <input
+              required
+              type="number"
+              value={refresh}
+              onChange={e => setRefresh(Number(e.target.value))}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+            />
+          </div>
+        </div>
+        <Button variant="primary" loading={saving} type="submit" className="w-full !rounded-2xl py-4 font-black tracking-widest text-xs uppercase shadow-xl shadow-indigo-500/20 mt-2">
+          Guardar Cambios
         </Button>
       </form>
     </Modal>

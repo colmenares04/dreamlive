@@ -13,7 +13,10 @@ export function AccountView() {
 
   const [username, setUsername] = useState(user?.username || '');
   const [fullName, setFullName] = useState(user?.full_name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [saving, setSaving] = useState(false);
+  
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPass, setChangingPass] = useState(false);
@@ -23,6 +26,7 @@ export function AccountView() {
     if (user) {
       setUsername(user.username);
       setFullName(user.full_name || '');
+      setEmail(user.email || '');
     }
   }, [user]);
 
@@ -31,26 +35,42 @@ export function AccountView() {
     if (!user) return;
     setSaving(true);
     try {
-      await UsersAdapter.update(user.id, { username, full_name: fullName });
+      await UsersAdapter.update(user.id, { 
+        username, 
+        full_name: fullName,
+        email 
+      });
       success('Perfil actualizado correctamente.');
-    } catch { error('Error al actualizar el perfil.'); }
-    finally { setSaving(false); }
+    } catch { 
+      error('Error al actualizar el perfil.'); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!currentPassword) { error('Ingresa tu contraseña actual.'); return; }
     if (!newPassword) { error('Ingresa una nueva contraseña.'); return; }
     if (newPassword !== confirmPassword) { error('Las contraseñas no coinciden.'); return; }
 
     setChangingPass(true);
     try {
-      await UsersAdapter.update(user.id, { password: newPassword });
+      await UsersAdapter.update(user.id, { 
+        password: newPassword, 
+        current_password: currentPassword 
+      });
       success('Contraseña actualizada con éxito.');
       setNewPassword('');
       setConfirmPassword('');
-    } catch { error('Error al cambiar la contraseña.'); }
-    finally { setChangingPass(false); }
+      setCurrentPassword('');
+    } catch (err: any) { 
+      const msg = err.response?.data?.detail || 'Error al cambiar la contraseña. Verifica tu clave actual.';
+      error(msg); 
+    } finally { 
+      setChangingPass(false); 
+    }
   };
 
   const roleLabels: Record<string, string> = {
@@ -121,6 +141,15 @@ export function AccountView() {
                   />
                 </div>
                 <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Correo Electrónico</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-white/5 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Nombre Completo</label>
                   <input
                     value={fullName}
@@ -149,6 +178,16 @@ export function AccountView() {
 
               <form onSubmit={handleChangePassword} className="space-y-6">
                 <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Contraseña Actual</label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-white/5 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-rose-500/10 outline-none transition-all dark:text-white"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div className="pt-4 border-t border-slate-100 dark:border-white/5">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Nueva Contraseña</label>
                   <input
                     type="password"

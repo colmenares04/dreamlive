@@ -8,6 +8,7 @@ from app.infrastructure.api.deps import get_uow
 from app.infrastructure.api.v2.shared import get_current_v2_agency
 from app.adapters.security.handlers import hash_password, create_access_token, decode_token_func, verify_password
 from app.adapters.db.models import AgencyORM, LicenseORM
+from app.infrastructure.api.v2.web.audit_helper import create_audit_log
 
 router = APIRouter(prefix="/auth", tags=["Auth Web V2"])
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -37,6 +38,7 @@ class UserOut(BaseModel):
     status: str
     agency_id: str | None
     license_id: str | None = None
+    license_key: str | None = None
     logo_url: str | None = None
     limite_diario: int = 60
     usados_hoy: int = 0
@@ -69,6 +71,14 @@ async def login(
 
     if not verify_password(payload.password, agency.password) and agency.password != payload.password:
         raise HTTPException(status_code=401, detail="Credenciales inválidas.")
+
+    await create_audit_log(
+        uow=uow,
+        category="AUTH",
+        action=f"Inicio de sesión (Web): {agency.name}",
+        agency_id=str(agency.id)
+    )
+    await uow.session.commit()
 
     access_token = create_access_token(
         subject=str(agency.id),
@@ -150,7 +160,9 @@ async def get_me(
             return UserOut(
                 id=str(lic.id), email=lic.email or "", username=lic.recruiter_name or "",
                 full_name=lic.recruiter_name or "", role=lic.role or "agency_admin", status="active",
-                agency_id=str(lic.agency_id) if lic.agency_id else None
+                agency_id=str(lic.agency_id) if lic.agency_id else None,
+                license_id=str(lic.id),
+                license_key=lic.key
             )
 
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
@@ -168,6 +180,30 @@ async def select_profile(
     lic = res_lic.scalar_one_or_none()
     if not lic:
         raise HTTPException(status_code=404, detail="Perfil no encontrado.")
+
+    # Verificación de PIN/Contraseña si existe
+    if lic.admin_password:
+        if not payload.password:
+            raise HTTPException(status_code=401, detail="Se requiere un PIN de acceso para este perfil.")
+        
+        # Soportamos tanto texto plano como hash para admin_password (PIN)
+        is_valid = False
+        if verify_password(payload.password, lic.admin_password):
+            is_valid = True
+        elif lic.admin_password == payload.password:
+            is_valid = True
+            
+        if not is_valid:
+            raise HTTPException(status_code=401, detail="PIN de acceso incorrecto.")
+
+    await create_audit_log(
+        uow=uow,
+        category="AUTH",
+        action=f"Selección de perfil: {lic.recruiter_name}",
+        user_id=str(lic.id),
+        agency_id=str(lic.agency_id)
+    )
+    await uow.session.commit()
 
     access_token = create_access_token(
         subject=str(lic.id),
