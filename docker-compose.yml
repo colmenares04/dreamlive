@@ -80,7 +80,7 @@ services:
       context: ./dreamlive_web
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:8000/api/v2
+        - VITE_API_URL=https://api.dreamlive.app/api/v2
     container_name: dreamlive_web
     depends_on:
       - api
